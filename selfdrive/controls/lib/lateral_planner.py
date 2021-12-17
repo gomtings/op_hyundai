@@ -12,13 +12,13 @@ from selfdrive.config import Conversions as CV
 import cereal.messaging as messaging
 from cereal import log
 
-AUTO_LCA_START_TIME = 1.0
+AUTO_LCA_START_TIME = 0.1
 
 LaneChangeState = log.LateralPlan.LaneChangeState
 LaneChangeDirection = log.LateralPlan.LaneChangeDirection
 
-LANE_CHANGE_SPEED_MIN = 60 * CV.KPH_TO_MS
-LANE_CHANGE_TIME_MAX = 10.
+LANE_CHANGE_SPEED_MIN = 40 * CV.KPH_TO_MS
+LANE_CHANGE_TIME_MAX = 30.
 
 DESIRES = {
   LaneChangeDirection.none: {

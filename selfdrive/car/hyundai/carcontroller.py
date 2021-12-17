@@ -17,10 +17,9 @@ from selfdrive.road_speed_limiter import road_speed_limiter_get_active
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 min_set_speed = 30 * CV.KPH_TO_MS
+maintenance = 15 # Additional polar bear.
 
-
-SP_CARS = [CAR.GENESIS, CAR.GENESIS_G70, CAR.GENESIS_G80,
-           CAR.GENESIS_EQ900, CAR.GENESIS_EQ900_L, CAR.K9, CAR.GENESIS_G90]
+SP_CARS = [CAR.NEXO]
 
 def process_hud_alert(enabled, fingerprint, visual_alert, left_lane, right_lane,
                       left_lane_depart, right_lane_depart):
@@ -97,8 +96,8 @@ class CarController():
     # Disable steering while turning blinker on and speed below 60 kph
     if CS.out.leftBlinker or CS.out.rightBlinker:
       self.turning_signal_timer = 0.5 / DT_CTRL  # Disable for 0.5 Seconds after blinker turned off
-    if self.turning_indicator_alert: # set and clear by interface
-      lkas_active = 0
+    if self.turning_indicator_alert and CS.out.vEgo < maintenance * CV.KPH_TO_MS: # set and clear by interface # Additional polar bear.: # set and clear by interface
+      lkas_active = 0# 시그널이 켜져도 10km 이상에서는 조향을 유지 합니다.
     if self.turning_signal_timer > 0:
       self.turning_signal_timer -= 1
 

@@ -52,6 +52,7 @@ class CAR:
   GRANDEUR_IG_FL = "HYUNDAI GRANDEUR IG FL 2020"
   GRANDEUR_IG_FL_HEV = "HYUNDAI GRANDEUR IG FL HEV 2020"
   TUCSON_TL_SCC  = "HYUNDAI TUCSON TL SCC 2017"
+  NEXO = "HYUNDAI NEXO"
   # kia
   FORTE = "KIA FORTE E 2018"
   K5 = "KIA K5 2019 & 2016"
@@ -243,6 +244,9 @@ FINGERPRINTS = {
   },{
     64: 8, 66: 8, 67: 8, 68: 8, 127: 8, 273: 8, 274: 8, 275: 8, 339: 8, 356: 4, 399: 8, 512: 6, 544: 8, 608: 8, 790: 8, 809: 8, 832: 8, 899: 8, 902: 8, 903: 8, 909: 8, 916: 8, 1040: 8, 1056: 8, 1057: 8, 1078: 4, 1151: 6, 1168: 7, 1170: 8, 1186: 2, 1191: 2, 1265: 4, 1280: 1, 1282: 4, 1287: 4, 1290: 8, 1292: 8, 1312: 8, 1314: 8, 1322: 8, 1342: 6, 1345: 8, 1348: 8, 1349: 8, 1351: 8, 1353: 8, 1363: 8, 1365: 8, 1366: 8, 1367: 8, 1369: 8, 1407: 8, 1419: 8, 1427: 6, 1440: 8, 1456: 4, 1470: 8, 1472: 8, 1491: 8, 1530: 8, 2015: 8, 2024: 8, 2025: 8
   }],
+  CAR.NEXO: [{
+    127: 8, 145: 8, 146: 8, 304: 8, 320: 8, 339: 8, 352: 8, 356: 4, 512: 6, 544: 8, 593: 8, 688: 5, 832: 8, 881: 8, 882: 8, 897: 8, 902: 8, 903: 8, 905: 8, 908: 8, 909: 8, 912: 7, 916: 8, 1056: 8, 1057: 8, 1078: 4, 1136: 8, 1151: 8, 1155: 8, 1156: 8, 1157: 4, 1162: 8, 1164: 8, 1168: 7, 1173: 8, 1174: 8, 1180: 8, 1183: 8, 1186: 2, 1191: 2, 1192: 8, 1193: 8, 1210: 8, 1219: 8, 1220: 8, 1222: 6, 1223: 8, 1224: 8, 1227: 8, 1230: 6, 1231: 6, 1265: 4, 1268: 8, 1280: 1, 1287: 4, 1290: 8, 1291: 8, 1292: 8, 1294: 8, 1297: 8, 1298: 8, 1305: 8, 1312: 8, 1315: 8, 1316: 8, 1322: 8, 1324: 8, 1342: 6, 1345: 8, 1348: 8, 1355: 8, 1363: 8, 1369: 8, 1371: 8, 1407: 8, 1419: 8, 1427: 6, 1429: 8, 1430: 8, 1437: 8, 1456: 4, 1460: 8, 1470: 8, 1484: 8, 1507: 8, 1520: 8, 1535: 8
+  }],  
   # kia
   CAR.FORTE: [{
     67: 8, 127: 8, 304: 8, 320: 8, 339: 8, 356: 4, 544: 8, 593: 8, 608: 8, 688: 5, 809: 8, 832: 8, 854: 7, 870: 7, 871: 8, 872: 8, 897: 8, 902: 8, 903: 8, 909: 8, 916: 8, 1040: 8, 1042: 8, 1078: 4, 1107: 5, 1136: 8, 1156: 8, 1170: 8, 1173: 8, 1191: 2, 1225: 8, 1265: 4, 1280: 4, 1287: 4, 1292: 8, 1294: 8, 1312: 8, 1322: 8, 1342: 6, 1345: 8, 1348: 8, 1363: 8, 1369: 8, 1384: 8, 1394: 8, 1407: 8, 1427: 6, 1456: 4, 1470: 8
@@ -313,7 +317,22 @@ FINGERPRINTS = {
   }],
 }
 
-FW_VERSIONS = {}
+FW_VERSIONS = {
+    CAR.NEXO: {
+    (Ecu.esp, 0x7D1, None): [
+      b'\xf1\x00FE IEB \x01 312 \x11\x13 58520-M5000',
+    ],
+    (Ecu.fwdCamera, 0x7C4, None): [
+      b'\xf1\x00FE  MFC  AT KOR LHD 1.00 1.04 99211-M5000 180918',
+    ],
+    (Ecu.eps, 0x7D4, None): [
+      b'\xf1\x00FE  MDPS C 1.00 1.05 56340-M5000 9903',
+    ],
+    (Ecu.fwdRadar, 0x7D0, None): [
+      b'\xf1\x00FE__ SCC FHCUP      1.00 1.03 99110-M5000         ',
+    ],
+  },
+}
 
 CHECKSUM = {
   "crc8": [CAR.SANTA_FE, CAR.SONATA, CAR.PALISADE, CAR.SONATA_HEV, CAR.SONATA21_HEV, CAR.SELTOS, CAR.ELANTRA_2021,
@@ -323,27 +342,21 @@ CHECKSUM = {
 
 FEATURES = {
   # Use Cluster for Gear Selection, rather than Transmission
-  "use_cluster_gears": {CAR.ELANTRA, CAR.KONA, CAR.ELANTRA_GT_I30, CAR.K7, CAR.GRANDEUR_IG, CAR.GRANDEUR_IG_FL},
+  "use_cluster_gears": {},
 
   # Use TCU Message for Gear Selection
-  "use_tcu_gears": {CAR.K5, CAR.SONATA19, CAR.VELOSTER, CAR.SONATA_LF_TURBO, CAR.TUCSON_TL_SCC},
+  "use_tcu_gears": {},
 
   # Use E_GEAR Message for Gear Selection
-  "use_elect_gears": {CAR.K5_HEV, CAR.IONIQ_EV_LTD, CAR.KONA_EV, CAR.KONA_HEV, CAR.SONATA_HEV, CAR.SONATA21_HEV, CAR.SONATA21_HEV, CAR.NIRO_EV, CAR.K7_HEV,
-                      CAR.GRANDEUR_IG_HEV, CAR.GRANDEUR_IG_FL_HEV, CAR.IONIQ_EV_2020, CAR.IONIQ_PHEV, CAR.ELANTRA_HEV_2021,
-                      CAR.NIRO_HEV, CAR.NIRO_HEV_2021, CAR.SANTA_FE_HEV_2022},
+  "use_elect_gears": {CAR.NEXO},
 
   # send LFA MFA message for new HKG models
-  "send_lfa_mfa": {CAR.SONATA, CAR.PALISADE, CAR.SONATA_HEV, CAR.SONATA21_HEV, CAR.SANTA_FE, CAR.NIRO_EV, CAR.GRANDEUR_IG_FL, CAR.GRANDEUR_IG_FL_HEV,
-                   CAR.KONA_EV, CAR.KONA_HEV, CAR.TUCSON_TL_SCC, CAR.ELANTRA_2021, CAR.ELANTRA_HEV_2021,
-                   CAR.K9, CAR.GENESIS_G90, CAR.NIRO_HEV_2021, CAR.SANTA_FE_2022, CAR.SANTA_FE_HEV_2022, CAR.K5_2021},
+  "send_lfa_mfa": {CAR.NEXO},
 
   "send_hda_state_2": {CAR.GENESIS_G80, CAR.GENESIS_EQ900, CAR.GENESIS_EQ900_L},
 
   # these cars use the FCA11 message for the AEB and FCW signals, all others use SCC12
-  "use_fca": {CAR.SONATA, CAR.ELANTRA, CAR.ELANTRA_GT_I30, CAR.STINGER, CAR.IONIQ_EV_2020, CAR.IONIQ_PHEV, CAR.KONA, CAR.KONA_EV, CAR.FORTE,
-              CAR.PALISADE, CAR.GENESIS_G70, CAR.SANTA_FE, CAR.SELTOS, CAR.ELANTRA_2021, CAR.ELANTRA_HEV_2021,
-              CAR.K9, CAR.GENESIS_G90, CAR.SANTA_FE_2022, CAR.SANTA_FE_HEV_2022, CAR.K5_2021},
+  "use_fca": {CAR.NEXO},
 
   "has_scc13": {CAR.PALISADE, CAR.NIRO_HEV, CAR.NIRO_HEV_2021, CAR.K9, CAR.GENESIS_G90, CAR.K5_2021},
   "has_scc14": {CAR.PALISADE, CAR.NIRO_HEV, CAR.NIRO_HEV_2021, CAR.K9, CAR.GENESIS_G90, CAR.K5_2021},
@@ -353,7 +366,7 @@ HYBRID_CAR = {CAR.K5_HEV, CAR.KONA_HEV, CAR.NIRO_HEV, CAR.NIRO_HEV_2021, CAR.SON
               CAR.GRANDEUR_IG_HEV, CAR.GRANDEUR_IG_FL_HEV, CAR.IONIQ_PHEV, CAR.ELANTRA_HEV_2021, CAR.IONIQ,
               CAR.SANTA_FE_HEV_2022}
 
-EV_CAR = {CAR.IONIQ_EV_LTD, CAR.IONIQ_EV_2020, CAR.KONA_EV, CAR.NIRO_EV}
+EV_CAR = {CAR.NEXO}
 
 EV_HYBRID_CAR = EV_CAR | HYBRID_CAR
 
@@ -393,6 +406,7 @@ DBC = {
   CAR.GRANDEUR_IG_FL: dbc_dict('hyundai_kia_generic', None),
   CAR.GRANDEUR_IG_FL_HEV: dbc_dict('hyundai_kia_generic', None),
   CAR.TUCSON_TL_SCC: dbc_dict('hyundai_kia_generic', None),
+  CAR.NEXO: dbc_dict('hyundai_kia_generic', None),
   # kia
   CAR.FORTE: dbc_dict('hyundai_kia_generic', None),
   CAR.K5: dbc_dict('hyundai_kia_generic', None),

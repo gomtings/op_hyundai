@@ -183,6 +183,11 @@ class CarInterface(CarInterfaceBase):
       ret.wheelbase = 2.67
       tire_stiffness_factor = 0.7
       ret.centerToFront = ret.wheelbase * 0.4
+    elif candidate == CAR.NEXO:
+      ret.mass = 1885. + STD_CARGO_KG
+      ret.wheelbase = 2.79
+      ret.centerToFront = ret.wheelbase * 0.4
+      tire_stiffness_factor = 0.7    
     # kia
     elif candidate == CAR.SORENTO:
       ret.mass = 1985. + STD_CARGO_KG
