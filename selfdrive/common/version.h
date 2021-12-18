@@ -1,1 +1,1 @@
-#define COMMA_VERSION "hkg0813forNEXO"
+#define COMMA_VERSION "0.8.13forNEXO"
