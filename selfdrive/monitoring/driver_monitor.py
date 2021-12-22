@@ -6,7 +6,6 @@ from common.realtime import DT_DMON
 from selfdrive.hardware import TICI
 from common.filter_simple import FirstOrderFilter
 from common.stat_live import RunningStatFilter
-from selfdrive.config import Conversions as CV # 21.12.21 - polorbear - 모니터링 조건 수정을 위한 추가.
 
 EventName = car.CarEvent.EventName
 
@@ -270,19 +269,18 @@ class DriverStatus():
         self.awareness = max(self.awareness - self.step_change, -0.1)
 
     alert = None
-    if ret.vEgo > 0: # 21.12.21 - polorbear  모니터링 조건 추가. -> 현재 속도가 0 이상일 경우에 체크함.
-      if self.awareness <= 0.:
-        # terminal red alert: disengagement required
-        alert = EventName.driverDistracted if self.active_monitoring_mode else EventName.driverUnresponsive
-        self.terminal_time += 1
-        if awareness_prev > 0.:
-          self.terminal_alert_cnt += 1
-      elif self.awareness <= self.threshold_prompt:
-        # prompt orange alert
-        alert = EventName.promptDriverDistracted if self.active_monitoring_mode else EventName.promptDriverUnresponsive
-      elif self.awareness <= self.threshold_pre:
-        # pre green alert
-        alert = EventName.preDriverDistracted if self.active_monitoring_mode else EventName.preDriverUnresponsive
-        
+    if self.awareness <= 0.:
+      # terminal red alert: disengagement required
+      alert = EventName.driverDistracted if self.active_monitoring_mode else EventName.driverUnresponsive
+      self.terminal_time += 1
+      if awareness_prev > 0.:
+        self.terminal_alert_cnt += 1
+    elif self.awareness <= self.threshold_prompt:
+      # prompt orange alert
+      alert = EventName.promptDriverDistracted if self.active_monitoring_mode else EventName.promptDriverUnresponsive
+    elif self.awareness <= self.threshold_pre:
+      # pre green alert
+      alert = EventName.preDriverDistracted if self.active_monitoring_mode else EventName.preDriverUnresponsive
+
     if alert is not None:
       events.add(alert)
