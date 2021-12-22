@@ -283,4 +283,8 @@ class DriverStatus():
       alert = EventName.preDriverDistracted if self.active_monitoring_mode else EventName.preDriverUnresponsive
 
     if alert is not None:
-      events.add(alert)
+      if ret.vEgo <= 0: # 21.12.21 - polorbear 모니터링 이벤트 조건 추가. -> 현재 속도가 0 경우 이벤트를 발생 안함.
+        alert = None
+        events.add(alert)
+      else:
+        events.add(alert)
