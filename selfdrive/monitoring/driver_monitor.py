@@ -267,7 +267,9 @@ class DriverStatus():
       # should always be counting if distracted unless at standstill and reaching orange
       if not standstill_exemption:
         self.awareness = max(self.awareness - self.step_change, -0.1)
-
+    
+    print("start or stop = ")
+    print(standstill)
     alert = None
     if self.awareness <= 0.:
       # terminal red alert: disengagement required
@@ -281,10 +283,6 @@ class DriverStatus():
     elif self.awareness <= self.threshold_pre:
       # pre green alert
       alert = EventName.preDriverDistracted if self.active_monitoring_mode else EventName.preDriverUnresponsive
-
+      
     if alert is not None:
-      if ret.vEgo <= 0: # 21.12.21 - polorbear 모니터링 이벤트 조건 추가. -> 현재 속도가 0 경우 이벤트를 발생 안함.
-        alert = None
-        events.add(alert)
-      else:
-        events.add(alert)
+      events.add(alert)
