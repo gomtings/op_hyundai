@@ -269,20 +269,18 @@ class DriverStatus():
         self.awareness = max(self.awareness - self.step_change, -0.1)
 
     alert = None
-    
-    if not standstill: # 주행중...  standstill 가   true 면 정차 상태. false 면 주행중... 
-      if self.awareness <= 0.:
-        # terminal red alert: disengagement required
-        alert = EventName.driverDistracted if self.active_monitoring_mode else EventName.driverUnresponsive
-        self.terminal_time += 1
-        if awareness_prev > 0.:
-          self.terminal_alert_cnt += 1
-      elif self.awareness <= self.threshold_prompt:
-        # prompt orange alert
-        alert = EventName.promptDriverDistracted if self.active_monitoring_mode else EventName.promptDriverUnresponsive
-      elif self.awareness <= self.threshold_pre:
-        # pre green alert
-        alert = EventName.preDriverDistracted if self.active_monitoring_mode else EventName.preDriverUnresponsive
+    if self.awareness <= 0.:
+      # terminal red alert: disengagement required
+      alert = EventName.driverDistracted if self.active_monitoring_mode else EventName.driverUnresponsive
+      self.terminal_time += 1
+      if awareness_prev > 0.:
+        self.terminal_alert_cnt += 1
+    elif self.awareness <= self.threshold_prompt:
+      # prompt orange alert
+      alert = EventName.promptDriverDistracted if self.active_monitoring_mode else EventName.promptDriverUnresponsive
+    elif self.awareness <= self.threshold_pre:
+      # pre green alert
+      alert = EventName.preDriverDistracted if self.active_monitoring_mode else EventName.preDriverUnresponsive
 
     if alert is not None:
-      events.add(alert) 
+      events.add(alert)
