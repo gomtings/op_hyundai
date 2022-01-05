@@ -140,14 +140,14 @@ class Alert:
 
 class NoEntryAlert(Alert):
   def __init__(self, alert_text_2: str, visual_alert: car.CarControl.HUDControl.VisualAlert=VisualAlert.none):
-    super().__init__("openpilot Unavailable", alert_text_2, AlertStatus.normal,
+    super().__init__("오픈파일럿을 사용할 수 없음", alert_text_2, AlertStatus.normal,
                      AlertSize.mid, Priority.LOW, visual_alert,
                      AudibleAlert.refuse, 3.)
 
 
 class SoftDisableAlert(Alert):
   def __init__(self, alert_text_2: str):
-    super().__init__("TAKE CONTROL IMMEDIATELY", alert_text_2,
+    super().__init__("핸들을 즉시 잡아주세요", alert_text_2,
                      AlertStatus.userPrompt, AlertSize.full,
                      Priority.MID, VisualAlert.steerRequired,
                      AudibleAlert.warningSoft, 2.),
@@ -157,12 +157,12 @@ class SoftDisableAlert(Alert):
 class UserSoftDisableAlert(SoftDisableAlert):
   def __init__(self, alert_text_2: str):
     super().__init__(alert_text_2),
-    self.alert_text_1 = "openpilot will disengage"
+    self.alert_text_1 = "오픈파일럿이 해제됩니다."
 
 
 class ImmediateDisableAlert(Alert):
   def __init__(self, alert_text_2: str):
-    super().__init__("TAKE CONTROL IMMEDIATELY", alert_text_2,
+    super().__init__("핸들을 즉시 잡아주세요", alert_text_2,
                      AlertStatus.critical, AlertSize.full,
                      Priority.HIGHEST, VisualAlert.steerRequired,
                      AudibleAlert.warningImmediate, 4.),
@@ -184,7 +184,7 @@ class NormalPermanentAlert(Alert):
 
 
 class StartupAlert(Alert):
-  def __init__(self, alert_text_1: str, alert_text_2: str = "Always keep hands on wheel and eyes on road", alert_status=AlertStatus.normal):
+  def __init__(self, alert_text_1: str, alert_text_2: str = "항상 핸들을 잡고 도로를 주시하세요", alert_status=AlertStatus.normal):
     super().__init__(alert_text_1, alert_text_2,
                      alert_status, AlertSize.mid,
                      Priority.LOWER, VisualAlert.none, AudibleAlert.none, 5.),
@@ -263,10 +263,10 @@ def joystick_alert(CP: car.CarParams, sm: messaging.SubMaster, metric: bool, sof
 def auto_lane_change_alert(CP: car.CarParams, sm: messaging.SubMaster, metric: bool, soft_disable_time: int) -> Alert:
   alc_timer = sm['lateralPlan'].autoLaneChangeTimer
   return Alert(
-    "Auto Lane Change starts in (%d)" % alc_timer,
-    "Monitor Other Vehicles",
+    "차선 변경을 시작합니다 in (%d)" % alc_timer,
+    "차선의 차량을 확인하세요",
     AlertStatus.normal, AlertSize.mid,
-    Priority.LOWER, VisualAlert.steerRequired, AudibleAlert.none, .1, alert_rate=0.75)
+    Priority.LOWER, VisualAlert.none, AudibleAlert.none, .1, alert_rate=0.75)
 
 
 
@@ -346,8 +346,8 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
 
   EventName.stockAeb: {
     ET.PERMANENT: Alert(
-      "BRAKE!",
-      "Stock AEB: Risk of Collision",
+      "브레이크!",
+      "추돌 위험",
       AlertStatus.critical, AlertSize.full,
       Priority.HIGHEST, VisualAlert.fcw, AudibleAlert.none, 2.),
     ET.NO_ENTRY: NoEntryAlert("Stock AEB: Risk of Collision"),
@@ -355,16 +355,16 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
 
   EventName.fcw: {
     ET.PERMANENT: Alert(
-      "BRAKE!",
-      "Risk of Collision",
+      "브레이크!",
+      "추돌 위험",
       AlertStatus.critical, AlertSize.full,
       Priority.HIGHEST, VisualAlert.fcw, AudibleAlert.warningSoft, 2.),
   },
 
   EventName.ldw: {
     ET.PERMANENT: Alert(
-      "Lane Departure Detected",
-      "",
+      "핸들을 잡아주세요",
+      "차선이탈 감지됨",
       AlertStatus.userPrompt, AlertSize.small,
       Priority.LOW, VisualAlert.ldw, AudibleAlert.prompt, 3.),
   },
@@ -394,15 +394,15 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
 
   EventName.steerTempUnavailableSilent: {
     ET.WARNING: Alert(
-      "Steering Temporarily Unavailable",
-      "",
+      "핸들을 잡아주세요",
+      "조향제어 일시적으로 사용불가",
       AlertStatus.userPrompt, AlertSize.small,
       Priority.LOW, VisualAlert.steerRequired, AudibleAlert.prompt, 1.),
   },
 
   EventName.preDriverDistracted: {
     ET.WARNING: Alert(
-      "Pay Attention",
+      "도로를 주시하세요 : 운전자 도로주시 불안",
       "",
       AlertStatus.normal, AlertSize.small,
       Priority.LOW, VisualAlert.none, AudibleAlert.none, .1),
@@ -410,23 +410,23 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
 
   EventName.promptDriverDistracted: {
     ET.WARNING: Alert(
-      "Pay Attention",
-      "Driver Distracted",
+      "도로를 주시하세요",
+      "운전자 도로주시 불안",
       AlertStatus.userPrompt, AlertSize.mid,
       Priority.MID, VisualAlert.steerRequired, AudibleAlert.promptDistracted, .1),
   },
 
   EventName.driverDistracted: {
     ET.WARNING: Alert(
-      "DISENGAGE IMMEDIATELY",
-      "Driver Distracted",
+      "조향제어가 강제로 해제됩니다",
+      "운전자 도로주시 불안",
       AlertStatus.critical, AlertSize.full,
       Priority.HIGH, VisualAlert.steerRequired, AudibleAlert.warningImmediate, .1),
   },
 
   EventName.preDriverUnresponsive: {
     ET.WARNING: Alert(
-      "Touch Steering Wheel: No Face Detected",
+      "핸들을 잡아주세요 : 운전자 인식 불가",
       "",
       AlertStatus.normal, AlertSize.small,
       Priority.LOW, VisualAlert.steerRequired, AudibleAlert.none, .1, alert_rate=0.75),
@@ -434,32 +434,32 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
 
   EventName.promptDriverUnresponsive: {
     ET.WARNING: Alert(
-      "Touch Steering Wheel",
-      "Driver Unresponsive",
+      "핸들을 잡아주세요",
+      "운전자 응답하지않음",
       AlertStatus.userPrompt, AlertSize.mid,
       Priority.MID, VisualAlert.steerRequired, AudibleAlert.promptDistracted, .1),
   },
 
   EventName.driverUnresponsive: {
     ET.WARNING: Alert(
-      "DISENGAGE IMMEDIATELY",
-      "Driver Unresponsive",
+      "조향제어가 강제로 해제됩니다",
+      "운전자 응답하지않음",
       AlertStatus.critical, AlertSize.full,
       Priority.HIGH, VisualAlert.steerRequired, AudibleAlert.warningImmediate, .1),
   },
 
   EventName.manualRestart: {
     ET.WARNING: Alert(
-      "TAKE CONTROL",
-      "Resume Driving Manually",
+      "핸들을 잡아주세요",
+      "수동으로 재활성화하세요",
       AlertStatus.userPrompt, AlertSize.mid,
       Priority.LOW, VisualAlert.none, AudibleAlert.none, .2),
   },
 
   EventName.resumeRequired: {
     ET.WARNING: Alert(
-      "STOPPED",
-      "Press Resume to Go",
+      "앞차량 멈춤",
+      "앞차가 출발하면 자동 재출발",
       AlertStatus.userPrompt, AlertSize.mid,
       Priority.LOW, VisualAlert.none, AudibleAlert.none, .2),
   },
@@ -470,31 +470,31 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
 
   EventName.preLaneChangeLeft: {
     ET.WARNING: Alert(
-      "Steer Left to Start Lane Change Once Safe",
-      "",
+      "차선을 변경합니다",
+      "좌측차선의 차량을 확인하세요",
       AlertStatus.normal, AlertSize.small,
       Priority.LOW, VisualAlert.none, AudibleAlert.none, .1, alert_rate=0.75),
   },
 
   EventName.preLaneChangeRight: {
     ET.WARNING: Alert(
-      "Steer Right to Start Lane Change Once Safe",
-      "",
+      "차선을 변경합니다",
+      "우측차선의 차량을 확인하세요",
       AlertStatus.normal, AlertSize.small,
       Priority.LOW, VisualAlert.none, AudibleAlert.none, .1, alert_rate=0.75),
   },
 
   EventName.laneChangeBlocked: {
     ET.WARNING: Alert(
-      "Car Detected in Blindspot",
-      "",
+      "후측방 차량감지",
+      "차선에 차량이 감지되니 대기하세요",
       AlertStatus.userPrompt, AlertSize.small,
       Priority.LOW, VisualAlert.none, AudibleAlert.prompt, .1),
   },
 
   EventName.laneChange: {
     ET.WARNING: Alert(
-      "Changing Lanes",
+      "차선을 변경합니다",
       "",
       AlertStatus.normal, AlertSize.small,
       Priority.LOW, VisualAlert.none, AudibleAlert.none, .1),
@@ -502,8 +502,8 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
 
   EventName.steerSaturated: {
     ET.WARNING: Alert(
-      "Take Control",
-      "Turn Exceeds Steering Limit",
+      "핸들을 잡아주세요",
+      "조향제어 제한을 초과함",
       AlertStatus.userPrompt, AlertSize.mid,
       Priority.LOW, VisualAlert.steerRequired, AudibleAlert.promptRepeat, 1.),
   },
