@@ -51,7 +51,6 @@ class CarController():
     self.car_fingerprint = CP.carFingerprint
     self.packer = CANPacker(dbc_name)
     self.apply_steer_last = 0
-    self.steer_rate_limited = False
     self.accel = 0
     self.lkas11_cnt = 0
     self.scc12_cnt = -1
@@ -74,8 +73,6 @@ class CarController():
     self.keep_steering_turn_signals = param.get_bool('KeepSteeringTurnSignals')
     self.warning_over_speed_limit = param.get_bool('WarningOverSpeedLimit')
 
-    # gas_factor, brake_factor
-    # Adjust it in the range of 0.7 to 1.3
     self.scc_smoother = SccSmoother()
     self.last_blinker_frame = 0
 
@@ -87,8 +84,6 @@ class CarController():
     new_steer = int(round(actuators.steer * CarControllerParams.STEER_MAX))
     apply_steer = apply_std_steer_torque_limits(new_steer, self.apply_steer_last, CS.out.steeringTorque,
                                                 CarControllerParams)
-
-    self.steer_rate_limited = new_steer != apply_steer
 
     # disable if steer angle reach 90 deg, otherwise mdps fault in some models
     lkas_active = enabled and not CS.out.steerWarning and abs(CS.out.steeringAngleDeg) < CS.CP.maxSteeringAngleDeg

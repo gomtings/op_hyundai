@@ -4,7 +4,7 @@ import os
 import usb1
 import time
 import subprocess
-from typing import List
+from typing import NoReturn
 from functools import cmp_to_key
 
 from common.spinner import Spinner
@@ -31,12 +31,7 @@ def flash_panda(panda_serial : str) -> Panda:
 
   panda_version = "bootstub" if panda.bootstub else panda.get_version()
   panda_signature = b"" if panda.bootstub else panda.get_signature()
-  cloudlog.warning("Panda %s connected, version: %s, signature %s, expected %s" % (
-    panda_serial,
-    panda_version,
-    panda_signature.hex()[:16],
-    fw_signature.hex()[:16],
-  ))
+  cloudlog.warning(f"Panda {panda_serial} connected, version: {panda_version}, signature {panda_signature.hex()[:16]}, expected {fw_signature.hex()[:16]}")
 
   if panda.bootstub or panda_signature != fw_signature:
     cloudlog.info("Panda firmware out of date, update required")
@@ -86,11 +81,11 @@ def panda_sort_cmp(a : Panda, b : Panda):
   # sort by hardware type
   if a_type != b_type:
     return a_type < b_type
-  
+
   # last resort: sort by serial number
   return a.get_usb_serial() < b.get_usb_serial()
 
-def main() -> None:
+def main() -> NoReturn:
   while True:
     try:
       # Flash all Pandas in DFU mode
