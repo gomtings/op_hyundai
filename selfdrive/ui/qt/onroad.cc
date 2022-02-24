@@ -4,6 +4,7 @@
 
 #include <QDebug>
 #include <QSound>
+#include <QMouseEvent>
 
 #include "selfdrive/common/timing.h"
 #include "selfdrive/ui/qt/util.h"
@@ -43,7 +44,6 @@ OnroadWindow::OnroadWindow(QWidget *parent) : QWidget(parent) {
   QObject::connect(uiState(), &UIState::uiUpdate, this, &OnroadWindow::updateState);
   QObject::connect(uiState(), &UIState::offroadTransition, this, &OnroadWindow::offroadTransition);
 
-#ifdef QCOM2
   // screen recoder - neokii
 
   record_timer = std::make_shared<QTimer>();
@@ -64,7 +64,7 @@ OnroadWindow::OnroadWindow(QWidget *parent) : QWidget(parent) {
   stacked_layout->addWidget(recorder_widget);
   recorder_widget->raise();
   alerts->raise();
-#endif
+
 }
 
 void OnroadWindow::updateState(const UIState &s) {
@@ -88,8 +88,6 @@ void OnroadWindow::updateState(const UIState &s) {
 
 void OnroadWindow::mouseReleaseEvent(QMouseEvent* e) {
 
-#ifdef QCOM2
-  // neokii
   QPoint endPos = e->pos();
   int dx = endPos.x() - startPos.x();
   int dy = endPos.y() - startPos.y();
@@ -133,33 +131,27 @@ void OnroadWindow::mouseReleaseEvent(QMouseEvent* e) {
 
   // propagation event to parent(HomeWindow)
   QWidget::mouseReleaseEvent(e);
-#endif
 }
 
 void OnroadWindow::mousePressEvent(QMouseEvent* e) {
-#ifdef QCOM2
   startPos = e->pos();
-#else
-  if (map != nullptr) {
-    bool sidebarVisible = geometry().x() > 0;
-    map->setVisible(!sidebarVisible && !map->isVisible());
-  }
-
-  // propagation event to parent(HomeWindow)
-  QWidget::mouseReleaseEvent(e);
-#endif
+  //QWidget::mousePressEvent(e);
 }
 
 void OnroadWindow::offroadTransition(bool offroad) {
 #ifdef ENABLE_MAPS
   if (!offroad) {
-    if (map == nullptr && (uiState()->has_prime || !MAPBOX_TOKEN.isEmpty())) {
+    if (map == nullptr && (uiState()->prime_type || !MAPBOX_TOKEN.isEmpty())) {
       MapWindow * m = new MapWindow(get_mapbox_settings());
-      m->setFixedWidth(topWidget(this)->width() / 2);
-      m->offroadTransition(offroad);
-      QObject::connect(uiState(), &UIState::offroadTransition, m, &MapWindow::offroadTransition);
-      split->addWidget(m, 0, Qt::AlignRight);
       map = m;
+
+      QObject::connect(uiState(), &UIState::offroadTransition, m, &MapWindow::offroadTransition);
+
+      m->setFixedWidth(topWidget(this)->width() / 2);
+      split->addWidget(m, 0, Qt::AlignRight);
+
+      // Make map visible after adding to split
+      m->offroadTransition(offroad);
     }
   }
 #endif
@@ -170,11 +162,10 @@ void OnroadWindow::offroadTransition(bool offroad) {
   bool wide_cam = Hardware::TICI() && Params().getBool("EnableWideCamera");
   nvg->setStreamType(wide_cam ? VISION_STREAM_RGB_WIDE : VISION_STREAM_RGB_BACK);
 
-#ifdef QCOM2
   if(offroad && recorder) {
     recorder->stop(false);
   }
-#endif
+
 }
 
 void OnroadWindow::paintEvent(QPaintEvent *event) {
@@ -331,7 +322,7 @@ void NvgWindow::drawLead(QPainter &painter, const cereal::ModelDataV2::LeadDataV
   float g_xo = sz / 5;
   float g_yo = sz / 10;
 
-  QPointF glow[] = {{x + (sz * 1.35) + g_xo, y + sz + g_yo}, {x, y - g_xo}, {x - (sz * 1.35) - g_xo, y + sz + g_yo}};
+  QPointF glow[] = {{x + (sz * 1.35) + g_xo, y + sz + g_yo}, {x, y - g_yo}, {x - (sz * 1.35) - g_xo, y + sz + g_yo}};
   painter.setBrush(is_radar ? QColor(86, 121, 216, 255) : QColor(218, 202, 37, 255));
   painter.drawPolygon(glow, std::size(glow));
 
@@ -406,6 +397,7 @@ void NvgWindow::drawIcon(QPainter &p, int x, int y, QPixmap &img, QBrush bg, flo
 void NvgWindow::drawText2(QPainter &p, int x, int y, int flags, const QString &text, const QColor& color) {
   QFontMetrics fm(p.font());
   QRect rect = fm.boundingRect(text);
+  rect.adjust(-1, -1, 1, 1);
   p.setPen(color);
   p.drawText(QRect(x, y, rect.width(), rect.height()), flags, text);
 }
@@ -449,29 +441,27 @@ void NvgWindow::drawHud(QPainter &p) {
   const auto car_params = sm["carParams"].getCarParams();
   const auto live_params = sm["liveParameters"].getLiveParameters();
 
-  const auto scc_smoother = sm["carControl"].getCarControl().getSccSmoother();
-  bool is_metric = s->scene.is_metric;
-  bool long_control = scc_smoother.getLongControl();
+  //const auto scc_smoother = sm["carControl"].getCarControl().getSccSmoother();
+  //bool is_metric = s->scene.is_metric;
+  //bool long_control = scc_smoother.getLongControl();
 
   // kph
-  float applyMaxSpeed = scc_smoother.getApplyMaxSpeed();
-  float cruiseMaxSpeed = scc_smoother.getCruiseMaxSpeed();
+  //float applyMaxSpeed = scc_smoother.getApplyMaxSpeed();
+  //float cruiseMaxSpeed = scc_smoother.getCruiseMaxSpeed();
 
-  bool is_cruise_set = (cruiseMaxSpeed > 0 && cruiseMaxSpeed < 255);
+  //bool is_cruise_set = (cruiseMaxSpeed > 0 && cruiseMaxSpeed < 255);
 
   int mdps_bus = car_params.getMdpsBus();
   int scc_bus = car_params.getSccBus();
 
   QString infoText;
-  infoText.sprintf("AO(%.2f/%.2f) SR(%.2f) SRC(%.2f) SAD(%.2f) MDPS(%d) SCC(%d) LAD(%.2f/%.2f) SCC(%.2f/%.2f/%.2f)",
+  infoText.sprintf("AO(%.2f/%.2f) SR(%.2f) SRC(%.2f) SAD(%.2f) BUS(MDPS %d, SCC %d) SCC(%.2f/%.2f/%.2f)",
                       live_params.getAngleOffsetDeg(),
                       live_params.getAngleOffsetAverageDeg(),
                       controls_state.getSteerRatio(),
                       controls_state.getSteerRateCost(),
                       controls_state.getSteerActuatorDelay(),
                       mdps_bus, scc_bus,
-                      controls_state.getLongitudinalActuatorDelayLowerBound(),
-                      controls_state.getLongitudinalActuatorDelayUpperBound(),
                       controls_state.getSccGasFactor(),
                       controls_state.getSccBrakeFactor(),
                       controls_state.getSccCurvatureFactor()
@@ -507,15 +497,12 @@ void NvgWindow::drawBottomIcons(QPainter &p) {
   auto car_state = sm["carState"].getCarState();
   auto scc_smoother = sm["carControl"].getCarControl().getSccSmoother();
 
-  int x = radius / 2 + (bdr_s * 2) + (radius + 50);
-  const int y = rect().bottom() - footer_h / 2 - 10;
-
   // tire pressure
   {
     const int w = 58;
     const int h = 126;
     const int x = 110;
-    const int y = height() - h - 80;
+    const int y = height() - h - 85;
 
     auto tpms = car_state.getTpms();
     const float fl = tpms.getFl();
@@ -531,7 +518,7 @@ void NvgWindow::drawBottomIcons(QPainter &p) {
     QFontMetrics fm(p.font());
     QRect rcFont = fm.boundingRect("9");
 
-    int center_x = x + 4;
+    int center_x = x + 3;
     int center_y = y + h/2;
     const int marginX = (int)(rcFont.width() * 2.7f);
     const int marginY = (int)((h/2 - rcFont.height()) * 0.7f);
@@ -541,6 +528,9 @@ void NvgWindow::drawBottomIcons(QPainter &p) {
     drawText2(p, center_x-marginX, center_y+marginY, Qt::AlignRight, get_tpms_text(rl), get_tpms_color(rl));
     drawText2(p, center_x+marginX, center_y+marginY, Qt::AlignLeft, get_tpms_text(rr), get_tpms_color(rr));
   }
+
+  int x = radius / 2 + (bdr_s * 2) + (radius + 50);
+  const int y = rect().bottom() - footer_h / 2 - 10;
 
   // cruise gap
   int gap = car_state.getCruiseGap();
@@ -648,23 +638,56 @@ void NvgWindow::drawSpeed(QPainter &p) {
   UIState *s = uiState();
   const SubMaster &sm = *(s->sm);
   float cur_speed = std::max(0.0, sm["carState"].getCarState().getCluSpeedMs() * (s->scene.is_metric ? MS_TO_KPH : MS_TO_MPH));
+  auto car_state = sm["carState"].getCarState();
+  float accel = car_state.getAEgo();
+
+  QColor color = QColor(255, 255, 255, 230);
+
+  if(accel > 0) {
+    int a = (int)(255.f - (180.f * (accel/2.f)));
+    a = std::min(a, 255);
+    a = std::max(a, 80);
+    color = QColor(a, a, 255, 230);
+  }
+  else {
+    int a = (int)(255.f - (255.f * (-accel/3.f)));
+    a = std::min(a, 255);
+    a = std::max(a, 60);
+    color = QColor(255, a, a, 230);
+  }
 
   QString speed;
   speed.sprintf("%.0f", cur_speed);
   configFont(p, "Open Sans", 176, "Bold");
-  drawText(p, rect().center().x(), 230, speed);
+  drawTextWithColor(p, rect().center().x(), 230, speed, color);
+
   configFont(p, "Open Sans", 66, "Regular");
   drawText(p, rect().center().x(), 310, s->scene.is_metric ? "km/h" : "mph", 200);
 }
 
 void NvgWindow::drawSpeedLimit(QPainter &p) {
   const SubMaster &sm = *(uiState()->sm);
-  auto car_state = sm["carState"].getCarState();
-  auto scc_smoother = sm["carControl"].getCarControl().getSccSmoother();
+  auto roadLimitSpeed = sm["roadLimitSpeed"].getRoadLimitSpeed();
 
-  int activeNDA = scc_smoother.getRoadLimitSpeedActive();
-  int limit_speed = scc_smoother.getRoadLimitSpeed();
-  int left_dist = scc_smoother.getRoadLimitSpeedLeftDist();
+  int activeNDA = roadLimitSpeed.getActive();
+
+  int camLimitSpeed = roadLimitSpeed.getCamLimitSpeed();
+  int camLimitSpeedLeftDist = roadLimitSpeed.getCamLimitSpeedLeftDist();
+
+  int sectionLimitSpeed = roadLimitSpeed.getSectionLimitSpeed();
+  int sectionLeftDist = roadLimitSpeed.getSectionLeftDist();
+
+  int limit_speed = 0;
+  int left_dist = 0;
+
+  if(camLimitSpeed > 0 && camLimitSpeedLeftDist > 0) {
+    limit_speed = camLimitSpeed;
+    left_dist = camLimitSpeedLeftDist;
+  }
+  else if(sectionLimitSpeed > 0 && sectionLeftDist > 0) {
+    limit_speed = sectionLimitSpeed;
+    left_dist = sectionLeftDist;
+  }
 
   if(activeNDA > 0)
   {
@@ -677,16 +700,16 @@ void NvgWindow::drawSpeedLimit(QPainter &p) {
       p.drawPixmap(x, y, w, h, activeNDA == 1 ? ic_nda : ic_hda);
   }
 
-  if(limit_speed > 10 && left_dist > 0)
+  if(limit_speed > 10 && limit_speed < 130)
   {
-    int radius = 192;
+    int radius_ = 192;
 
     int x = 30;
     int y = 270;
 
     p.setPen(Qt::NoPen);
     p.setBrush(QBrush(QColor(255, 0, 0, 255)));
-    QRect rect = QRect(x, y, radius, radius);
+    QRect rect = QRect(x, y, radius_, radius_);
     p.drawEllipse(rect);
 
     p.setBrush(QBrush(QColor(255, 255, 255, 255)));
@@ -700,18 +723,20 @@ void NvgWindow::drawSpeedLimit(QPainter &p) {
 
     if(left_dist >= 1000)
       str_left_dist.sprintf("%.1fkm", left_dist / 1000.f);
-    else
+    else if(left_dist > 0)
       str_left_dist.sprintf("%dm", left_dist);
 
     configFont(p, "Open Sans", 80, "Bold");
     p.setPen(QColor(0, 0, 0, 230));
     p.drawText(rect, Qt::AlignCenter, str_limit_speed);
 
-    configFont(p, "Open Sans", 60, "Bold");
-    rect.translate(0, radius/2 + 45);
-    rect.adjust(-30, 0, 30, 0);
-    p.setPen(QColor(255, 255, 255, 230));
-    p.drawText(rect, Qt::AlignCenter, str_left_dist);
+    if(str_left_dist.length() > 0) {
+      configFont(p, "Open Sans", 60, "Bold");
+      rect.translate(0, radius_/2 + 45);
+      rect.adjust(-30, 0, 30, 0);
+      p.setPen(QColor(255, 255, 255, 230));
+      p.drawText(rect, Qt::AlignCenter, str_left_dist);
+    }
   }
   else {
     auto controls_state = sm["controlsState"].getControlsState();
@@ -719,7 +744,7 @@ void NvgWindow::drawSpeedLimit(QPainter &p) {
     int sccStockCamStatus = (int)controls_state.getSccStockCamStatus();
 
     if(sccStockCamAct == 2 && sccStockCamStatus == 2) {
-      int radius = 192;
+      int radius_ = 192;
 
       int x = 30;
       int y = 270;
@@ -727,7 +752,7 @@ void NvgWindow::drawSpeedLimit(QPainter &p) {
       p.setPen(Qt::NoPen);
 
       p.setBrush(QBrush(QColor(255, 0, 0, 255)));
-      QRect rect = QRect(x, y, radius, radius);
+      QRect rect = QRect(x, y, radius_, radius_);
       p.drawEllipse(rect);
 
       p.setBrush(QBrush(QColor(255, 255, 255, 255)));
@@ -860,7 +885,7 @@ void NvgWindow::drawDebugText(QPainter &p) {
 
   auto controls_state = sm["controlsState"].getControlsState();
   auto car_control = sm["carControl"].getCarControl();
-  auto car_state = sm["carState"].getCarState();
+  //auto car_state = sm["carState"].getCarState();
 
   float applyAccel = controls_state.getApplyAccel();
 
@@ -868,8 +893,8 @@ void NvgWindow::drawDebugText(QPainter &p) {
   float aReqValueMin = controls_state.getAReqValueMin();
   float aReqValueMax = controls_state.getAReqValueMax();
 
-  int sccStockCamAct = (int)controls_state.getSccStockCamAct();
-  int sccStockCamStatus = (int)controls_state.getSccStockCamStatus();
+  //int sccStockCamAct = (int)controls_state.getSccStockCamAct();
+  //int sccStockCamStatus = (int)controls_state.getSccStockCamStatus();
 
   int longControlState = (int)controls_state.getLongControlState();
   float vPid = controls_state.getVPid();
@@ -913,6 +938,12 @@ void NvgWindow::drawDebugText(QPainter &p) {
 
   y += height;
   str.sprintf("%.3f (%.3f/%.3f)\n", aReqValue, aReqValueMin, aReqValueMax);
+  p.drawText(text_x, y, str);
+
+  auto car_state = sm["carState"].getCarState();
+
+  y += height;
+  str.sprintf("aEgo: %.3f\n", car_state.getAEgo());
   p.drawText(text_x, y, str);
 
   auto lead_radar = sm["radarState"].getRadarState().getLeadOne();

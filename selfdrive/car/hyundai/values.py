@@ -1,5 +1,3 @@
-# flake8: noqa
-
 from cereal import car
 from selfdrive.car import dbc_dict
 Ecu = car.CarParams.Ecu
@@ -7,7 +5,7 @@ Ecu = car.CarParams.Ecu
 class CarControllerParams:
 
   ACCEL_MAX = 2.0
-  ACCEL_MIN = -3.6
+  ACCEL_MIN = -3.7
 
   STEER_MAX = 384   # 409 is the max, 255 is stock
   STEER_DELTA_UP = 3
@@ -356,8 +354,6 @@ FEATURES = {
 
   # send LFA MFA message for new HKG models
   "send_lfa_mfa": {CAR.NEXO},
-
-  "send_hda_state_2": {CAR.GENESIS_G80, CAR.GENESIS_EQ900, CAR.GENESIS_EQ900_L},
 
   # these cars use the FCA11 message for the AEB and FCW signals, all others use SCC12
   "use_fca": {CAR.NEXO},

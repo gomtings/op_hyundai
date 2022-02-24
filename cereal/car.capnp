@@ -69,7 +69,6 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     preLaneChangeLeft @57;
     preLaneChangeRight @58;
     laneChange @59;
-    communityFeatureDisallowed @62;
     lowMemory @63;
     stockAeb @64;
     ldw @65;
@@ -107,9 +106,10 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     cruiseMismatch @106;
     lkasDisabled @107;
 
-    driverMonitorLowAccDEPRECATED @68;
     radarCanErrorDEPRECATED @15;
+    communityFeatureDisallowedDEPRECATED @62;
     radarCommIssueDEPRECATED @67;
+    driverMonitorLowAccDEPRECATED @68;
     gasUnavailableDEPRECATED @3;
     dataNeededDEPRECATED @16;
     modelCommIssueDEPRECATED @27;
@@ -334,11 +334,7 @@ struct CarControl {
 
     logMessage @3 :Text;
 
-    roadLimitSpeedActive @4 :Int32;
-    roadLimitSpeed @5 :UInt32;
-    roadLimitSpeedLeftDist @6 :UInt32;
-
-    autoTrGap @7 :UInt32;
+    autoTrGap @4 :UInt32;
   }
 
   struct Actuators {
@@ -436,6 +432,7 @@ struct CarParams {
   minSteerSpeed @8 :Float32;
   maxSteeringAngleDeg @54 :Float32;
   safetyConfigs @62 :List(SafetyConfig);
+  unsafeMode @65 :Int16;
 
   steerMaxBP @11 :List(Float32);
   steerMaxV @12 :List(Float32);
@@ -487,7 +484,6 @@ struct CarParams {
   carFw @44 :List(CarFw);
 
   radarTimeStep @45: Float32 = 0.05;  # time delta between radar updates, 20Hz is very standard
-  communityFeature @46: Bool;  # true if a community maintained feature is detected
   fingerprintSource @49: FingerprintSource;
   networkLocation @50 :NetworkLocation;  # Where Panda/C2 is integrated into the car's CAN network
 
@@ -498,13 +494,14 @@ struct CarParams {
     safetyParam @1 :Int16;
   }
   
-  mdpsBus @65: Int8;
-  sasBus @66: Int8;
-  sccBus @67: Int8;
-  enableAutoHold @68 :Bool;
-  hasScc13 @69 :Bool;
-  hasScc14 @70 :Bool;
-  hasEms @71 :Bool;
+  mdpsBus @66: Int8;
+  sasBus @67: Int8;
+  sccBus @68: Int8;
+  enableAutoHold @69 :Bool;
+  hasScc13 @70 :Bool;
+  hasScc14 @71 :Bool;
+  hasEms @72 :Bool;
+  hasLfaHda @73 :Bool;
 
   struct LateralParams {
     torqueBP @0 :List(Int32);
@@ -524,6 +521,7 @@ struct CarParams {
     kpV @1 :List(Float32);
     kiBP @2 :List(Float32);
     kiV @3 :List(Float32);
+    kf @6 :Float32;
     deadzoneBP @4 :List(Float32);
     deadzoneV @5 :List(Float32);
   }
@@ -643,12 +641,13 @@ struct CarParams {
   }
 
   enableCameraDEPRECATED @4 :Bool;
-  isPandaBlackDEPRECATED @39: Bool;
+  isPandaBlackDEPRECATED @39 :Bool;
   hasStockCameraDEPRECATED @57 :Bool;
   safetyParamDEPRECATED @10 :Int16;
   safetyModelDEPRECATED @9 :SafetyModel;
   safetyModelPassiveDEPRECATED @42 :SafetyModel = silent;
   minSpeedCanDEPRECATED @51 :Float32;
   startAccelDEPRECATED @32 :Float32;
+  communityFeatureDEPRECATED @46: Bool;
   startingAccelRateDEPRECATED @53 :Float32;
 }

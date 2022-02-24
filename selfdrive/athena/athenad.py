@@ -4,33 +4,39 @@ import hashlib
 import io
 import json
 import os
-import sys
 import queue
 import random
 import select
 import socket
+import subprocess
+import sys
+import tempfile
 import threading
 import time
 from collections import namedtuple
+from datetime import datetime
 from functools import partial
-from typing import Any
+from typing import Any, Dict
 
 import requests
 from jsonrpc import JSONRPCResponseManager, dispatcher
-from websocket import ABNF, WebSocketTimeoutException, WebSocketException, create_connection
+from websocket import (ABNF, WebSocketException, WebSocketTimeoutException,
+                       create_connection)
 
 import cereal.messaging as messaging
+from cereal import log
 from cereal.services import service_list
 from common.api import Api
-from common.file_helpers import CallbackReader
 from common.basedir import PERSIST
+from common.file_helpers import CallbackReader
 from common.params import Params
 from common.realtime import sec_since_boot
-from selfdrive.hardware import HARDWARE, PC
+from selfdrive.hardware import HARDWARE, PC, TICI
 from selfdrive.loggerd.config import ROOT
 from selfdrive.loggerd.xattr_cache import getxattr, setxattr
-from selfdrive.swaglog import cloudlog, SWAGLOG_DIR
-from selfdrive.version import get_version, get_origin, get_short_branch, get_commit
+from selfdrive.statsd import STATS_DIR
+from selfdrive.swaglog import SWAGLOG_DIR, cloudlog
+from selfdrive.version import get_commit, get_origin, get_short_branch, get_version
 
 ATHENA_HOST = os.getenv('ATHENA_HOST', 'wss://athena.comma.ai')
 HANDLER_THREADS = int(os.getenv('HANDLER_THREADS', "4"))
@@ -42,18 +48,24 @@ RECONNECT_TIMEOUT_S = 70
 
 RETRY_DELAY = 10  # seconds
 MAX_RETRY_COUNT = 30  # Try for at most 5 minutes if upload fails immediately
+MAX_AGE = 31 * 24 * 3600  # seconds
 WS_FRAME_SIZE = 4096
+
+NetworkType = log.DeviceState.NetworkType
 
 dispatcher["echo"] = lambda s: s
 recv_queue: Any = queue.Queue()
 send_queue: Any = queue.Queue()
 upload_queue: Any = queue.Queue()
-log_send_queue: Any = queue.Queue()
+low_priority_send_queue: Any = queue.Queue()
 log_recv_queue: Any = queue.Queue()
 cancelled_uploads: Any = set()
-UploadItem = namedtuple('UploadItem', ['path', 'url', 'headers', 'created_at', 'id', 'retry_count', 'current', 'progress'], defaults=(0, False, 0))
+UploadItem = namedtuple('UploadItem', ['path', 'url', 'headers', 'created_at', 'id', 'retry_count', 'current', 'progress', 'allow_cellular'], defaults=(0, False, 0, False))
 
-cur_upload_items = {}
+cur_upload_items: Dict[int, Any] = {}
+
+class AbortTransferException(Exception):
+  pass
 
 
 class UploadQueueCache():
@@ -86,6 +98,7 @@ def handle_long_poll(ws):
     threading.Thread(target=ws_send, args=(ws, end_event), name='ws_send'),
     threading.Thread(target=upload_handler, args=(end_event,), name='upload_handler'),
     threading.Thread(target=log_handler, args=(end_event,), name='log_handler'),
+    threading.Thread(target=stat_handler, args=(end_event,), name='stat_handler'),
   ] + [
     threading.Thread(target=jsonrpc_handler, args=(end_event,), name=f'worker_{x}')
     for x in range(HANDLER_THREADS)
@@ -125,8 +138,32 @@ def jsonrpc_handler(end_event):
       send_queue.put_nowait(json.dumps({"error": str(e)}))
 
 
-def upload_handler(end_event):
+def retry_upload(tid: int, end_event: threading.Event, increase_count: bool = True) -> None:
+  if cur_upload_items[tid].retry_count < MAX_RETRY_COUNT:
+    item = cur_upload_items[tid]
+    new_retry_count = item.retry_count + 1 if increase_count else item.retry_count
+
+    item = item._replace(
+      retry_count=new_retry_count,
+      progress=0,
+      current=False
+    )
+    upload_queue.put_nowait(item)
+    UploadQueueCache.cache(upload_queue)
+
+    cur_upload_items[tid] = None
+
+    for _ in range(RETRY_DELAY):
+      time.sleep(1)
+      if end_event.is_set():
+        break
+
+
+def upload_handler(end_event: threading.Event) -> None:
+  sm = messaging.SubMaster(['deviceState'])
   tid = threading.get_ident()
+
+  cellular_unmetered = Params().get_bool("CellularUnmetered")
 
   while not end_event.is_set():
     cur_upload_items[tid] = None
@@ -138,31 +175,53 @@ def upload_handler(end_event):
         cancelled_uploads.remove(cur_upload_items[tid].id)
         continue
 
+      # Remove item if too old
+      age = datetime.now() - datetime.fromtimestamp(cur_upload_items[tid].created_at / 1000)
+      if age.total_seconds() > MAX_AGE:
+        cloudlog.event("athena.upload_handler.expired", item=cur_upload_items[tid], error=True)
+        continue
+
+      # Check if uploading over cell is allowed
+      sm.update(0)
+      cell = sm['deviceState'].networkType not in [NetworkType.wifi, NetworkType.ethernet]
+      if cell and (not cur_upload_items[tid].allow_cellular) and (not cellular_unmetered):
+        retry_upload(tid, end_event, False)
+        continue
+
       try:
         def cb(sz, cur):
+          # Abort transfer if connection changed to cell after starting upload
+          sm.update(0)
+          cell = sm['deviceState'].networkType not in [NetworkType.wifi, NetworkType.ethernet]
+          if cell and (not cur_upload_items[tid].allow_cellular):
+            raise AbortTransferException
+
           cur_upload_items[tid] = cur_upload_items[tid]._replace(progress=cur / sz if sz else 1)
 
-        _do_upload(cur_upload_items[tid], cb)
+
+        network_type = sm['deviceState'].networkType.raw
+        fn = cur_upload_items[tid].path
+        try:
+          sz = os.path.getsize(fn)
+        except OSError:
+          sz = -1
+
+        cloudlog.event("athena.upload_handler.upload_start", fn=fn, sz=sz, network_type=network_type)
+        response = _do_upload(cur_upload_items[tid], cb)
+
+        if response.status_code not in (200, 201, 403, 412):
+          cloudlog.event("athena.upload_handler.retry", status_code=response.status_code, fn=fn, sz=sz, network_type=network_type)
+          retry_upload(tid, end_event)
+        else:
+          cloudlog.event("athena.upload_handler.success", fn=fn, sz=sz, network_type=network_type)
+
         UploadQueueCache.cache(upload_queue)
-      except (requests.exceptions.Timeout, requests.exceptions.ConnectionError, requests.exceptions.SSLError) as e:
-        cloudlog.warning(f"athena.upload_handler.retry {e} {cur_upload_items[tid]}")
-
-        if cur_upload_items[tid].retry_count < MAX_RETRY_COUNT:
-          item = cur_upload_items[tid]
-          item = item._replace(
-            retry_count=item.retry_count + 1,
-            progress=0,
-            current=False
-          )
-          upload_queue.put_nowait(item)
-          UploadQueueCache.cache(upload_queue)
-
-          cur_upload_items[tid] = None
-
-          for _ in range(RETRY_DELAY):
-            time.sleep(1)
-            if end_event.is_set():
-              break
+      except (requests.exceptions.Timeout, requests.exceptions.ConnectionError, requests.exceptions.SSLError):
+        cloudlog.event("athena.upload_handler.timeout", fn=fn, sz=sz, network_type=network_type)
+        retry_upload(tid, end_event)
+      except AbortTransferException:
+        cloudlog.event("athena.upload_handler.abort", fn=fn, sz=sz, network_type=network_type)
+        retry_upload(tid, end_event, False)
 
     except queue.Empty:
       pass
@@ -263,29 +322,47 @@ def reboot():
 
 @dispatcher.add_method
 def uploadFileToUrl(fn, url, headers):
-  return uploadFilesToUrls([[fn, url, headers]])
+  return uploadFilesToUrls([{
+    "fn": fn,
+    "url": url,
+    "headers": headers,
+  }])
 
 
 @dispatcher.add_method
 def uploadFilesToUrls(files_data):
   items = []
-  for fn, url, headers in files_data:
-    if len(fn) == 0 or fn[0] == '/' or '..' in fn:
-      return 500
+  failed = []
+  for file in files_data:
+    fn = file.get('fn', '')
+    if len(fn) == 0 or fn[0] == '/' or '..' in fn or 'url' not in file:
+      failed.append(fn)
+      continue
     path = os.path.join(ROOT, fn)
     if not os.path.exists(path):
-      return 404
+      failed.append(fn)
+      continue
 
-    item = UploadItem(path=path, url=url, headers=headers, created_at=int(time.time() * 1000), id=None)
+    item = UploadItem(
+      path=path,
+      url=file['url'],
+      headers=file.get('headers', {}),
+      created_at=int(time.time() * 1000),
+      id=None,
+      allow_cellular=file.get('allow_cellular', False),
+    )
     upload_id = hashlib.sha1(str(item).encode()).hexdigest()
-    items.append(item._replace(id=upload_id))
-
-  for item in items:
+    item = item._replace(id=upload_id)
     upload_queue.put_nowait(item)
+    items.append(item._asdict())
 
   UploadQueueCache.cache(upload_queue)
 
-  return {"enqueued": len(items), "items": [i._asdict() for i in items]}
+  resp = {"enqueued": len(items), "items": items}
+  if failed:
+    resp["failed"] = failed
+
+  return resp
 
 
 @dispatcher.add_method
@@ -311,6 +388,18 @@ def cancelUpload(upload_id):
 @dispatcher.add_method
 def primeActivated(activated):
   return {"success": 1}
+
+
+@dispatcher.add_method
+def setBandwithLimit(upload_speed_kbps, download_speed_kbps):
+  if not TICI:
+    return {"success": 0, "error": "only supported on comma three"}
+
+  try:
+    HARDWARE.set_bandwidth_limit(upload_speed_kbps, download_speed_kbps)
+    return {"success": 1}
+  except subprocess.CalledProcessError as e:
+    return {"success": 0, "error": "failed to set limit", "stdout": e.stdout, "stderr": e.stderr}
 
 
 def startLocalProxy(global_end_event, remote_ws_uri, local_port):
@@ -377,7 +466,7 @@ def getNetworks():
 
 @dispatcher.add_method
 def takeSnapshot():
-  from selfdrive.camerad.snapshot.snapshot import snapshot, jpeg_write
+  from selfdrive.camerad.snapshot.snapshot import jpeg_write, snapshot
   ret = snapshot()
   if ret is not None:
     def b64jpeg(x):
@@ -441,7 +530,7 @@ def log_handler(end_event):
               "jsonrpc": "2.0",
               "id": log_entry
             }
-            log_send_queue.put_nowait(json.dumps(jsonrpc))
+            low_priority_send_queue.put_nowait(json.dumps(jsonrpc))
             curr_log = log_entry
         except OSError:
           pass  # file could be deleted by log rotation
@@ -470,6 +559,32 @@ def log_handler(end_event):
 
     except Exception:
       cloudlog.exception("athena.log_handler.exception")
+
+
+def stat_handler(end_event):
+  while not end_event.is_set():
+    last_scan = 0
+    curr_scan = sec_since_boot()
+    try:
+      if curr_scan - last_scan > 10:
+        stat_filenames = list(filter(lambda name: not name.startswith(tempfile.gettempprefix()), os.listdir(STATS_DIR)))
+        if len(stat_filenames) > 0:
+          stat_path = os.path.join(STATS_DIR, stat_filenames[0])
+          with open(stat_path) as f:
+            jsonrpc = {
+              "method": "storeStats",
+              "params": {
+                "stats": f.read()
+              },
+              "jsonrpc": "2.0",
+              "id": stat_filenames[0]
+            }
+            low_priority_send_queue.put_nowait(json.dumps(jsonrpc))
+          os.remove(stat_path)
+        last_scan = curr_scan
+    except Exception:
+      cloudlog.exception("athena.stat_handler.exception")
+    time.sleep(0.1)
 
 
 def ws_proxy_recv(ws, local_sock, ssock, end_event, global_end_event):
@@ -544,7 +659,7 @@ def ws_send(ws, end_event):
       try:
         data = send_queue.get_nowait()
       except queue.Empty:
-        data = log_send_queue.get(timeout=1)
+        data = low_priority_send_queue.get(timeout=1)
       for i in range(0, len(data), WS_FRAME_SIZE):
         frame = data[i:i+WS_FRAME_SIZE]
         last = i + WS_FRAME_SIZE >= len(data)

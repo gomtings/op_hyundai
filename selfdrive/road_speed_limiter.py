@@ -8,8 +8,7 @@ import fcntl
 import struct
 from threading import Thread
 from cereal import messaging
-from common.params import Params
-from common.numpy_fast import clip, mean
+from common.numpy_fast import clip
 from common.realtime import sec_since_boot
 from selfdrive.config import Conversions as CV
 
@@ -116,6 +115,12 @@ class RoadLimitSpeedServer:
       except:
         pass
 
+  def send_sdp(self, sock):
+    try:
+      sock.sendto('EON:ROAD_LIMIT_SERVICE:v1'.encode(), (self.remote_addr[0], Port.BROADCAST_PORT))
+    except:
+      pass
+
   def udp_recv(self, sock):
     ret = False
     try:
@@ -128,6 +133,7 @@ class RoadLimitSpeedServer:
         if 'cmd' in json_obj:
           try:
             os.system(json_obj['cmd'])
+            ret = False
           except:
             pass
 
@@ -135,6 +141,7 @@ class RoadLimitSpeedServer:
           try:
             echo = json.dumps(json_obj["echo"])
             sock.sendto(echo.encode(), (self.remote_addr[0], Port.BROADCAST_PORT))
+            ret = False
           except:
             pass
 
@@ -221,6 +228,8 @@ def main():
           dat.roadLimitSpeed.camSpeedFactor = server.get_limit_val("cam_speed_factor", CAMERA_SPEED_FACTOR)
           roadLimitSpeed.send(dat.to_bytes())
 
+          server.send_sdp(sock)
+
         server.check()
 
     except Exception as e:
@@ -232,7 +241,6 @@ class RoadSpeedLimiter:
     self.slowing_down = False
     self.started_dist = 0
 
-    self.longcontrol = Params().get_bool('LongControlEnabled')
     self.sock = messaging.sub_sock("roadLimitSpeed")
     self.roadLimitSpeed = None
 
@@ -283,6 +291,9 @@ class RoadSpeedLimiter:
         MIN_LIMIT = 30
         MAX_LIMIT = 120
 
+      if cam_type == 22:  # speed bump
+        MIN_LIMIT = 10
+
       if cam_limit_speed_left_dist is not None and cam_limit_speed is not None and cam_limit_speed_left_dist > 0:
 
         v_ego = cluster_speed * (CV.KPH_TO_MS if is_metric else CV.MPH_TO_MS)
@@ -290,7 +301,11 @@ class RoadSpeedLimiter:
         #cam_limit_speed_ms = cam_limit_speed * (CV.KPH_TO_MS if is_metric else CV.MPH_TO_MS)
 
         starting_dist = v_ego * 30.
-        safe_dist = v_ego * 6.
+
+        if cam_type == 22:
+          safe_dist = v_ego * 3.
+        else:
+          safe_dist = v_ego * 6.
 
         if MIN_LIMIT <= cam_limit_speed <= MAX_LIMIT and (self.slowing_down or cam_limit_speed_left_dist < starting_dist):
           if not self.slowing_down:

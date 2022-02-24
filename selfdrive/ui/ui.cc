@@ -76,11 +76,11 @@ static void update_model(UIState *s, const cereal::ModelDataV2::Reader &model) {
   auto model_position = model.getPosition();
   float max_distance = std::clamp(model_position.getX()[TRAJECTORY_SIZE - 1],
                                   MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE);
-  int max_idx = get_path_length_idx(model_position, max_distance);
 
   // update lane lines
   const auto lane_lines = model.getLaneLines();
   const auto lane_line_probs = model.getLaneLineProbs();
+  int max_idx = get_path_length_idx(lane_lines[0], max_distance);
   for (int i = 0; i < std::size(scene.lane_line_vertices); i++) {
     scene.lane_line_probs[i] = lane_line_probs[i];
     update_line_data(s, lane_lines[i], 0.025 * scene.lane_line_probs[i], 0, &scene.lane_line_vertices[i], max_idx);
@@ -99,8 +99,8 @@ static void update_model(UIState *s, const cereal::ModelDataV2::Reader &model) {
   if (lead_one.getStatus()) {
     const float lead_d = lead_one.getDRel() * 2.;
     max_distance = std::clamp((float)(lead_d - fmin(lead_d * 0.35, 10.)), 0.0f, max_distance);
-    max_idx = get_path_length_idx(model_position, max_distance);  
   }
+  max_idx = get_path_length_idx(model_position, max_distance);
   update_line_data(s, model_position, 0.5, 1.22, &scene.track_vertices, max_idx);
 }
 
@@ -112,12 +112,6 @@ static void update_state(UIState *s) {
   SubMaster &sm = *(s->sm);
   UIScene &scene = s->scene;
 
-  if (sm.updated("modelV2")) {
-    update_model(s, sm["modelV2"].getModelV2());
-  }
-  if (sm.updated("radarState") && sm.rcv_frame("modelV2") >= s->scene.started_frame) {
-    update_leads(s, sm["radarState"].getRadarState(), sm["modelV2"].getModelV2().getPosition());
-  }
   if (sm.updated("liveCalibration")) {
     auto rpy_list = sm["liveCalibration"].getLiveCalibration().getRpyCalib();
     Eigen::Vector3d rpy;
@@ -132,6 +126,14 @@ static void update_state(UIState *s) {
       for (int j = 0; j < 3; j++) {
         scene.view_from_calib.v[i*3 + j] = view_from_calib(i,j);
       }
+    }
+  }
+  if (s->worldObjectsVisible()) {
+    if (sm.updated("modelV2")) {
+      update_model(s, sm["modelV2"].getModelV2());
+    }
+    if (sm.updated("radarState") && sm.rcv_frame("modelV2") > s->scene.started_frame) {
+      update_leads(s, sm["radarState"].getRadarState(), sm["modelV2"].getModelV2().getPosition());
     }
   }
   if (sm.updated("pandaStates")) {
@@ -167,16 +169,22 @@ static void update_state(UIState *s) {
       }
     }
   }
-  if (sm.updated("roadCameraState")) {
+  if (!Hardware::TICI() && sm.updated("roadCameraState")) {
     auto camera_state = sm["roadCameraState"].getRoadCameraState();
 
     float max_lines = Hardware::EON() ? 5408 : 1904;
     float max_gain = Hardware::EON() ? 1.0: 10.0;
     float max_ev = max_lines * max_gain;
 
-    if (Hardware::TICI()) {
-      max_ev /= 6;
-    }
+    float ev = camera_state.getGain() * float(camera_state.getIntegLines());
+
+    scene.light_sensor = std::clamp<float>(1.0 - (ev / max_ev), 0.0, 1.0);
+  } else if (Hardware::TICI() && sm.updated("wideRoadCameraState")) {
+    auto camera_state = sm["wideRoadCameraState"].getWideRoadCameraState();
+
+    float max_lines = 1904;
+    float max_gain = 10.0;
+    float max_ev = max_lines * max_gain / 6;
 
     float ev = camera_state.getGain() * float(camera_state.getIntegLines());
 
@@ -205,7 +213,7 @@ void UIState::updateStatus() {
   }
 
   // Handle onroad/offroad transition
-  if (scene.started != started_prev) {
+  if (scene.started != started_prev || sm->frame == 1) {
     if (scene.started) {
       status = STATUS_DISENGAGED;
       scene.started_frame = sm->frame;
@@ -214,8 +222,6 @@ void UIState::updateStatus() {
     }
     started_prev = scene.started;
     emit offroadTransition(!scene.started);
-  } else if (sm->frame == 1) {
-    emit offroadTransition(!scene.started);
   }
 }
 
@@ -223,12 +229,13 @@ UIState::UIState(QObject *parent) : QObject(parent) {
   sm = std::make_unique<SubMaster, const std::initializer_list<const char *>>({
     "modelV2", "controlsState", "liveCalibration", "radarState", "deviceState", "roadCameraState",
     "pandaStates", "carParams", "driverMonitoringState", "sensorEvents", "carState", "liveLocationKalman",
-    "gpsLocationExternal", "carControl", "liveParameters"
+    "wideRoadCameraState",
+    "gpsLocationExternal", "carControl", "liveParameters", "roadLimitSpeed",
   });
 
   Params params;
   wide_camera = Hardware::TICI() ? params.getBool("EnableWideCamera") : false;
-  has_prime = params.getBool("HasPrime");
+  prime_type = std::atoi(params.get("PrimeType").c_str());
 
   // update timer
   timer = new QTimer(this);

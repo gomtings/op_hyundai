@@ -19,6 +19,7 @@ def create_lkas11(packer, frame, car_fingerprint, apply_steer, steer_req,
   values["CF_Lkas_ActToi"] = steer_req
   values["CF_Lkas_ToiFlt"] = 0
   values["CF_Lkas_MsgCount"] = frame % 0x10
+  values["CF_Lkas_Chksum"] = 0
 
   if car_fingerprint in FEATURES["send_lfa_mfa"]:
     values["CF_Lkas_LdwsActivemode"] = int(left_lane) + (int(right_lane) << 1)
@@ -69,11 +70,11 @@ def create_lkas11(packer, frame, car_fingerprint, apply_steer, steer_req,
 
   return packer.make_can_msg("LKAS11", bus, values)
 
-def create_clu11(packer, frame, bus, clu11, button, speed):
+def create_clu11(packer, bus, clu11, button, speed):
   values = copy.copy(clu11)
   values["CF_Clu_CruiseSwState"] = button
   values["CF_Clu_Vanz"] = speed
-  values["CF_Clu_AliveCnt1"] = frame
+  values["CF_Clu_AliveCnt1"] = (values["CF_Clu_AliveCnt1"] + 1) % 0x10
   return packer.make_can_msg("CLU11", bus, values)
 
 def create_lfahda_mfc(packer, enabled, active):
@@ -91,12 +92,21 @@ def create_lfahda_mfc(packer, enabled, active):
 
   return packer.make_can_msg("LFAHDA_MFC", 0, values)
 
-def create_hda_mfc(packer, active, state):
-  values = {
-    "HDA_USM": 2,
-    "HDA_Active": 1 if active > 0 else 0,
-    "HDA_Icon_State": state if active > 0 else 0,
-  }
+def create_hda_mfc(packer, active, CS, left_lane, right_lane):
+  values = copy.copy(CS.lfahda_mfc)
+
+  ldwSysState = 0
+  if left_lane:
+    ldwSysState += 1
+  if right_lane:
+    ldwSysState += 2
+
+  values["HDA_LdwSysState"] = ldwSysState
+  values["HDA_USM"] = 2
+  values["HDA_VSetReq"] = 100
+  values["HDA_Icon_Wheel"] = 1 if active > 1 and CS.out.cruiseState.enabledAcc else 0
+  values["HDA_Icon_State"] = 2 if active > 1 else 0
+  values["HDA_Chime"] = 1 if active > 1 else 0
 
   return packer.make_can_msg("LFAHDA_MFC", 0, values)
 

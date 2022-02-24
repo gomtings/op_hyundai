@@ -6,8 +6,8 @@ from selfdrive.config import Conversions as CV
 from selfdrive.car.hyundai.values import CAR, Buttons, CarControllerParams
 from selfdrive.car import STD_CARGO_KG, scale_rot_inertia, scale_tire_stiffness, gen_empty_fingerprint, get_safety_config
 from selfdrive.car.interfaces import CarInterfaceBase
-from selfdrive.controls.lib.lateral_planner import LANE_CHANGE_SPEED_MIN
 from common.params import Params
+from selfdrive.controls.lib.desire_helper import LANE_CHANGE_SPEED_MIN
 
 GearShifter = car.CarState.GearShifter
 EventName = car.CarEvent.EventName
@@ -24,8 +24,8 @@ class CarInterface(CarInterfaceBase):
 
     v_current_kph = current_speed * CV.MS_TO_KPH
 
-    gas_max_bp = [0., 10., 20., 50., 70., 130.]
-    gas_max_v = [CarControllerParams.ACCEL_MAX, 1.4, 0.85, 0.72, 0.47, 0.22]
+    gas_max_bp = [0., 10., 20., 50., 70., 130., 150.]
+    gas_max_v = [CarControllerParams.ACCEL_MAX, 1.4, 0.82, 0.65, 0.47, 0.18, 0.1]
 
     return CarControllerParams.ACCEL_MIN, interp(v_current_kph, gas_max_bp, gas_max_v)
 
@@ -38,15 +38,13 @@ class CarInterface(CarInterfaceBase):
     ret.carName = "hyundai"
     ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.hyundaiLegacy, 0)]
 
-    ret.communityFeature = True
-
     tire_stiffness_factor = 1.
     ret.maxSteeringAngleDeg = 1000.
 
     # lateral
     ret.lateralTuning.init('lqr')
 
-    ret.lateralTuning.lqr.scale = 1550.
+    ret.lateralTuning.lqr.scale = 1600.
     ret.lateralTuning.lqr.ki = 0.01
     ret.lateralTuning.lqr.dcGain = 0.0027
 
@@ -58,8 +56,9 @@ class CarInterface(CarInterfaceBase):
 
     ret.steerRatio = 16.5
     ret.steerActuatorDelay = 0.1
-    ret.steerLimitTimer = 2.5
     ret.steerRateCost = 0.4
+
+    ret.steerLimitTimer = 2.5
     ret.steerMaxBP = [0.]
     ret.steerMaxV = [2.]
 
@@ -67,7 +66,9 @@ class CarInterface(CarInterfaceBase):
     ret.longitudinalTuning.kpBP = [0., 5.*CV.KPH_TO_MS, 10.*CV.KPH_TO_MS, 20.*CV.KPH_TO_MS, 130.*CV.KPH_TO_MS]
     ret.longitudinalTuning.kpV = [1.6, 1.18, 0.9, 0.78, 0.48]
     ret.longitudinalTuning.kiBP = [0., 130. * CV.KPH_TO_MS]
-    ret.longitudinalTuning.kiV = [0.13, 0.08]
+    ret.longitudinalTuning.kiV = [0.1, 0.06]
+    ret.longitudinalActuatorDelayLowerBound = 0.3
+    ret.longitudinalActuatorDelayUpperBound = 0.3
 
     ret.stopAccel = -2.0
     ret.stoppingDecelRate = 0.6  # brake_travel/s while trying to stop
@@ -166,13 +167,13 @@ class CarInterface(CarInterfaceBase):
       ret.mass = 1640. + STD_CARGO_KG
       ret.wheelbase = 2.845
       ret.centerToFront = ret.wheelbase * 0.385
-      ret.steerRatio = 17.5
+      ret.steerRatio = 17.
     elif candidate in [CAR.GRANDEUR_IG_FL, CAR.GRANDEUR_IG_FL_HEV]:
       tire_stiffness_factor = 0.8
       ret.mass = 1725. + STD_CARGO_KG
       ret.wheelbase = 2.885
       ret.centerToFront = ret.wheelbase * 0.385
-      ret.steerRatio = 17.5
+      ret.steerRatio = 17.
     elif candidate == CAR.VELOSTER:
       ret.mass = 3558. * CV.LB_TO_KG
       ret.wheelbase = 2.80
@@ -288,6 +289,7 @@ class CarInterface(CarInterfaceBase):
       ret.hasScc14 = 905 in fingerprint[ret.sccBus]
 
     ret.hasEms = 608 in fingerprint[0] and 809 in fingerprint[0]
+    ret.hasLfaHda = 1157 in fingerprint[0]
 
     ret.radarOffCan = ret.sccBus == -1
     ret.pcmCruise = not ret.radarOffCan
@@ -392,7 +394,7 @@ class CarInterface(CarInterfaceBase):
 
   # scc smoother - hyundai only
   def apply(self, c, controls):
-    ret = self.CC.update(c.enabled, self.CS, self.frame, c, c.actuators,
+    ret = self.CC.update(c, c.enabled, self.CS, self.frame, c, c.actuators,
                                c.cruiseControl.cancel, c.hudControl.visualAlert, c.hudControl.leftLaneVisible,
                                c.hudControl.rightLaneVisible, c.hudControl.leftLaneDepart, c.hudControl.rightLaneDepart,
                                c.hudControl.setSpeed, c.hudControl.leadVisible, controls)

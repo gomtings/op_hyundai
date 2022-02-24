@@ -62,7 +62,6 @@ class Planner:
 
   def update(self, sm):
     v_ego = sm['carState'].vEgo
-    a_ego = sm['carState'].aEgo
 
     v_cruise_kph = sm['controlsState'].vCruise
     v_cruise_kph = min(v_cruise_kph, V_CRUISE_MAX)
@@ -73,17 +72,21 @@ class Planner:
       vCluRatio = sm['carState'].vCluRatio
       if vCluRatio > 0.5:
         v_cruise *= vCluRatio
-        v_cruise = int(v_cruise * CV.MS_TO_KPH) * CV.KPH_TO_MS
+        v_cruise = int(v_cruise * CV.MS_TO_KPH + 0.25) * CV.KPH_TO_MS
 
     long_control_state = sm['controlsState'].longControlState
     force_slow_decel = sm['controlsState'].forceDecel
 
-    prev_accel_constraint = True
-    if long_control_state == LongCtrlState.off or sm['carState'].gasPressed:
+    # Reset current state when not engaged, or user is controlling the speed
+    reset_state = long_control_state == LongCtrlState.off
+    reset_state = reset_state or sm['carState'].gasPressed
+
+    # No change cost when user is controlling the speed, or when standstill
+    prev_accel_constraint = not (reset_state or sm['carState'].standstill)
+
+    if reset_state:
       self.v_desired_filter.x = v_ego
       self.a_desired = 0.0
-      # Smoothly changing between accel trajectory is only relevant when OP is driving
-      prev_accel_constraint = False
 
     # Prevent divergence, smooth in current v_ego
     self.v_desired_filter.x = max(0.0, self.v_desired_filter.update(v_ego))
@@ -97,9 +100,12 @@ class Planner:
     # clip limits, cannot init MPC outside of bounds
     accel_limits_turns[0] = min(accel_limits_turns[0], self.a_desired + 0.05)
     accel_limits_turns[1] = max(accel_limits_turns[1], self.a_desired - 0.05)
+
+    self.mpc.set_weights(prev_accel_constraint)
     self.mpc.set_accel_limits(accel_limits_turns[0], accel_limits_turns[1])
     self.mpc.set_cur_state(self.v_desired_filter.x, self.a_desired)
-    self.mpc.update(sm['carState'], sm['radarState'], v_cruise, prev_accel_constraint=prev_accel_constraint)
+    self.mpc.update(sm['carState'], sm['radarState'], v_cruise)
+
     self.v_desired_trajectory = np.interp(T_IDXS[:CONTROL_N], T_IDXS_MPC, self.mpc.v_solution)
     self.a_desired_trajectory = np.interp(T_IDXS[:CONTROL_N], T_IDXS_MPC, self.mpc.a_solution)
     self.j_desired_trajectory = np.interp(T_IDXS[:CONTROL_N], T_IDXS_MPC[:-1], self.mpc.j_solution)
@@ -123,12 +129,14 @@ class Planner:
     longitudinalPlan.modelMonoTime = sm.logMonoTime['modelV2']
     longitudinalPlan.processingDelay = (plan_send.logMonoTime / 1e9) - sm.logMonoTime['modelV2']
 
-    longitudinalPlan.speeds = [float(x) for x in self.v_desired_trajectory]
-    longitudinalPlan.accels = [float(x) for x in self.a_desired_trajectory]
-    longitudinalPlan.jerks = [float(x) for x in self.j_desired_trajectory]
+    longitudinalPlan.speeds = self.v_desired_trajectory.tolist()
+    longitudinalPlan.accels = self.a_desired_trajectory.tolist()
+    longitudinalPlan.jerks = self.j_desired_trajectory.tolist()
 
     longitudinalPlan.hasLead = sm['radarState'].leadOne.status
     longitudinalPlan.longitudinalPlanSource = self.mpc.source
     longitudinalPlan.fcw = self.fcw
+
+    longitudinalPlan.solverExecutionTime = self.mpc.solve_time
 
     pm.send('longitudinalPlan', plan_send)

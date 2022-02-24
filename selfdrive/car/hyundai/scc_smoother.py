@@ -108,10 +108,10 @@ class SccSmoother:
     self.slowing_down_sound_alert = False
 
   @staticmethod
-  def create_clu11(packer, frame, bus, clu11, button):
+  def create_clu11(packer, bus, clu11, button):
     values = copy.copy(clu11)
     values["CF_Clu_CruiseSwState"] = button
-    values["CF_Clu_AliveCnt1"] = frame
+    values["CF_Clu_AliveCnt1"] = (values["CF_Clu_AliveCnt1"] + 1) % 0x10
     return packer.make_can_msg("CLU11", bus, values)
 
   def is_active(self, frame):
@@ -138,7 +138,7 @@ class SccSmoother:
     else:
       max_speed_clu = self.kph_to_clu(controls.v_cruise_kph)
 
-    self.active_cam = road_limit_speed > 0
+    self.active_cam = road_limit_speed > 0 and left_dist > 0
 
     if road_speed_limiter.roadLimitSpeed is not None:
       camSpeedFactor = clip(road_speed_limiter.roadLimitSpeed.camSpeedFactor, 1.0, 1.1)
@@ -153,7 +153,7 @@ class SccSmoother:
 
     max_speed_log = ""
 
-    if apply_limit_speed >= self.kph_to_clu(30):
+    if apply_limit_speed >= self.kph_to_clu(10):
 
       if first_started:
         self.max_speed_clu = clu11_speed
@@ -198,10 +198,6 @@ class SccSmoother:
 
     road_limit_speed, left_dist, max_speed_log = self.cal_max_speed(frame, CC, CS, controls.sm, clu11_speed, controls)
 
-    CC.sccSmoother.roadLimitSpeedActive = road_speed_limiter_get_active()
-    CC.sccSmoother.roadLimitSpeed = road_limit_speed
-    CC.sccSmoother.roadLimitSpeedLeftDist = left_dist
-
     # kph
     controls.applyMaxSpeed = float(clip(CS.cruiseState_speed * CV.MS_TO_KPH, MIN_SET_SPEED_KPH,
                                                 self.max_speed_clu * self.speed_conv_to_ms * CV.MS_TO_KPH))
@@ -237,7 +233,7 @@ class SccSmoother:
 
       if self.btn != Buttons.NONE:
 
-        can_sends.append(SccSmoother.create_clu11(packer, self.alive_timer, CS.scc_bus, CS.clu11, self.btn))
+        can_sends.append(SccSmoother.create_clu11(packer, CS.scc_bus, CS.clu11, self.btn))
 
         if self.alive_timer == 0:
           self.started_frame = frame
