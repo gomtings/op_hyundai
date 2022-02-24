@@ -87,21 +87,21 @@ void set_safety_mode(uint16_t mode, int16_t param) {
 
   switch (mode_copy) {
     case SAFETY_SILENT:
-      set_intercept_relay(false); //true -> fix by PolorBear - tici 21.12.18
+      set_intercept_relay(true); //true -> fix by PolorBear - tici 21.12.18
       if (current_board->has_obd) {
         current_board->set_can_mode(CAN_MODE_NORMAL);
       }
       can_silent = ALL_CAN_SILENT;
       break;
     case SAFETY_NOOUTPUT:
-      set_intercept_relay(false); //true -> fix by PolorBear - tici 21.12.18
+      set_intercept_relay(true); //true -> fix by PolorBear - tici 21.12.18
       if (current_board->has_obd) {
         current_board->set_can_mode(CAN_MODE_NORMAL);
       }
       can_silent = ALL_CAN_LIVE;
       break;
     case SAFETY_ELM327:
-      set_intercept_relay(false); //true -> fix by PolorBear - tici 21.12.18
+      set_intercept_relay(true); //true -> fix by PolorBear - tici 21.12.18
       heartbeat_counter = 0U;
       heartbeat_lost = false;
       if (current_board->has_obd) {
@@ -234,6 +234,7 @@ void tick_handler(void) {
           }
 
           if (power_save_status != POWER_SAVE_STATUS_ENABLED) { // power_save_mode ENABLED fix by PolorBear - tici 21.12.18
+            set_intercept_relay(false); //add by PolorBear - tici 22.02.15 power_save_mode 진입시 릴레이 전환.
             set_power_save_state(POWER_SAVE_STATUS_ENABLED);
           }
 
