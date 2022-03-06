@@ -38,9 +38,9 @@ CRUISE_INTERVAL_SIGN = {
 
 
 class MPC_COST_LAT:
-  PATH = 1.25
-  HEADING = 1.25
-  STEER_RATE = 1.25
+  PATH = 1.00
+  HEADING = 1.00
+  STEER_RATE = 1.00
 
 
 def rate_limit(new_value, last_value, dw_step, up_step):
