@@ -176,9 +176,9 @@ def gen_long_mpc_solver():
   ocp.cost.zu = cost_weights
 
   ocp.constraints.lh = np.zeros(CONSTR_DIM)
-  ocp.constraints.lh_e = np.zeros(CONSTR_DIM)
+
   ocp.constraints.uh = 1e4*np.ones(CONSTR_DIM)
-  ocp.constraints.uh_e = 1e4*np.ones(CONSTR_DIM)
+
   ocp.constraints.idxsh = np.arange(CONSTR_DIM)
 
   # The HPIPM solver can give decent solutions even when it is stopped early
@@ -194,6 +194,7 @@ def gen_long_mpc_solver():
   # More iterations take too much time and less lead to inaccurate convergence in
   # some situations. Ideally we would run just 1 iteration to ensure fixed runtime.
   ocp.solver_options.qp_solver_iter_max = 10
+  ocp.solver_options.qp_tol = 1e-3
 
   # set prediction horizon
   ocp.solver_options.tf = Tf
