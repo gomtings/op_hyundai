@@ -75,6 +75,7 @@ class CarController():
     self.last_blinker_frame = 0
     self.prev_active_cam = False
     self.active_cam_timer = 0
+    self.last_active_cam_frame = 0
 
   def update(self, c, enabled, CS, frame, CC, actuators, pcm_cancel_cmd, visual_alert,
              left_lane, right_lane, left_lane_depart, right_lane_depart, set_speed, lead_visible, controls):
@@ -86,7 +87,7 @@ class CarController():
                                                 CarControllerParams)
 
     # disable when temp fault is active, or below LKA minimum speed
-    lkas_active = c.active and not CS.out.steerWarning and abs(CS.out.steeringAngleDeg) < CS.CP.maxSteeringAngleDeg
+    lkas_active = c.active and not CS.out.steerFaultTemporary and abs(CS.out.steeringAngleDeg) < CS.CP.maxSteeringAngleDeg
 
     # Disable steering while turning blinker on and speed below 60 kph
     if CS.out.leftBlinker or CS.out.rightBlinker:
@@ -109,7 +110,9 @@ class CarController():
       if self.prev_active_cam != self.scc_smoother.active_cam:
         self.prev_active_cam = self.scc_smoother.active_cam
         if self.scc_smoother.active_cam:
-          self.active_cam_timer = int(1.5 / DT_CTRL)
+          if (frame - self.last_active_cam_frame) * DT_CTRL > 10.0:
+            self.active_cam_timer = int(1.5 / DT_CTRL)
+            self.last_active_cam_frame = frame
 
       if self.active_cam_timer > 0:
         self.active_cam_timer -= 1
