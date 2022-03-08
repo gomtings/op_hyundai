@@ -74,8 +74,6 @@ typedef struct FrameMetadata {
   unsigned int lens_pos;
   float lens_err;
   float lens_true_pos;
-
-  float processing_time;  
 } FrameMetadata;
 
 typedef struct CameraExpInfo {
