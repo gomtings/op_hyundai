@@ -38,11 +38,10 @@ int main(int argc, char* argv[]) {
 
   // test model
   auto thneed = new Thneed(true);
-  thneed->record &= ~THNEED_RECORD;
+  thneed->record = false;
   thneed->load(argv[2]);
   thneed->clexec();
   thneed->find_inputs_outputs();
 
   return 0;
 }
-
