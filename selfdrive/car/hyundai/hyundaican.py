@@ -198,4 +198,3 @@ def create_scc14(packer, enabled, e_vgo, standstill, accel, gaspressed, objgap, 
       values["ComfortBandLower"] = 50.
 
   return packer.make_can_msg("SCC14", 0, values)
-

@@ -59,8 +59,6 @@ class CarInterface(CarInterfaceBase):
     ret.steerRateCost = 0.35
 
     ret.steerLimitTimer = 2.5
-    ret.steerMaxBP = [0.]
-    ret.steerMaxV = [2.]
 
     # longitudinal
     ret.longitudinalTuning.kpBP = [0., 5.*CV.KPH_TO_MS, 10.*CV.KPH_TO_MS, 20.*CV.KPH_TO_MS, 130.*CV.KPH_TO_MS]
@@ -68,7 +66,7 @@ class CarInterface(CarInterfaceBase):
     ret.longitudinalTuning.kiBP = [0., 130. * CV.KPH_TO_MS]
     ret.longitudinalTuning.kiV = [0.08, 0.04]
     ret.longitudinalActuatorDelayLowerBound = 0.3
-    ret.longitudinalActuatorDelayUpperBound = 0.3
+    ret.longitudinalActuatorDelayUpperBound = 0.5
 
     ret.stopAccel = -2.0
     ret.stoppingDecelRate = 0.5  # brake_travel/s while trying to stop
@@ -392,9 +390,4 @@ class CarInterface(CarInterfaceBase):
 
   # scc smoother - hyundai only
   def apply(self, c, controls):
-    ret = self.CC.update(c, self.CS, self.frame, c.actuators,
-                               c.cruiseControl.cancel, c.hudControl.visualAlert, c.hudControl.leftLaneVisible,
-                               c.hudControl.rightLaneVisible, c.hudControl.leftLaneDepart, c.hudControl.rightLaneDepart,
-                               c.hudControl.setSpeed, c.hudControl.leadVisible, controls)
-    self.frame += 1
-    return ret
+    return self.CC.update(c, self.CS, controls)
