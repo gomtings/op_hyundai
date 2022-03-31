@@ -19,7 +19,7 @@ VisualAlert = car.CarControl.HUDControl.VisualAlert
 min_set_speed = 30 * CV.KPH_TO_MS
 
 STEER_FAULT_MAX_ANGLE = 90
-STEER_FAULT_MAX_FRAMES = 90
+STEER_FAULT_MAX_FRAMES = 95
 
 MIN_HOLD_SPEED = 15 # Additional polar bear.
 
@@ -132,10 +132,11 @@ class CarController:
       self.lkas11_cnt = CS.lkas11["CF_Lkas_MsgCount"]
 
     self.lkas11_cnt = (self.lkas11_cnt + 1) % 0x10
-
-    if not lkas_active or abs(CS.out.steeringAngleDeg) <= STEER_FAULT_MAX_ANGLE:
+    
+    # avoid 90 degree fault
+    if not lkas_active or abs(CS.out.steeringAngleDeg) < STEER_FAULT_MAX_ANGLE:
       self.angle_limit_counter = 0
-    elif abs(CS.out.steeringAngleDeg) > STEER_FAULT_MAX_ANGLE:
+    elif abs(CS.out.steeringAngleDeg) >= STEER_FAULT_MAX_ANGLE:
       self.angle_limit_counter += 1
 
     # stop steering for a cycle to avoid fault

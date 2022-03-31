@@ -78,7 +78,6 @@ class CarInterface(CarInterfaceBase):
       ret.mass = 1900. + STD_CARGO_KG
       ret.wheelbase = 3.01
       ret.centerToFront = ret.wheelbase * 0.4
-      ret.maxSteeringAngleDeg = 90.
     elif candidate == CAR.GENESIS_G70:
       ret.mass = 1640. + STD_CARGO_KG
       ret.wheelbase = 2.84
@@ -186,8 +185,7 @@ class CarInterface(CarInterfaceBase):
       ret.mass = 1885. + STD_CARGO_KG
       ret.wheelbase = 2.79
       ret.centerToFront = ret.wheelbase * 0.4
-      tire_stiffness_factor = 0.7 
-      ret.maxSteeringAngleDeg = 90.   
+      tire_stiffness_factor = 0.7  
     # kia
     elif candidate == CAR.SORENTO:
       ret.mass = 1985. + STD_CARGO_KG
