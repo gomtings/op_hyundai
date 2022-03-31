@@ -17,6 +17,7 @@ from selfdrive.road_speed_limiter import road_speed_limiter_get_active
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 min_set_speed = 30 * CV.KPH_TO_MS
+
 MIN_HOLD_SPEED = 15 # Additional polar bear.
 
 def process_hud_alert(enabled, fingerprint, hud_control):
@@ -49,7 +50,7 @@ class CarController:
     self.params = CarControllerParams(CP)
     self.packer = CANPacker(dbc_name)
     self.frame = 0
-
+    
     self.apply_steer_last = 0
     self.accel = 0
     self.lkas11_cnt = 0
