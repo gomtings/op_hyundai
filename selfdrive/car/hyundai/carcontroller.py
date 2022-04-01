@@ -19,7 +19,7 @@ VisualAlert = car.CarControl.HUDControl.VisualAlert
 min_set_speed = 30 * CV.KPH_TO_MS
 
 STEER_FAULT_MAX_ANGLE = 90
-STEER_FAULT_MAX_FRAMES = 95
+STEER_FAULT_MAX_FRAMES = 50 # TODO: some cars might have a higher limit
 
 MIN_HOLD_SPEED = 15 # Additional polar bear.
 
