@@ -18,8 +18,8 @@ from selfdrive.road_speed_limiter import road_speed_limiter_get_active
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 min_set_speed = 30 * CV.KPH_TO_MS
 
-STEER_FAULT_MAX_ANGLE = 90
-STEER_FAULT_MAX_FRAMES = 50 # TODO: some cars might have a higher limit
+STEER_FAULT_MAX_ANGLE = 85  # EPS max is 90
+STEER_FAULT_MAX_FRAMES = 90  # EPS counter is 95
 
 MIN_HOLD_SPEED = 15 # Additional polar bear.
 
@@ -52,10 +52,12 @@ class CarController:
     self.car_fingerprint = CP.carFingerprint
     self.params = CarControllerParams(CP)
     self.packer = CANPacker(dbc_name)
-    self.frame = 0
 
     self.angle_limit_counter = 0
-
+    self.cut_steer_frames = 0
+    self.cut_steer = False   
+    self.frame = 0
+    
     self.apply_steer_last = 0
     self.accel = 0
     self.lkas11_cnt = 0
@@ -133,28 +135,36 @@ class CarController:
 
     self.lkas11_cnt = (self.lkas11_cnt + 1) % 0x10
     
-    # avoid 90 degree fault
-    if not lkas_active or abs(CS.out.steeringAngleDeg) < STEER_FAULT_MAX_ANGLE:
-      self.angle_limit_counter = 0
-    elif abs(CS.out.steeringAngleDeg) >= STEER_FAULT_MAX_ANGLE:
+    # avoid 90 degree fault - fix PolorBear 22.04.03
+    if lkas_active or abs(CS.out.steeringAngleDeg) < STEER_FAULT_MAX_ANGLE:
       self.angle_limit_counter += 1
-
-    # stop steering for a cycle to avoid fault
-    stop_steering_temp = False
-    if self.angle_limit_counter > STEER_FAULT_MAX_FRAMES:
-      apply_steer = 0
-      stop_steering_temp = True
+    else:
       self.angle_limit_counter = 0
+    
+    # stop requesting torque to avoid 90 degree fault and hold torque with induced temporary fault
+    # two cycles avoids race conditions every few minutes
+    
+    if self.angle_limit_counter > STEER_FAULT_MAX_FRAMES:
+      self.cut_steer = True
+    elif self.cut_steer_frames > 1:
+      self.cut_steer_frames = 0
+      self.cut_steer = False
+
+    cut_steer_temp = False
+    if self.cut_steer:
+      cut_steer_temp = True
+      self.angle_limit_counter = 0
+      self.cut_steer_frames += 1
 
     can_sends = []
     can_sends.append(create_lkas11(self.packer, self.frame, self.car_fingerprint, apply_steer, lkas_active,
                                    CS.lkas11, sys_warning, sys_state, CC.enabled, hud_control.leftLaneVisible, hud_control.rightLaneVisible,
-                                   left_lane_warning, right_lane_warning, 0, self.ldws_opt, stop_steering_temp))
+                                   left_lane_warning, right_lane_warning, 0, self.ldws_opt, cut_steer_temp))
 
     if CS.mdps_bus or CS.scc_bus == 1:  # send lkas11 bus 1 if mdps or scc is on bus 1
       can_sends.append(create_lkas11(self.packer, self.frame, self.car_fingerprint, apply_steer, lkas_active,
                                      CS.lkas11, sys_warning, sys_state, CC.enabled, hud_control.leftLaneVisible, hud_control.rightLaneVisible,
-                                     left_lane_warning, right_lane_warning, 1, self.ldws_opt, stop_steering_temp))
+                                     left_lane_warning, right_lane_warning, 1, self.ldws_opt, cut_steer_temp))
 
     if self.frame % 2 and CS.mdps_bus: # send clu11 to mdps if it is not on bus 0
       can_sends.append(create_clu11(self.packer, CS.mdps_bus, CS.clu11, Buttons.NONE, enabled_speed))
