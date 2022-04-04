@@ -135,26 +135,18 @@ class CarController:
 
     self.lkas11_cnt = (self.lkas11_cnt + 1) % 0x10
     
-    # avoid 90 degree fault - fix PolorBear 22.04.03
-    if lkas_active or abs(CS.out.steeringAngleDeg) < STEER_FAULT_MAX_ANGLE:
-      self.angle_limit_counter += 1
-    else:
+    # avoid 90 degree fault
+    if not lkas_active or abs(CS.out.steeringAngleDeg) <= STEER_FAULT_MAX_ANGLE:
       self.angle_limit_counter = 0
-    
-    # stop requesting torque to avoid 90 degree fault and hold torque with induced temporary fault
-    # two cycles avoids race conditions every few minutes
-    
-    if self.angle_limit_counter > STEER_FAULT_MAX_FRAMES:
-      self.cut_steer = True
-    elif self.cut_steer_frames > 1:
-      self.cut_steer_frames = 0
-      self.cut_steer = False
+    elif abs(CS.out.steeringAngleDeg) > STEER_FAULT_MAX_ANGLE:
+      self.angle_limit_counter += 1
 
+    # stop steering for a cycle to avoid fault
     cut_steer_temp = False
-    if self.cut_steer:
+    if self.angle_limit_counter > STEER_FAULT_MAX_FRAMES:
+      apply_steer = 0
       cut_steer_temp = True
       self.angle_limit_counter = 0
-      self.cut_steer_frames += 1
 
     can_sends = []
     can_sends.append(create_lkas11(self.packer, self.frame, self.car_fingerprint, apply_steer, lkas_active,
