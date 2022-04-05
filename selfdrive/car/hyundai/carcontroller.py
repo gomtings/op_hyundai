@@ -18,7 +18,7 @@ from selfdrive.road_speed_limiter import road_speed_limiter_get_active
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 min_set_speed = 30 * CV.KPH_TO_MS
 
-STEER_FAULT_MAX_ANGLE = 90  # EPS max is 90
+STEER_FAULT_MAX_ANGLE = 85  # EPS max is 90
 STEER_FAULT_MAX_FRAMES = 50  # EPS counter is 95
 
 MIN_HOLD_SPEED = 10 # Additional polar bear.
