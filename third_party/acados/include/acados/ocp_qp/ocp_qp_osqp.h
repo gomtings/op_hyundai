@@ -75,7 +75,8 @@ typedef struct ocp_qp_osqp_memory_
 
     double time_qp_solver_call;
     int iter;
-
+    int status;
+    
 } ocp_qp_osqp_memory;
 
 acados_size_t ocp_qp_osqp_opts_calculate_size(void *config, void *dims);

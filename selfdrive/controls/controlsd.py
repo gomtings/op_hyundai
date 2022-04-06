@@ -428,8 +428,11 @@ class Controls:
     # if stock cruise is completely disabled, then we can use our own set speed logic
     #if not self.CP.pcmCruise:
     #  self.v_cruise_kph = update_v_cruise(self.v_cruise_kph, CS.buttonEvents, self.button_timers, self.enabled, self.is_metric)
-    #elif CS.cruiseState.enabled:
-    #  self.v_cruise_kph = CS.cruiseState.speed * CV.MS_TO_KPH
+    #else:
+    #  if CS.cruiseState.available:
+    #    self.v_cruise_kph = CS.cruiseState.speed * CV.MS_TO_KPH
+    #  else:
+    #    self.v_cruise_kph = 0
 
     SccSmoother.update_cruise_buttons(self, CS, self.CP.openpilotLongitudinalControl)
 
@@ -651,10 +654,8 @@ class Controls:
       r_lane_change_prob = desire_prediction[Desire.laneChangeRight - 1]
 
       lane_lines = model_v2.laneLines
-
-      cameraOffset = ntune_common_get("cameraOffset") + 0.08 if self.wide_camera else ntune_common_get("cameraOffset")
-      l_lane_close = left_lane_visible and (lane_lines[1].y[0] > -(1.08 + cameraOffset))
-      r_lane_close = right_lane_visible and (lane_lines[2].y[0] < (1.08 - cameraOffset))
+      l_lane_close = left_lane_visible and (lane_lines[1].y[0] > -(1.08 + CAMERA_OFFSET))
+      r_lane_close = right_lane_visible and (lane_lines[2].y[0] < (1.08 - CAMERA_OFFSET))
 
       hudControl.leftLaneDepart = bool(l_lane_change_prob > LANE_DEPARTURE_THRESHOLD and l_lane_close)
       hudControl.rightLaneDepart = bool(r_lane_change_prob > LANE_DEPARTURE_THRESHOLD and r_lane_close)
@@ -806,6 +807,7 @@ class Controls:
     self.prof.checkpoint("Sent")
 
     self.update_button_timers(CS.buttonEvents)
+    self.CS_prev = CS
 
   def controlsd_thread(self):
     while True:

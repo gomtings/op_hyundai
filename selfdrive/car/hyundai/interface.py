@@ -41,6 +41,9 @@ class CarInterface(CarInterfaceBase):
     tire_stiffness_factor = 1.
     ret.maxSteeringAngleDeg = 1000.
 
+    ret.steerFaultMaxAngle = 85
+    ret.steerFaultMaxFrames = 90
+    
     # lateral
     ret.lateralTuning.init('lqr')
 
@@ -161,13 +164,13 @@ class CarInterface(CarInterfaceBase):
       ret.centerToFront = ret.wheelbase * 0.4
     elif candidate in [CAR.GRANDEUR_IG, CAR.GRANDEUR_IG_HEV]:
       tire_stiffness_factor = 0.8
-      ret.mass = 1640. + STD_CARGO_KG
+      ret.mass = 1570. + STD_CARGO_KG
       ret.wheelbase = 2.845
       ret.centerToFront = ret.wheelbase * 0.385
       ret.steerRatio = 17.
     elif candidate in [CAR.GRANDEUR_IG_FL, CAR.GRANDEUR_IG_FL_HEV]:
       tire_stiffness_factor = 0.8
-      ret.mass = 1725. + STD_CARGO_KG
+      ret.mass = 1600. + STD_CARGO_KG
       ret.wheelbase = 2.885
       ret.centerToFront = ret.wheelbase * 0.385
       ret.steerRatio = 17.
@@ -185,7 +188,9 @@ class CarInterface(CarInterfaceBase):
       ret.mass = 1885. + STD_CARGO_KG
       ret.wheelbase = 2.79
       ret.centerToFront = ret.wheelbase * 0.4
-      tire_stiffness_factor = 0.7  
+      tire_stiffness_factor = 0.7
+      ret.steerFaultMaxAngle = 85
+      ret.steerFaultMaxFrames = 90
     # kia
     elif candidate == CAR.SORENTO:
       ret.mass = 1985. + STD_CARGO_KG
