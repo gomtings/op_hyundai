@@ -8,7 +8,7 @@ AUTO_LCA_START_TIME = 0.0
 LaneChangeState = log.LateralPlan.LaneChangeState
 LaneChangeDirection = log.LateralPlan.LaneChangeDirection
 
-LANE_CHANGE_SPEED_MIN = 40 * CV.KPH_TO_MS
+LANE_CHANGE_SPEED_MIN = 35 * CV.KPH_TO_MS
 LANE_CHANGE_TIME_MAX = 30.
 
 DESIRES = {
