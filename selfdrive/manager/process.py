@@ -303,3 +303,4 @@ def ensure_running(procs: ValuesView[ManagerProcess], started: bool, driverview:
       p.stop(block=False)
 
     p.check_watchdog(started)
+
