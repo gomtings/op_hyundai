@@ -3,7 +3,6 @@ import os
 import sys
 import copy
 import json
-import time
 import uuid
 import socket
 import logging
@@ -11,8 +10,6 @@ import traceback
 from threading import local
 from collections import OrderedDict
 from contextlib import contextmanager
-
-LOG_TIMESTAMPS = "LOG_TIMESTAMPS" in os.environ
 
 def json_handler(obj):
   # if isinstance(obj, (datetime.date, datetime.time)):
@@ -165,15 +162,6 @@ class SwagLogger(logging.Logger):
       self.debug(evt)
     else:
       self.info(evt)
-
-  def timestamp(self, event_name):
-    if LOG_TIMESTAMPS:
-      t = time.monotonic()
-      tstp = NiceOrderedDict()
-      tstp['timestamp'] = NiceOrderedDict()
-      tstp['timestamp']["event"] = event_name
-      tstp['timestamp']["time"] = t*1e9
-      self.debug(tstp)
 
   def findCaller(self, stack_info=False, stacklevel=1):
     """

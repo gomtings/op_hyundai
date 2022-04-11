@@ -117,8 +117,7 @@ static int tesla_rx_hook(CANPacket_t *to_push) {
 }
 
 
-static int tesla_tx_hook(CANPacket_t *to_send, bool longitudinal_allowed) {
-
+static int tesla_tx_hook(CANPacket_t *to_send) {
   int tx = 1;
   int addr = GET_ADDR(to_send);
   bool violation = false;
@@ -197,7 +196,7 @@ static int tesla_tx_hook(CANPacket_t *to_send, bool longitudinal_allowed) {
       }
 
       // Don't allow longitudinal actuation if controls aren't allowed
-      if (!longitudinal_allowed) {
+      if (!controls_allowed) {
         if ((raw_accel_max != TESLA_NO_ACCEL_VALUE) || (raw_accel_min != TESLA_NO_ACCEL_VALUE)) {
           violation = true;
         }

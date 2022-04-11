@@ -8,13 +8,10 @@ static int body_rx_hook(CANPacket_t *to_push) {
 
   bool valid = addr_safety_check(to_push, &body_rx_checks, NULL, NULL, NULL);
 
-  controls_allowed = valid;
-
   return valid;
 }
 
-static int body_tx_hook(CANPacket_t *to_send, bool longitudinal_allowed) {
-  UNUSED(longitudinal_allowed);
+static int body_tx_hook(CANPacket_t *to_send) {
 
   int tx = 0;
   int addr = GET_ADDR(to_send);
@@ -24,7 +21,7 @@ static int body_tx_hook(CANPacket_t *to_send, bool longitudinal_allowed) {
     tx = 1;
   }
 
-  if ((addr == 0x250) && controls_allowed) {
+  if (addr == 0x250) {
     tx = 1;
   }
 

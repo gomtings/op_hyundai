@@ -7,8 +7,6 @@
 #include <QRegExp>
 #include <QtConcurrent>
 
-#include <array>
-
 #include "selfdrive/hardware/hw.h"
 #include "selfdrive/ui/qt/api.h"
 #include "selfdrive/ui/replay/replay.h"

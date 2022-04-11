@@ -210,7 +210,7 @@ pipeline {
 
                 stage('C3: replay') {
                   steps {
-                    phone_steps("tici3", [
+                    phone_steps("tici-party", [
                       ["build", "cd selfdrive/manager && ./build.py"],
                       ["model replay", "cd selfdrive/test/process_replay && ./model_replay.py"],
                     ])

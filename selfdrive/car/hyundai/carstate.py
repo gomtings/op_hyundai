@@ -102,7 +102,6 @@ class CarState(CarStateBase):
       ret.aEgo = aEgoWheel
 
     ret.vCluRatio = (vEgoWheel / vEgoClu) if (vEgoClu > 3. and vEgoWheel > 3.) else 1.0
-    ret.aBasis = cp.vl["TCS13"]["aBasis"]
 
     ret.standstill = ret.vEgoRaw < 0.01
 
@@ -286,7 +285,6 @@ class CarState(CarStateBase):
 
       ("ACCEnable", "TCS13"),
       ("BrakeLight", "TCS13"),
-      ("aBasis", "TCS13"),
       ("DriverBraking", "TCS13"),
       ("PBRAKE_ACT", "TCS13"),
       ("DriverOverride", "TCS13"),
