@@ -13,7 +13,8 @@ class CameraState {
 public:
   MultiCameraState *multi_cam_state;
   CameraInfo ci;
-
+  bool enabled;
+  
   std::mutex exp_lock;
 
   int exposure_time;
