@@ -53,7 +53,8 @@ def update_v_cruise(v_cruise_kph, buttonEvents, button_timers, enabled, metric):
   long_press = False
   button_type = None
 
-  v_cruise_delta = 1. if metric else CV.MPH_TO_KPH
+  # should be CV.MPH_TO_KPH, but this causes rounding errors
+  v_cruise_delta = 1. if metric else 1.6
 
   for b in buttonEvents:
     if b.type.raw in button_timers and not b.pressed:
@@ -95,7 +96,7 @@ def get_lag_adjusted_curvature(CP, v_ego, psis, curvatures, curvature_rates):
     curvature_rates = [0.0]*CONTROL_N
 
   # TODO this needs more thought, use .2s extra for now to estimate other delays
-  delay = ntune_common_get('steerActuatorDelay')+ .2
+  delay = ntune_common_get('steerActuatorDelay') + .2
   current_curvature = curvatures[0]
   psi = interp(delay, T_IDXS[:CONTROL_N], psis)
   desired_curvature_rate = curvature_rates[0]
@@ -107,7 +108,7 @@ def get_lag_adjusted_curvature(CP, v_ego, psis, curvatures, curvature_rates):
   desired_curvature = current_curvature + 2 * curvature_diff_from_psi
 
   v_ego = max(v_ego, 0.1)
-  max_curvature_rate = MAX_LATERAL_JERK / ((v_ego/2)**2)
+  max_curvature_rate = MAX_LATERAL_JERK / ((v_ego/2.5)**2)
   safe_desired_curvature_rate = clip(desired_curvature_rate,
                                           -max_curvature_rate,
                                           max_curvature_rate)
