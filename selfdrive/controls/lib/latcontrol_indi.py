@@ -39,10 +39,10 @@ class LatControlINDI(LatControl):
     self._G = (CP.lateralTuning.indi.actuatorEffectivenessBP, CP.lateralTuning.indi.actuatorEffectivenessV)
     self._outer_loop_gain = (CP.lateralTuning.indi.outerLoopGainBP, CP.lateralTuning.indi.outerLoopGainV)
     self._inner_loop_gain = (CP.lateralTuning.indi.innerLoopGainBP, CP.lateralTuning.indi.innerLoopGainV)
-
+    
+    self.tune = nTune(CP, self)
     self.steer_filter = FirstOrderFilter(0., self.RC, DT_CTRL)
     self.reset()
-    self.tune = nTune(CP, self)
 
   @property
   def RC(self):

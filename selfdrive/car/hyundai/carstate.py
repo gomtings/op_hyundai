@@ -49,7 +49,7 @@ class CarState(CarStateBase):
 
     self.use_cluster_speed = Params().get_bool('UseClusterSpeed')
     self.long_control_enabled = Params().get_bool('LongControlEnabled')
-    self.gear_shifter = GearShifter.park # Gear_init for Nexo ?? unknown 21.02.23.LSW
+    self.gear_shifter = GearShifter.drive # Gear_init for Nexo ?? unknown 21.02.23.LSW
 
 
   def update(self, cp, cp2, cp_cam):
