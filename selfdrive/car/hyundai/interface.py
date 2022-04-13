@@ -45,23 +45,37 @@ class CarInterface(CarInterfaceBase):
     ret.steerFaultMaxFrames = 90
     
     # lateral
-    """
-    ret.lateralTuning.init('lqr')
-    ret.lateralTuning.lqr.scale = 1600.
-    ret.lateralTuning.lqr.ki = 0.01
-    ret.lateralTuning.lqr.dcGain = 0.0027
-    ret.lateralTuning.lqr.a = [0., 1., -0.22619643, 1.21822268]
-    ret.lateralTuning.lqr.b = [-1.92006585e-04, 3.95603032e-05]
-    ret.lateralTuning.lqr.c = [1., 0.]
-    ret.lateralTuning.lqr.k = [-110., 451.]
-    ret.lateralTuning.lqr.l = [0.33, 0.318]
-    """
+    lateral_control = Params().get("LateralControl", encoding='utf-8')
+    if lateral_control == 'TORQUE':
+      ret.lateralTuning.init('torque')
+      ret.lateralTuning.torque.useSteeringAngle = True
 
-    ret.lateralTuning.init('torque')
-    ret.lateralTuning.torque.useSteeringAngle = True
-    ret.lateralTuning.torque.kp = 1.4
-    ret.lateralTuning.torque.kf = 0.08
-    ret.lateralTuning.torque.friction = 0.06   
+      MAX_TORQUE = 2.5
+      ret.lateralTuning.torque.kp = 3.5 / MAX_TORQUE
+      ret.lateralTuning.torque.kf = 0.75 / MAX_TORQUE
+      ret.lateralTuning.torque.friction = 0.06
+    elif lateral_control == 'INDI':
+      ret.lateralTuning.init('indi')
+      ret.lateralTuning.indi.innerLoopGainBP = [0.]
+      ret.lateralTuning.indi.innerLoopGainV = [3.3]
+      ret.lateralTuning.indi.outerLoopGainBP = [0.]
+      ret.lateralTuning.indi.outerLoopGainV = [2.8]
+      ret.lateralTuning.indi.timeConstantBP = [0.]
+      ret.lateralTuning.indi.timeConstantV = [1.4]
+      ret.lateralTuning.indi.actuatorEffectivenessBP = [0.]
+      ret.lateralTuning.indi.actuatorEffectivenessV = [1.8]
+    else:
+      ret.lateralTuning.init('lqr')
+
+      ret.lateralTuning.lqr.scale = 1600.
+      ret.lateralTuning.lqr.ki = 0.01
+      ret.lateralTuning.lqr.dcGain = 0.0027
+
+      ret.lateralTuning.lqr.a = [0., 1., -0.22619643, 1.21822268]
+      ret.lateralTuning.lqr.b = [-1.92006585e-04, 3.95603032e-05]
+      ret.lateralTuning.lqr.c = [1., 0.]
+      ret.lateralTuning.lqr.k = [-110., 451.]
+      ret.lateralTuning.lqr.l = [0.33, 0.318]  
     
     ret.steerRatio = 16.5
     ret.steerActuatorDelay = 0.2
@@ -87,6 +101,8 @@ class CarInterface(CarInterfaceBase):
       ret.mass = 1900. + STD_CARGO_KG
       ret.wheelbase = 3.01
       ret.centerToFront = ret.wheelbase * 0.4
+      ret.maxSteeringAngleDeg = 90.
+      ret.steerFaultMaxAngle = 0
     elif candidate == CAR.GENESIS_G70:
       ret.mass = 1640. + STD_CARGO_KG
       ret.wheelbase = 2.84
