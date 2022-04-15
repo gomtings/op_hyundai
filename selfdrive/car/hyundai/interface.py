@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from typing import List
 
 from cereal import car
 from common.numpy_fast import interp
@@ -51,8 +52,11 @@ class CarInterface(CarInterfaceBase):
       ret.lateralTuning.torque.useSteeringAngle = True
 
       MAX_TORQUE = 2.5
-      ret.lateralTuning.torque.kp = 3.5 / MAX_TORQUE
-      ret.lateralTuning.torque.kf = 0.75 / MAX_TORQUE
+      ret.lateralTuning.torque.kp = 2.0
+      ret.lateralTuning.torque.kf = 0.05
+      ret.lateralTuning.torque.friction = 0.01
+      ret.lateralTuning.torque.ki = 0.05
+      ret.lateralTuning.torque.kd = 0.7
       ret.lateralTuning.torque.friction = 0.06
     elif lateral_control == 'INDI':
       ret.lateralTuning.init('indi')
@@ -331,7 +335,10 @@ class CarInterface(CarInterfaceBase):
       ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.hyundaiCommunity, 0)]
     return ret
 
-  def update(self, c, can_strings):
+  def _update(self, c: car.CarControl) -> car.CarState:
+        pass
+
+  def update(self, c: car.CarControl, can_strings: List[bytes]) -> car.CarState:
     self.cp.update_strings(can_strings)
     self.cp2.update_strings(can_strings)
     self.cp_cam.update_strings(can_strings)

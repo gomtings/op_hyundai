@@ -196,9 +196,6 @@ class nTune():
     if self.checkValue("dcGain", 0.002, 0.004, 0.0027):
       updated = True
 
-    if self.checkValue("c_0", 0.3, 1.1, 1.0):
-      updated = True
-
     if self.checkValue("steerLimitTimer", 0.5, 3.0, 2.5):
       updated = True
 
@@ -223,13 +220,15 @@ class nTune():
 
     if self.checkValue("useSteeringAngle", 0., 1., 1.):
       updated = True
-    if self.checkValue("max_torque", 1.5, 4.0, 2.5):
+    if self.checkValue("kp", 0.5, 3.0, 2.0):
       updated = True
-    if self.checkValue("friction", 0.01, 1.5, 0.06):
+    if self.checkValue("kf", 0.0, 0.5, 0.05):
       updated = True
-    if self.checkValue("ki", 0.0, 0.5, 0.0):
+    if self.checkValue("friction", 0.0, 1.5, 0.01):
       updated = True
-    if self.checkValue("kd", 0.0, 1.5, 0.0):
+    if self.checkValue("ki", 0.0, 0.5, 0.05):
+      updated = True
+    if self.checkValue("kd", 0.0, 1.5, 0.7):
       updated = True
 
     return updated
@@ -254,7 +253,6 @@ class nTune():
       lqr.scale = float(self.config["scale"])
       lqr.ki = float(self.config["ki"])
       lqr.dc_gain = float(self.config["dcGain"])
-      lqr.C = np.array([float(self.config["c_0"]), 0.]).reshape((1, 2))
 
       lqr.x_hat = np.array([[0], [0]])
       lqr.reset()
@@ -272,12 +270,11 @@ class nTune():
   def updateTorque(self):
     torque = self.get_ctrl()
     if torque is not None:
-      max_torque = float(self.config["max_torque"])
-      torque.pid._k_p = [[0], [3.5 / max_torque]]
-      torque.pid.k_f = 0.75 / max_torque
-      torque.friction = float(self.config["friction"])
+      torque.pid._k_p = [[0], [float(self.config["kp"])]]
       torque.pid._k_i = [[0], [float(self.config["ki"])]]
       torque.pid._k_d = [[0], [float(self.config["kd"])]]
+      torque.pid.k_f = float(self.config["kf"])
+      torque.friction = float(self.config["friction"])
       torque.reset()
 
   def read_cp(self):
