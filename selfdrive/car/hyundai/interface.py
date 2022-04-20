@@ -50,11 +50,11 @@ class CarInterface(CarInterfaceBase):
     if lateral_control == 'TORQUE':
       ret.lateralTuning.init('torque')
       ret.lateralTuning.torque.useSteeringAngle = True
-      ret.lateralTuning.torque.kp = 1.0
-      ret.lateralTuning.torque.kf = 0.05
-      ret.lateralTuning.torque.friction = 0.01
+      ret.lateralTuning.torque.kp = 1.2
+      ret.lateralTuning.torque.kf = 0.1
+      ret.lateralTuning.torque.friction = 0.0
       ret.lateralTuning.torque.ki = 0.0
-      ret.lateralTuning.torque.kd = 0.5
+      ret.lateralTuning.torque.kd = 0.0
     elif lateral_control == 'INDI':
       ret.lateralTuning.init('indi')
       ret.lateralTuning.indi.innerLoopGainBP = [0.]
@@ -65,7 +65,7 @@ class CarInterface(CarInterfaceBase):
       ret.lateralTuning.indi.timeConstantV = [1.4]
       ret.lateralTuning.indi.actuatorEffectivenessBP = [0.]
       ret.lateralTuning.indi.actuatorEffectivenessV = [1.8]
-    else:
+    elif lateral_control == 'LQR':
       ret.lateralTuning.init('lqr')
 
       ret.lateralTuning.lqr.scale = 1600.
@@ -77,9 +77,12 @@ class CarInterface(CarInterfaceBase):
       ret.lateralTuning.lqr.c = [1., 0.]
       ret.lateralTuning.lqr.k = [-110., 451.]
       ret.lateralTuning.lqr.l = [0.33, 0.318]  
+    else:
+      ret.lateralTuning.init('hybrid')    
+    
     
     ret.steerRatio = 16.5
-    ret.steerActuatorDelay = 0.2
+    ret.steerActuatorDelay = 0.1
     ret.steerRateCost = 0.35
 
     ret.steerLimitTimer = 2.5
@@ -94,7 +97,7 @@ class CarInterface(CarInterfaceBase):
 
     ret.stopAccel = -2.0
     ret.stoppingDecelRate = 0.6  # brake_travel/s while trying to stop
-    ret.vEgoStopping = 0.6
+    ret.vEgoStopping = 0.5
     ret.vEgoStarting = 0.5
 
     # genesis
@@ -280,10 +283,6 @@ class CarInterface(CarInterfaceBase):
       tire_stiffness_factor = 0.8
 
       ret.steerRatio = 14.5
-
-      ret.lateralTuning.lqr.scale = 1650.
-      ret.lateralTuning.lqr.ki = 0.01
-      ret.lateralTuning.lqr.dcGain = 0.0026
 
 
 
