@@ -1,7 +1,10 @@
 
 **This is based on xx979xx for Hyundai, Kia, Genesis.**
-
 https://github.com/xx979xx/openpilot
+
+**This is a branch dedicated to C3. From that point on, C2/eon will end support.**
+**Last branch for c2/eon ->**
+https://github.com/gomtings/forNEXO/tree/hkg0814forNEXO_c2
 
 It is open source and inherits MIT license.  By installing this software you accept all responsibility for anything that might occur while you use it.  All contributors to this fork are not liable.  <b>Use at your own risk.</b>
 
