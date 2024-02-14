@@ -69,8 +69,8 @@ def create_suppress_lfa(packer, CAN, hda2_lfa_block_msg, hda2_alt_steering):
   values["COUNTER"] = hda2_lfa_block_msg["COUNTER"]
   values["SET_ME_0"] = 0
   values["SET_ME_0_2"] = 0
-  values["LEFT_LANE_LINE"] = 3
-  values["RIGHT_LANE_LINE"] = 3
+  values["LEFT_LANE_LINE"] = 0
+  values["RIGHT_LANE_LINE"] = 0
   return packer.make_can_msg(suppress_msg, CAN.ACAN, values)
 
 def create_buttons(packer, CP, CAN, cnt, btn):
