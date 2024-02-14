@@ -123,11 +123,12 @@ def create_lfahda_mfc(packer, enabled, hda_set_speed=0):
   }
   return packer.make_can_msg("LFAHDA_MFC", 0, values)
 
-def create_acc_commands(packer, enabled, accel, upper_jerk, idx, lead_visible, set_speed, stopping, long_override, use_fca, CS, stock_cam):
+def create_acc_commands(packer, enabled, accel, upper_jerk, idx, lead_visible, set_speed, stopping, long_override, use_fca, CS, stock_cam,vision_dist,RelSpd):
+#def create_acc_commands(packer, enabled, accel, upper_jerk, idx, lead_visible, set_speed, stopping, long_override, use_fca, CS, stock_cam):
   commands = []
 
   cruise_enabled = enabled and CS.out.cruiseState.enabled
-
+  objGap = 0 if vision_dist == 0 else 2 if vision_dist < 25 else 3 if vision_dist < 40 else 4 if vision_dist < 70 else 5
   scc11_values = {
     "MainMode_ACC": CS.out.cruiseState.available,
     "TauGapSet": CS.out.cruiseState.gapAdjust,
@@ -136,8 +137,8 @@ def create_acc_commands(packer, enabled, accel, upper_jerk, idx, lead_visible, s
     "ObjValid": 1, # close lead makes controls tighter
     "ACC_ObjStatus": 1, # close lead makes controls tighter
     "ACC_ObjLatPos": 0,
-    "ACC_ObjRelSpd": 0,
-    "ACC_ObjDist": 1, # close lead makes controls tighter
+    "ACC_ObjRelSpd": RelSpd,
+    "ACC_ObjDist": vision_dist, # close lead makes controls tighter
     }
 
   if not stock_cam:
@@ -172,7 +173,7 @@ def create_acc_commands(packer, enabled, accel, upper_jerk, idx, lead_visible, s
     "JerkUpperLimit": upper_jerk, # stock usually is 1.0 but sometimes uses higher values
     "JerkLowerLimit": 5.0, # stock usually is 0.5 but sometimes uses higher values
     "ACCMode": 2 if enabled and long_override else 1 if enabled else 4, # stock will always be 4 instead of 0 after first disengage
-    "ObjGap": 2 if lead_visible else 0, # 5: >30, m, 4: 25-30 m, 3: 20-25 m, 2: < 20 m, 0: no lead
+    "ObjGap": objGap #2 if lead_visible else 0, # 5: >30, m, 4: 25-30 m, 3: 20-25 m, 2: < 20 m, 0: no lead
   }
   commands.append(packer.make_can_msg("SCC14", 0, scc14_values))
 
@@ -184,7 +185,7 @@ def create_acc_commands(packer, enabled, accel, upper_jerk, idx, lead_visible, s
       "CR_FCA_Alive": idx % 0xF,
       "PAINT1_Status": 1,
       "FCA_DrvSetStatus": 1,
-      "FCA_Status": 1,  # AEB disabled
+      "FCA_Status": 0,  # AEB disabled
     }
     fca11_dat = packer.make_can_msg("FCA11", 0, fca11_values)[2]
     fca11_values["CR_FCA_ChkSum"] = hyundai_checksum(fca11_dat[:7])
@@ -205,7 +206,7 @@ def create_acc_opt(packer, use_fca):
   if use_fca:
     fca12_values = {
       "FCA_DrvSetState": 2,
-      "FCA_USM": 1, # AEB disabled
+      "FCA_USM": 0, # AEB disabled
     }
     commands.append(packer.make_can_msg("FCA12", 0, fca12_values))
 
