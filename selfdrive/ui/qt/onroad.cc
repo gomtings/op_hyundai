@@ -288,6 +288,14 @@ AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* par
   ic_turn_signal_r = QPixmap("../assets/images/turn_signal_r.png");
   ic_satellite = QPixmap("../assets/images/satellite.png");
 
+  const int size = 150;
+  ic_ts_green[0] = QPixmap("../assets/images/ts/green_off.svg").scaled(size, size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+  ic_ts_green[1] = QPixmap("../assets/images/ts/green_on.svg").scaled(size, size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+  ic_ts_left[0] = QPixmap("../assets/images/ts/left_off.svg").scaled(size, size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+  ic_ts_left[1] = QPixmap("../assets/images/ts/left_on.svg").scaled(size, size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+  ic_ts_red[0] = QPixmap("../assets/images/ts/red_off.svg").scaled(size, size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+  ic_ts_red[1] = QPixmap("../assets/images/ts/red_on.svg").scaled(size, size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+
   // screen recoder - neokii
 
   record_timer = std::make_shared<QTimer>();
@@ -493,13 +501,15 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
 
   if (s->scene.world_objects_visible && !s->scene.show_driver_camera) {
     update_model(s, model, sm["uiPlan"].getUiPlan());
-    drawHud(p, model);
-
     // DMoji
     if (!hideBottomIcons && (sm.rcv_frame("driverStateV2") > s->scene.started_frame)) {
       update_dmonitoring(s, sm["driverStateV2"].getDriverStateV2(), dm_fade_state, false);
       drawDriverState(p, s);
     }
+  }
+
+  if(!s->scene.show_driver_camera) {
+    drawHud(p, model);
   }
 
   double cur_draw_t = millis_since_boot();
@@ -590,6 +600,7 @@ void AnnotatedCameraWidget::drawHud(QPainter &p, const cereal::ModelDataV2::Read
   //drawTurnSignals(p);
   drawGpsStatus(p);
   drawMisc(p);
+  drawTrafficSignal(p);
   drawDebugText(p);
 
   const auto controls_state = sm["controlsState"].getControlsState();
@@ -1377,3 +1388,40 @@ void AnnotatedCameraWidget::drawMisc(QPainter &p) {
 
   p.restore();
 }
+
+void AnnotatedCameraWidget::drawTrafficSignal(QPainter &p) {
+  UIState *s = uiState();
+  const SubMaster &sm = *(s->sm);
+  const auto ts = sm["naviData"].getNaviData().getTs();
+
+  if(ts.getDistance() > 0) {
+    p.save();
+
+    int ic_size = 150;
+    int ic_gap = 70;
+    int text_h_margin = 70;
+    int center_x = (width()-(UI_BORDER_SIZE*2))/2 + UI_BORDER_SIZE;
+    int y = 380;
+
+    // left
+    p.drawPixmap(center_x-ic_size/2 - ic_size - ic_gap, y, ic_size, ic_size, ts.getIsRedLightOn() ? ic_ts_red[1] : ic_ts_red[0]);
+    p.drawPixmap(center_x-ic_size/2, y, ic_size, ic_size, ts.getIsLeftLightOn() ? ic_ts_left[1] : ic_ts_left[0]);
+    p.drawPixmap(center_x-ic_size/2 + ic_size + ic_gap, y, ic_size, ic_size, ts.getIsGreenLightOn() ? ic_ts_green[1] : ic_ts_green[0]);
+
+    QColor color = QColor(255, 255, 255, 230);
+    p.setFont(InterFont(70, QFont::Bold));
+
+    if(ts.getRedLightRemainTime() > 0)
+      drawText(p, center_x - ic_size - ic_gap, y + ic_size + text_h_margin, QString::number(ts.getRedLightRemainTime()), 200);
+
+    if(ts.getLeftLightRemainTime() > 0)
+      drawText(p, center_x, y + ic_size + text_h_margin, QString::number(ts.getLeftLightRemainTime()), 200);
+
+    if(ts.getGreenLightRemainTime() > 0)
+      drawText(p, center_x + ic_size + ic_gap, y + ic_size + text_h_margin, QString::number(ts.getGreenLightRemainTime()), 200);
+
+    p.restore();
+  }
+}
+
+

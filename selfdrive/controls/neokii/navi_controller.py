@@ -29,6 +29,7 @@ class Port:
 class NaviServer:
   def __init__(self):
     self.json_road_limit = None
+    self.json_traffic_signal = None
     self.active = 0
     self.last_updated = 0
     self.last_updated_active = 0
@@ -43,7 +44,7 @@ class NaviServer:
     broadcast.daemon = True
     broadcast.start()
 
-    self.gps_sm = messaging.SubMaster(['gpsLocationExternal'], poll=['gpsLocationExternal'])
+    self.gps_sm = messaging.SubMaster(['gpsLocationExternal'], poll='gpsLocationExternal')
     self.gps_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     self.location = None
@@ -195,6 +196,9 @@ class NaviServer:
             self.json_road_limit = json_obj['road_limit']
             self.last_updated = time.monotonic()
 
+          if 'traffic_signal' in json_obj:
+            self.json_traffic_signal = json_obj['traffic_signal']
+
         finally:
           self.lock.release()
 
@@ -203,6 +207,7 @@ class NaviServer:
       try:
         self.lock.acquire()
         self.json_road_limit = None
+        self.json_traffic_signal = None
       finally:
         self.lock.release()
 
@@ -214,6 +219,7 @@ class NaviServer:
       try:
         self.lock.acquire()
         self.json_road_limit = None
+        self.json_traffic_signal = None
       finally:
         self.lock.release()
 
@@ -223,6 +229,9 @@ class NaviServer:
 
   def get_limit_val(self, key, default=None):
     return self.get_json_val(self.json_road_limit, key, default)
+
+  def get_ts_val(self, key, default=None):
+    return self.get_json_val(self.json_traffic_signal, key, default)
 
   def get_json_val(self, json, key, default=None):
 
@@ -267,6 +276,15 @@ def main():
         dat.naviData.camSpeedFactor = server.get_limit_val("cam_speed_factor", CAMERA_SPEED_FACTOR)
         dat.naviData.currentRoadName = server.get_limit_val("current_road_name", "")
         dat.naviData.isNda2 = server.get_limit_val("is_nda2", False)
+
+        ts = dat.naviData.ts
+        ts.isGreenLightOn = server.get_ts_val("isGreenLightOn", False)
+        ts.isLeftLightOn = server.get_ts_val("isLeftLightOn", False)
+        ts.isRedLightOn = server.get_ts_val("isRedLightOn", False)
+        ts.greenLightRemainTime = server.get_ts_val("greenLightRemainTime", 0)
+        ts.leftLightRemainTime = server.get_ts_val("leftLightRemainTime", 0)
+        ts.redLightRemainTime = server.get_ts_val("redLightRemainTime", 0)
+        ts.distance = server.get_ts_val("distance", 0)
 
         naviData.send(dat.to_bytes())
         server.send_sdp(sock)
