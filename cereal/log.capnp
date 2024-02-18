@@ -2399,4 +2399,15 @@ struct NaviData {
     camSpeedFactor @11 :Float32;
     currentRoadName @12 :Text;
     isNda2 @13 :Bool;
+    ts @14 :TrafficSignal;
+
+    struct TrafficSignal {
+      isGreenLightOn @0 :Bool;
+      isLeftLightOn @1 :Bool;
+      isRedLightOn @2 :Bool;
+      greenLightRemainTime @3 :Int16;
+      leftLightRemainTime @4 :Int16;
+      redLightRemainTime @5 :Int16;
+      distance @6 :Int16;
+  }
 }
