@@ -1398,7 +1398,7 @@ void AnnotatedCameraWidget::drawTrafficSignal(QPainter &p) {
     p.save();
 
     int ic_size = 150;
-    int ic_gap = 70;
+    int ic_gap = width() < 1080 ? 40 : 50;
     int text_h_margin = 70;
     int center_x = (width()-(UI_BORDER_SIZE*2))/2 + UI_BORDER_SIZE;
     int y = 380;
