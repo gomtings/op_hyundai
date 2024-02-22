@@ -288,7 +288,7 @@ AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* par
   ic_turn_signal_r = QPixmap("../assets/images/turn_signal_r.png");
   ic_satellite = QPixmap("../assets/images/satellite.png");
 
-  const int size = 150;
+  const int size = 100;
   ic_ts_green[0] = QPixmap("../assets/images/ts/green_off.svg").scaled(size, size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
   ic_ts_green[1] = QPixmap("../assets/images/ts/green_on.svg").scaled(size, size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
   ic_ts_left[0] = QPixmap("../assets/images/ts/left_off.svg").scaled(size, size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
@@ -599,8 +599,10 @@ void AnnotatedCameraWidget::drawHud(QPainter &p, const cereal::ModelDataV2::Read
   drawDeviceState(p);
   //drawTurnSignals(p);
   drawGpsStatus(p);
-  drawMisc(p);
-  drawTrafficSignal(p);
+
+  if(!drawTrafficSignal(p))
+    drawMisc(p);
+
   drawDebugText(p);
 
   const auto controls_state = sm["controlsState"].getControlsState();
@@ -1389,39 +1391,61 @@ void AnnotatedCameraWidget::drawMisc(QPainter &p) {
   p.restore();
 }
 
-void AnnotatedCameraWidget::drawTrafficSignal(QPainter &p) {
+bool AnnotatedCameraWidget::drawTrafficSignal(QPainter &p) {
   UIState *s = uiState();
   const SubMaster &sm = *(s->sm);
   const auto ts = sm["naviData"].getNaviData().getTs();
 
-  if(ts.getDistance() > 0) {
+  if(ts.getDistance() > 0)
+  {
     p.save();
 
-    int ic_size = 150;
-    int ic_gap = width() < 1080 ? 40 : 50;
-    int text_h_margin = 70;
-    int center_x = (width()-(UI_BORDER_SIZE*2))/2 + UI_BORDER_SIZE;
-    int y = 380;
+    bool narrow = width() < 1080;
 
-    // left
+    int ic_size = narrow ? 110 : 130;
+    int ic_gap = narrow ? 20 : 30;
+    int text_h_margin = 80;
+    int center_x = narrow ? ((width()-(UI_BORDER_SIZE*2))/2 + UI_BORDER_SIZE) : ((width()-(UI_BORDER_SIZE*2))/4 + UI_BORDER_SIZE + 40);
+    int y = narrow ? 380 : 100;
+    int text_size = narrow ? 60 : 70;
+
+    // border
+    int border_margin = 10;
+    int border_x = center_x - ic_gap - ic_size - ic_size/2 - border_margin;
+    QRect border_rect(border_x, y - border_margin, ic_gap*2 + ic_size*3 + border_margin*2,
+                      ic_size + border_margin*2);
+    p.setRenderHint(QPainter::Antialiasing, true);
+    QColor backgroundColor(0x00, 0x00, 0x00, 0xCC);
+    p.setBrush(QBrush(backgroundColor));
+    p.setPen(Qt::NoPen);
+    p.drawRoundedRect(border_rect, ic_size/2 + border_margin, ic_size/2 + border_margin);
+
+    // signal
     p.drawPixmap(center_x-ic_size/2 - ic_size - ic_gap, y, ic_size, ic_size, ts.getIsRedLightOn() ? ic_ts_red[1] : ic_ts_red[0]);
     p.drawPixmap(center_x-ic_size/2, y, ic_size, ic_size, ts.getIsLeftLightOn() ? ic_ts_left[1] : ic_ts_left[0]);
     p.drawPixmap(center_x-ic_size/2 + ic_size + ic_gap, y, ic_size, ic_size, ts.getIsGreenLightOn() ? ic_ts_green[1] : ic_ts_green[0]);
 
-    QColor color = QColor(255, 255, 255, 230);
-    p.setFont(InterFont(70, QFont::Bold));
+    p.setFont(InterFont(text_size, QFont::Bold));
 
-    if(ts.getRedLightRemainTime() > 0)
-      drawText(p, center_x - ic_size - ic_gap, y + ic_size + text_h_margin, QString::number(ts.getRedLightRemainTime()), 200);
+    if(ts.getRedLightRemainTime() > 0) {
+      QColor color = QColor(252, 45, 50, 230);
+      drawTextWithColor(p, center_x - ic_size - ic_gap, y + ic_size + text_h_margin, QString::number(ts.getRedLightRemainTime()), color);
+    }
 
-    if(ts.getLeftLightRemainTime() > 0)
-      drawText(p, center_x, y + ic_size + text_h_margin, QString::number(ts.getLeftLightRemainTime()), 200);
+    if(ts.getLeftLightRemainTime() > 0) {
+      QColor color = QColor(34, 195, 53, 230);
+      drawTextWithColor(p, center_x, y + ic_size + text_h_margin, QString::number(ts.getLeftLightRemainTime()), color);
+    }
 
-    if(ts.getGreenLightRemainTime() > 0)
-      drawText(p, center_x + ic_size + ic_gap, y + ic_size + text_h_margin, QString::number(ts.getGreenLightRemainTime()), 200);
+    if(ts.getGreenLightRemainTime() > 0) {
+      QColor color = QColor(34, 195, 53, 230);
+      drawTextWithColor(p, center_x + ic_size + ic_gap, y + ic_size + text_h_margin, QString::number(ts.getGreenLightRemainTime()), color);
+    }
 
     p.restore();
+    return true;
   }
+  return false;
 }
 
 
