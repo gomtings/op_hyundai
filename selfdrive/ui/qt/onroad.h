@@ -142,7 +142,7 @@ protected:
   void drawDebugText(QPainter &p);
   void drawDriverState(QPainter &painter, const UIState *s);
   void drawMisc(QPainter &p);
-  void drawTrafficSignal(QPainter &p);
+  bool drawTrafficSignal(QPainter &p);
   void drawHud(QPainter &p, const cereal::ModelDataV2::Reader &model);
 
   // neokii
