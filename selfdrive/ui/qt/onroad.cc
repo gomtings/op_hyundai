@@ -288,7 +288,7 @@ AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* par
   ic_turn_signal_r = QPixmap("../assets/images/turn_signal_r.png");
   ic_satellite = QPixmap("../assets/images/satellite.png");
 
-  const int size = 100;
+  const int size = 150;
   ic_ts_green[0] = QPixmap("../assets/images/ts/green_off.svg").scaled(size, size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
   ic_ts_green[1] = QPixmap("../assets/images/ts/green_on.svg").scaled(size, size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
   ic_ts_left[0] = QPixmap("../assets/images/ts/left_off.svg").scaled(size, size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
@@ -555,6 +555,21 @@ void AnnotatedCameraWidget::drawTextWithColor(QPainter &p, int x, int y, const Q
 
   p.setPen(color);
   p.drawText(real_rect.x(), real_rect.bottom(), text);
+}
+
+void AnnotatedCameraWidget::drawRoundedText(QPainter &p, int x, int y, const QString &text, QColor& color, QColor& bgColor, int cornerRadius) {
+  QFontMetrics fm(p.font());
+  QRect init_rect = fm.boundingRect(text);
+  QRect real_rect = fm.boundingRect(init_rect, 0, text);
+  real_rect.moveCenter({x, y - real_rect.height() / 2});
+  real_rect.adjust(-10, 0, 10, 0);
+
+  p.setBrush(QBrush(bgColor));
+  p.setPen(Qt::NoPen);
+  p.drawRoundedRect(real_rect, cornerRadius, cornerRadius);
+
+  p.setPen(color);
+  p.drawText(real_rect, Qt::AlignCenter, text);
 }
 
 void AnnotatedCameraWidget::drawText2(QPainter &p, int x, int y, int flags, const QString &text, const QColor& color) {
@@ -1004,11 +1019,10 @@ void AnnotatedCameraWidget::drawDeviceState(QPainter &p) {
   const auto freeSpacePercent = deviceState.getFreeSpacePercent();
 
   const auto cpuTempC = deviceState.getCpuTempC();
-  //const auto gpuTempC = deviceState.getGpuTempC();
-  float ambientTemp = deviceState.getAmbientTempC();
+  const auto gpuTempC = deviceState.getGpuTempC();
 
   float cpuTemp = 0.f;
-  //float gpuTemp = 0.f;
+  float gpuTemp = 0.f;
 
   if(std::size(cpuTempC) > 0) {
     for(int i = 0; i < std::size(cpuTempC); i++) {
@@ -1017,13 +1031,13 @@ void AnnotatedCameraWidget::drawDeviceState(QPainter &p) {
     cpuTemp = cpuTemp / (float)std::size(cpuTempC);
   }
 
-  /*if(std::size(gpuTempC) > 0) {
+  if(std::size(gpuTempC) > 0) {
     for(int i = 0; i < std::size(gpuTempC); i++) {
       gpuTemp += gpuTempC[i];
     }
     gpuTemp = gpuTemp / (float)std::size(gpuTempC);
     cpuTemp = (cpuTemp + gpuTemp) / 2.f;
-  }*/
+  }
 
   int w = 192;
   int x = width() - (30 + w) + 8;
@@ -1064,10 +1078,10 @@ void AnnotatedCameraWidget::drawDeviceState(QPainter &p) {
 
   y += 80;
   p.setFont(InterFont(50, QFont::Bold));
-  str.sprintf("%.0f°C", ambientTemp);
+  str.sprintf("%.0f°C", gpuTemp);
   rect = QRect(x, y, w, w);
-  r = interp<float>(ambientTemp, {35.f, 60.f}, {200.f, 255.f}, false);
-  g = interp<float>(ambientTemp, {35.f, 60.f}, {255.f, 200.f}, false);
+  r = interp<float>(gpuTemp, {35.f, 60.f}, {200.f, 255.f}, false);
+  g = interp<float>(gpuTemp, {35.f, 60.f}, {255.f, 200.f}, false);
   p.setPen(QColor(r, g, 200, 200));
   p.drawText(rect, Qt::AlignCenter, str);
 
@@ -1075,7 +1089,7 @@ void AnnotatedCameraWidget::drawDeviceState(QPainter &p) {
   p.setFont(InterFont(25, QFont::Bold));
   rect = QRect(x, y, w, w);
   p.setPen(QColor(255, 255, 255, 200));
-  p.drawText(rect, Qt::AlignCenter, "AMBIENT");
+  p.drawText(rect, Qt::AlignCenter, "GPU");
 
   p.restore();
 }
@@ -1396,8 +1410,7 @@ bool AnnotatedCameraWidget::drawTrafficSignal(QPainter &p) {
   const SubMaster &sm = *(s->sm);
   const auto ts = sm["naviData"].getNaviData().getTs();
 
-  if(ts.getDistance() > 0)
-  {
+  if(ts.getDistance() > 0) {
     p.save();
 
     bool narrow = width() < 1080;
@@ -1429,17 +1442,20 @@ bool AnnotatedCameraWidget::drawTrafficSignal(QPainter &p) {
 
     if(ts.getRedLightRemainTime() > 0) {
       QColor color = QColor(252, 45, 50, 230);
-      drawTextWithColor(p, center_x - ic_size - ic_gap, y + ic_size + text_h_margin, QString::number(ts.getRedLightRemainTime()), color);
+      drawRoundedText(p, center_x - ic_size - ic_gap, y + ic_size + text_h_margin + 20, QString::number(ts.getRedLightRemainTime()),
+          color, backgroundColor, 20);
     }
 
     if(ts.getLeftLightRemainTime() > 0) {
       QColor color = QColor(34, 195, 53, 230);
-      drawTextWithColor(p, center_x, y + ic_size + text_h_margin, QString::number(ts.getLeftLightRemainTime()), color);
+      drawRoundedText(p, center_x, y + ic_size + text_h_margin + 20, QString::number(ts.getLeftLightRemainTime()),
+          color, backgroundColor, 20);
     }
 
     if(ts.getGreenLightRemainTime() > 0) {
       QColor color = QColor(34, 195, 53, 230);
-      drawTextWithColor(p, center_x + ic_size + ic_gap, y + ic_size + text_h_margin, QString::number(ts.getGreenLightRemainTime()), color);
+      drawRoundedText(p, center_x + ic_size + ic_gap, y + ic_size + text_h_margin + 20, QString::number(ts.getGreenLightRemainTime()),
+          color, backgroundColor, 20);
     }
 
     p.restore();

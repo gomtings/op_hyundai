@@ -106,6 +106,7 @@ protected:
   void drawText(QPainter &p, int x, int y, const QString &text, int alpha = 255);
   void drawText2(QPainter &p, int x, int y, int flags, const QString &text, const QColor& color);
   void drawTextWithColor(QPainter &p, int x, int y, const QString &text, QColor& color);
+  void drawRoundedText(QPainter &p, int x, int y, const QString &text, QColor& color, QColor& bgColor, int cornerRadius);
   void paintEvent(QPaintEvent *event) override;
 
   const int radius = 192;
