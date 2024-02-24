@@ -179,7 +179,7 @@ static void hyundai_canfd_rx_hook(const CANPacket_t *to_push) {
         cruise_button = (GET_BYTE(to_push, 4) >> 4) & 0x7U;
         main_button = GET_BIT(to_push, 34U);
       }
-      hyundai_common_cruise_buttons_check(cruise_button, main_button); // 롱컨?
+      hyundai_common_cruise_buttons_check(cruise_button, main_button);
     }
 
     // gas press, different for EV, hybrid, and ICE models
@@ -213,7 +213,7 @@ static void hyundai_canfd_rx_hook(const CANPacket_t *to_push) {
       // 1=enabled, 2=driver override
       int cruise_status = ((GET_BYTE(to_push, 8) >> 4) & 0x7U);
       bool cruise_engaged = (cruise_status == 1) || (cruise_status == 2);
-      hyundai_common_cruise_state_check(cruise_engaged); // 롱컨이 아닐떄.
+      hyundai_common_cruise_state_check(cruise_engaged);
     }
   }
 

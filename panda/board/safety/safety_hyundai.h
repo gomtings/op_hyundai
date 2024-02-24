@@ -188,7 +188,7 @@ static void hyundai_rx_hook(const CANPacket_t *to_push) {
   if (addr == 0x420) { //  MainMode_ACC
     // 1 bits: 0
     int cruise_available = GET_BIT(to_push, 0U);
-    hyundai_common_cruise_state_check(cruise_available); // 롱컨이 아님?
+    hyundai_common_cruise_state_check(cruise_available);
   }
 
   if (bus == 0) {
@@ -201,7 +201,7 @@ static void hyundai_rx_hook(const CANPacket_t *to_push) {
     if (addr == 0x4F1) {
       int cruise_button = GET_BYTE(to_push, 0) & 0x7U;
       bool main_button = GET_BIT(to_push, 3U);
-      hyundai_common_cruise_buttons_check(cruise_button, main_button); //  롱컨일때..?
+      hyundai_common_cruise_buttons_check(cruise_button, main_button);
     }
 
     // gas press, different for EV, hybrid, and ICE models
