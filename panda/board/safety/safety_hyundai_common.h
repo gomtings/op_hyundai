@@ -74,7 +74,8 @@ void hyundai_common_cruise_buttons_check(const int cruise_button, const bool mai
     // enter controls on falling edge of resume or set
     bool set = (cruise_button != HYUNDAI_BTN_SET) && (cruise_button_prev == HYUNDAI_BTN_SET);
     bool res = (cruise_button != HYUNDAI_BTN_RESUME) && (cruise_button_prev == HYUNDAI_BTN_RESUME);
-    if (set || res) {
+    bool m_chk = (main_button == HYUNDAI_BTN_RESUME);
+    if (set || res || m_chk) {
       controls_allowed = true;
     }
 
