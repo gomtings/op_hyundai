@@ -22,6 +22,7 @@
 #include "selfdrive/ui/ui.h"
 #include "selfdrive/ui/qt/util.h"
 #include "selfdrive/ui/qt/qt_window.h"
+#include "selfdrive/ui/qt/ntune/ntunepannel.h"
 
 #include <QComboBox>
 #include <QAbstractItemView>
@@ -422,6 +423,7 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
     {tr("Toggles"), toggles},
     {tr("Software"), new SoftwarePanel(this)},
     {tr("Community"), new CommunityPanel(this)},
+    {"nTune", new nTuneMainWidget(this)},
   };
 
   nav_btns = new QButtonGroup(this);
