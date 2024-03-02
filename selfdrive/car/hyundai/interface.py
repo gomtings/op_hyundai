@@ -26,8 +26,8 @@ class CarInterface(CarInterfaceBase):
   @staticmethod
   def get_pid_accel_limits(CP, current_speed, cruise_speed):
     v_current_kph = current_speed * CV.MS_TO_KPH
-    gas_max_bp = [10., 20., 50., 70., 130., 150.]
-    gas_max_v = [ACCEL_MAX, 1.5, 1.0, 0.6, 0.2, 0.1]
+    gas_max_bp = [5., 10., 30., 70., 130., 150.]
+    gas_max_v = [2.0, 1.3, 0.6, 0.3, 0.15, 0.1]
     return ACCEL_MIN, interp(v_current_kph, gas_max_bp, gas_max_v)
 
   @staticmethod
@@ -85,7 +85,7 @@ class CarInterface(CarInterfaceBase):
       if 0x38d in fingerprint[0] or 0x38d in fingerprint[2]:
         ret.flags |= HyundaiFlags.USE_FCA.value
 
-    ret.steerActuatorDelay = 0.1  # Default delay
+    ret.steerActuatorDelay = 0.2  # Default delay
     ret.steerLimitTimer = 0.4
     CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
 
@@ -287,23 +287,20 @@ class CarInterface(CarInterfaceBase):
       ret.longitudinalTuning.kiV = [0.0]
       ret.experimentalLongitudinalAvailable = candidate not in (CANFD_UNSUPPORTED_LONGITUDINAL_CAR | CANFD_RADAR_SCC_CAR)
     else:
-      ret.longitudinalTuning.kpBP = [0., 5. * CV.KPH_TO_MS, 10. * CV.KPH_TO_MS, 30. * CV.KPH_TO_MS, 130. * CV.KPH_TO_MS]
-      ret.longitudinalTuning.kpV = [1.2, 1.0, 0.95, 0.8, 0.25]
-      ret.longitudinalTuning.kiBP = [0., 130. * CV.KPH_TO_MS]
-      ret.longitudinalTuning.kiV = [0.1, 0.05]
-      ret.stoppingDecelRate = 0.2
-
-      ret.steerActuatorDelay = 0.1
-      ret.steerLimitTimer = 2.0
-
+      ret.longitudinalTuning.kpV = [0.5]
+      ret.longitudinalTuning.kiV = [0.0]
       ret.experimentalLongitudinalAvailable = True #candidate not in (LEGACY_SAFETY_MODE_CAR)
 
     ret.openpilotLongitudinalControl = experimental_long and ret.experimentalLongitudinalAvailable
     ret.pcmCruise = not ret.openpilotLongitudinalControl
 
     ret.stoppingControl = True
-    ret.startingState = True
-    ret.vEgoStarting = 0.2
+    ret.startingState = False
+    ret.stoppingDecelRate = 0.3
+    ret.steerActuatorDelay = 0.2
+    ret.steerLimitTimer = 2.0
+
+    ret.vEgoStarting = 0.1
     ret.vEgoStopping = 0.2
     ret.startAccel = 1.0
     ret.longitudinalActuatorDelayLowerBound = 0.5

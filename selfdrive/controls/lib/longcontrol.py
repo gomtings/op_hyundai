@@ -3,7 +3,7 @@ from openpilot.common.numpy_fast import clip, interp
 from openpilot.common.realtime import DT_CTRL
 from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N, apply_deadzone
 from openpilot.selfdrive.controls.lib.pid import PIDController
-from openpilot.selfdrive.controls.ntune import ntune_common_get
+from openpilot.selfdrive.controls.ntune import ntune_scc_get
 from openpilot.selfdrive.modeld.constants import ModelConstants
 
 LongCtrlState = car.CarControl.Actuators.LongControlState
@@ -66,7 +66,7 @@ class LongControl:
     self.pid.reset()
     self.v_pid = v_pid
 
-  def update(self, active, CS, long_plan, accel_limits, t_since_plan):
+  def update(self, active, CS, long_plan, accel_limits, t_since_plan, is_blend):
     """Update longitudinal control. This updates the state machine and runs a PID loop"""
     # Interp control trajectory
     speeds = long_plan.speeds
@@ -81,7 +81,7 @@ class LongControl:
       a_target_upper = 2 * (v_target_upper - v_target_now) / self.CP.longitudinalActuatorDelayUpperBound - a_target_now
 
       v_target = min(v_target_lower, v_target_upper)
-      a_target = min(a_target_lower, a_target_upper) * ntune_common_get('longLeadSensitivity')
+      a_target = min(a_target_lower, a_target_upper) * ntune_scc_get('longLeadSensitivity')
 
       v_target_1sec = interp(self.CP.longitudinalActuatorDelayUpperBound + t_since_plan + 1.0, ModelConstants.T_IDXS[:CONTROL_N], speeds)
     else:
@@ -105,15 +105,23 @@ class LongControl:
     elif self.long_control_state == LongCtrlState.stopping:
       if output_accel > self.CP.stopAccel:
         output_accel = min(output_accel, 0.0)
-        output_accel -= interp(output_accel, [-1.5, -0.5], [self.CP.stoppingDecelRate / 2., self.CP.stoppingDecelRate]) * DT_CTRL
+        output_accel -= interp(output_accel, [-1.0, 0.], [self.CP.stoppingDecelRate / 2., self.CP.stoppingDecelRate]) * DT_CTRL
       self.reset(CS.vEgo)
 
     elif self.long_control_state == LongCtrlState.starting:
-      output_accel = self.CP.startAccel
+      output_accel = self.CP.startAccel if CS.vEgo < 0.01 else 0.
       self.reset(CS.vEgo)
 
     elif self.long_control_state == LongCtrlState.pid:
-      self.v_pid = v_target_now
+      if v_target_1sec > v_target:
+        long_starting_factor = ntune_scc_get('longStartingFactor')
+        if is_blend:
+          long_starting_factor = (long_starting_factor - 1.) * 0.5 + 1.
+        starting_factor = interp(v_target_now, [1.5, 4.], [long_starting_factor, 1.0])
+        self.v_pid = v_target_now * starting_factor
+        a_target *= starting_factor
+      else:
+        self.v_pid = v_target_now
 
       # Toyota starts braking more when it thinks you want to stop
       # Freeze the integrator so we don't accelerate to compensate, and don't allow positive acceleration
