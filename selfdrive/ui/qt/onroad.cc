@@ -1177,7 +1177,7 @@ void AnnotatedCameraWidget::drawTurnSignals(QPainter &p) {
 void AnnotatedCameraWidget::drawGpsStatus(QPainter &p) {
   const SubMaster &sm = *(uiState()->sm);
   auto gps = sm["gpsLocationExternal"].getGpsLocationExternal();
-  float accuracy = gps.getAccuracy();
+  float accuracy = gps.getHorizontalAccuracy();
   if(accuracy < 0.01f || accuracy > 20.f)
     return;
 

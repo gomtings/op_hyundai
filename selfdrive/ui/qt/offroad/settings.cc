@@ -515,9 +515,14 @@ CommunityPanel::CommunityPanel(SettingsWindow *parent) : ListWidget(parent) {
 
   connect(changeCar, &ButtonControl::clicked, [=]() {
     QStringList items = get_list("/data/params/d/SupportedCars");
-    QString selection = MultiOptionDialog::getSelection(tr("Select a car"), items, selected_car, this);
+    items.insert(0, "[Not Selected]");
+    QString selection = MultiOptionDialog::getSelection(tr("Select your car"), items, selected_car, this);
     if (!selection.isEmpty()) {
-      Params().put("SelectedCar", selection.toStdString());
+      if(selection == "[Not Selected]")
+        Params().put("SelectedCar", "");
+      else
+        Params().put("SelectedCar", selection.toStdString());
+
       qApp->exit(18);
       watchdog_kick(0);
     }
