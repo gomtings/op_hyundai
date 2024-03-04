@@ -25,8 +25,8 @@ class CarInterface(CarInterfaceBase):
   @staticmethod
   def get_pid_accel_limits(CP, current_speed, cruise_speed):
     v_current_kph = current_speed * CV.MS_TO_KPH
-    gas_max_bp = [5., 10., 30., 70., 130., 150.]
-    gas_max_v = [2.0, 1.3, 0.6, 0.3, 0.15, 0.1]
+    gas_max_bp = [7., 15., 30., 70., 130., 150.]
+    gas_max_v = [2.0, 1.3, 0.8, 0.4, 0.15, 0.1]
     return ACCEL_MIN, interp(v_current_kph, gas_max_bp, gas_max_v)
 
   @staticmethod
@@ -90,11 +90,13 @@ class CarInterface(CarInterfaceBase):
 
     # *** longitudinal control ***
     if candidate in CANFD_CAR:
-      ret.longitudinalTuning.kpV = [0.1]
+      ret.longitudinalTuning.kpBP = [0., 10.]
+      ret.longitudinalTuning.kpV = [0.5, 0.2]
       ret.longitudinalTuning.kiV = [0.0]
       ret.experimentalLongitudinalAvailable = candidate not in (CANFD_UNSUPPORTED_LONGITUDINAL_CAR | CANFD_RADAR_SCC_CAR)
     else:
-      ret.longitudinalTuning.kpV = [0.5]
+      ret.longitudinalTuning.kpBP = [0., 10.]
+      ret.longitudinalTuning.kpV = [1.0, 0.5]
       ret.longitudinalTuning.kiV = [0.0]
       ret.experimentalLongitudinalAvailable = True #candidate not in (LEGACY_SAFETY_MODE_CAR)
 
@@ -108,10 +110,11 @@ class CarInterface(CarInterfaceBase):
     ret.steerLimitTimer = 2.0
 
     ret.vEgoStarting = 0.1
-    ret.vEgoStopping = 0.2
+    ret.vEgoStopping = 0.1
     ret.startAccel = 1.0
     ret.longitudinalActuatorDelayLowerBound = 0.5
     ret.longitudinalActuatorDelayUpperBound = 0.5
+    ret.radarTimeStep = 0.02  # 50hz
 
     # *** feature detection ***
     if candidate in CANFD_CAR:
@@ -157,7 +160,6 @@ class CarInterface(CarInterfaceBase):
         ret.openpilotLongitudinalControl = True
         ret.radarUnavailable = False
         ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.hyundaiLegacy)]
-        ret.radarTimeStep = 0.02  # 50hz
 
     if ret.openpilotLongitudinalControl and ret.sccBus == 0 and not Params().get_bool('CruiseStateControl'):
       ret.pcmCruise = False
