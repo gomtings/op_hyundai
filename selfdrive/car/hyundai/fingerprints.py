@@ -1793,4 +1793,8 @@ FW_VERSIONS = {
       b'\xf1\x00US4_ RDR -----      1.00 1.00 99110-CG000         ',
     ],
   },
+  CAR.GENESIS_GV80_MR_MOON: {
+    (Ecu.fwdCamera, 0x7c4, None): [],
+    (Ecu.fwdRadar, 0x7d0, None): [],
+  },
 }
