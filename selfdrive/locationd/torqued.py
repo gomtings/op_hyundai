@@ -169,8 +169,10 @@ class TorqueEstimator(ParameterEstimator):
     self.lag = ntune_common_get('steerActuatorDelay')+.2
     if which == "carControl":
       self.raw_points["carControl_t"].append(t + self.lag)
-      self.raw_points["steer_torque"].append(-msg.actuatorsOutput.steer)
       self.raw_points["active"].append(msg.latActive)
+    elif which == "carOutput":
+      self.raw_points["carOutput_t"].append(t + self.lag)
+      self.raw_points["steer_torque"].append(-msg.actuatorsOutput.steer)
     elif which == "carState":
       self.raw_points["carState_t"].append(t + self.lag)
       self.raw_points["vego"].append(msg.vEgo)
@@ -182,7 +184,7 @@ class TorqueEstimator(ParameterEstimator):
         active = np.interp(np.arange(t - MIN_ENGAGE_BUFFER, t, DT_MDL), self.raw_points['carControl_t'], self.raw_points['active']).astype(bool)
         steer_override = np.interp(np.arange(t - MIN_ENGAGE_BUFFER, t, DT_MDL), self.raw_points['carState_t'], self.raw_points['steer_override']).astype(bool)
         vego = np.interp(t, self.raw_points['carState_t'], self.raw_points['vego'])
-        steer = np.interp(t, self.raw_points['carControl_t'], self.raw_points['steer_torque'])
+        steer = np.interp(t, self.raw_points['carOutput_t'], self.raw_points['steer_torque'])
         lateral_acc = (vego * yaw_rate) - (np.sin(roll) * ACCELERATION_DUE_TO_GRAVITY)
         if all(active) and (not any(steer_override)) and (vego > MIN_VEL) and (abs(steer) > STEER_MIN_THRESHOLD) and (abs(lateral_acc) <= LAT_ACC_THRESHOLD):
           self.filtered_points.add_point(float(steer), float(lateral_acc))
@@ -242,7 +244,7 @@ def main(demo=False):
   config_realtime_process([0, 1, 2, 3], 5)
 
   pm = messaging.PubMaster(['liveTorqueParameters'])
-  sm = messaging.SubMaster(['carControl', 'carState', 'liveLocationKalman'], poll='liveLocationKalman')
+  sm = messaging.SubMaster(['carControl', 'carOutput', 'carState', 'liveLocationKalman'], poll='liveLocationKalman')
 
   params = Params()
   with car.CarParams.from_bytes(params.get("CarParams", block=True)) as CP:

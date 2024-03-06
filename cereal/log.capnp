@@ -2257,6 +2257,7 @@ struct Event {
     liveCalibration @19 :LiveCalibrationData;
     carState @22 :Car.CarState;
     carControl @23 :Car.CarControl;
+    carOutput @127 :Car.CarOutput;
     longitudinalPlan @24 :LongitudinalPlan;
     uiPlan @106 :UiPlan;
     ubloxGnss @34 :UbloxGnss;
@@ -2341,7 +2342,7 @@ struct Event {
     customReserved9 @116 :Custom.CustomReserved9;
     
     # neokii
-    naviData @127 :NaviData;
+    naviData @128 :NaviData;
 
     # *********** legacy + deprecated ***********
     model @9 :Legacy.ModelData; # TODO: rename modelV2 and mark this as deprecated
