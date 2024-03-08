@@ -24,7 +24,7 @@ nTuneMainWidget::nTuneMainWidget(QWidget *parent)
         TuneItemInfo("scc_v2.json", "longStartingFactor", tr("Acceleration at start, increasing this value will make the acceleration faster."),
                      1.4f, 0.7f, 1.7f, 0.05f, 2),
         TuneItemInfo("scc_v2.json", "longLeadSensitivity", tr("Sensitivity lead, the higher it is, the more sensitive the response to the lead."),
-                     0.85f, 0.5f, 1.3f, 0.05f, 2),
+                     0.9f, 0.5f, 1.3f, 0.05f, 2),
     },
     {
         TuneItemInfo("lat_torque_v4.json", "latAccelFactor", "", 2.5f, 0.5f, 4.5f, 0.1f, 2),
