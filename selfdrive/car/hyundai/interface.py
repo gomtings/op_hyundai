@@ -96,7 +96,7 @@ class CarInterface(CarInterfaceBase):
       ret.experimentalLongitudinalAvailable = candidate not in CANFD_UNSUPPORTED_LONGITUDINAL_CAR
     else:
       ret.longitudinalTuning.kpBP = [0., 10.]
-      ret.longitudinalTuning.kpV = [1.0, 0.5]
+      ret.longitudinalTuning.kpV = [1.2, 0.6]
       ret.longitudinalTuning.kiV = [0.0]
       ret.experimentalLongitudinalAvailable = True #candidate not in (LEGACY_SAFETY_MODE_CAR)
 
