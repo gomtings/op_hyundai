@@ -10,6 +10,9 @@
 #include "common/swaglog.h"
 #include "selfdrive/ui/qt/maps/map_helpers.h"
 
+#include "selfdrive/controls/neokii/navi_gps_manager.h"
+NaviGpsManager navi_gps_manager;
+
 const float DEFAULT_ZOOM = 13.5; // Don't go below 13 or features will start to disappear
 const int HEIGHT = 256, WIDTH = 256;
 const int NUM_VIPC_BUFFERS = 4;
@@ -153,6 +156,11 @@ void MapRenderer::updatePosition(QMapLibre::Coordinate position, float bearing) 
   // Choose a scale that ensures above 13 zoom level up to and above 75deg of lat
   float meters_per_pixel = 2;
   float zoom = get_zoom_level_for_scale(position.first, meters_per_pixel);
+
+  if(navi_gps_manager.check()) {
+    float speed;
+    navi_gps_manager.update(position, bearing, speed);
+  }
 
   m_map->setCoordinate(position);
   m_map->setBearing(bearing);

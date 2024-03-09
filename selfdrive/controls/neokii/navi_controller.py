@@ -3,7 +3,9 @@ import json
 import os
 
 import select
+import signal
 import subprocess
+import sys
 import threading
 import time
 import socket
@@ -43,6 +45,13 @@ class NaviServer:
     broadcast = Thread(target=self.broadcast_thread, args=[])
     broadcast.daemon = True
     broadcast.start()
+
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    subprocess.Popen(["./ngpsd"])
+
+    speed = Thread(target=self.speed_thread, args=[])
+    speed.daemon = True
+    speed.start()
 
     self.gps_sm = messaging.SubMaster(['gpsLocationExternal'], poll='gpsLocationExternal')
     self.gps_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -133,6 +142,16 @@ class NaviServer:
 
       except:
         pass
+
+  def speed_thread(self):
+    sm = messaging.SubMaster(['carState'], poll='carState')
+    while True:
+      sm.update(100)
+      if sm.updated['carState']:
+        v_ego = sm['carState'].vEgo
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+          data_in_bytes = struct.pack('!f', v_ego)
+          sock.sendto(data_in_bytes, ('127.0.0.1', 2847))
 
   def send_sdp(self, sock):
     try:
@@ -247,8 +266,28 @@ class NaviServer:
 
     return default
 
+def navi_gps_thread():
+  naviGps = messaging.pub_sock('naviGps')
+  with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+    sock.bind(('0.0.0.0', 2931))
+    while True:
+      try:
+        data, address = sock.recvfrom(16)
+        floats = struct.unpack('ffff', data)
+        dat = messaging.new_message('naviGps', valid=True)
+        dat.naviGps.latitude = floats[0]
+        dat.naviGps.longitude = floats[1]
+        dat.naviGps.heading = floats[2]
+        dat.naviGps.speed = floats[3]
+        naviGps.send(dat.to_bytes())
+      except:
+        pass
 
 def main():
+  navi_gps = Thread(target=navi_gps_thread, args=[])
+  navi_gps.daemon = True
+  navi_gps.start()
+
   server = NaviServer()
   naviData = messaging.pub_sock('naviData')
 
@@ -461,6 +500,10 @@ class SpeedLimiter:
     self.slowing_down = False
     return 0, 0, 0, False, log
 
+def signal_handler(sig, frame):
+  print('Ctrl+C pressed, exiting.')
+  sys.exit(0)
 
 if __name__ == "__main__":
+  signal.signal(signal.SIGINT, signal_handler)
   main()
