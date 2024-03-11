@@ -285,7 +285,7 @@ void MapWindow::initializeGL() {
   QObject::connect(m_map.data(), &QMapLibre::Map::mapChanged, [=](QMapLibre::Map::MapChange change) {
     // set global animation duration to 0 ms so visibility changes are instant
     if (change == QMapLibre::Map::MapChange::MapChangeDidFinishLoadingStyle) {
-      m_map->setTransitionOptions(200, 0);
+      m_map->setTransitionOptions(0, 0);
     }
     if (change == QMapLibre::Map::MapChange::MapChangeDidFinishLoadingMap) {
       loaded_once = true;
