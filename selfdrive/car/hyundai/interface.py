@@ -112,8 +112,8 @@ class CarInterface(CarInterfaceBase):
     ret.vEgoStarting = 0.1
     ret.vEgoStopping = 0.1
     ret.startAccel = 1.0
-    ret.longitudinalActuatorDelayLowerBound = 0.5
-    ret.longitudinalActuatorDelayUpperBound = 0.5
+    #ret.longitudinalActuatorDelayLowerBound = 0.5
+    #ret.longitudinalActuatorDelayUpperBound = 0.5
     ret.radarTimeStep = 0.02  # 50hz
 
     # *** feature detection ***
