@@ -46,8 +46,7 @@ class NaviServer:
     broadcast.daemon = True
     broadcast.start()
 
-    os.chdir(os.path.dirname(os.path.abspath(__file__)))
-    subprocess.Popen(["./ngpsd"])
+    subprocess.Popen([os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ngpsd')])
 
     speed = Thread(target=self.speed_thread, args=[])
     speed.daemon = True
