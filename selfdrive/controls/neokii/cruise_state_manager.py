@@ -177,11 +177,14 @@ class CruiseStateManager:
           v_cruise_kph = clip(round(self.speed * CV.MS_TO_KPH, 1), V_CRUISE_ENABLE_MIN, V_CRUISE_MAX)
           v_cruise_kph = clip(v_cruise_kph, round(CS.vEgoCluster * CV.MS_TO_KPH, 1), V_CRUISE_MAX)
 
-    if btn == ButtonType.gapAdjustCruise and not self.btn_long_pressed:
-      self.gapAdjust -= 1
-      if self.gapAdjust < 1:
-        self.gapAdjust = 4
-      self.params.put_nonblocking("SccGapAdjust", str(self.gapAdjust))
+    if btn == ButtonType.gapAdjustCruise:
+      if not self.btn_long_pressed:
+        self.gapAdjust -= 1
+        if self.gapAdjust < 1:
+          self.gapAdjust = 4
+        self.params.put_nonblocking("SccGapAdjust", str(self.gapAdjust))
+      else:
+        self.params.put_bool("ExperimentalMode", not self.params.get_bool("ExperimentalMode"))
 
     if btn == ButtonType.cancel:
       self.enabled = False
