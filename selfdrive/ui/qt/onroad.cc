@@ -1332,7 +1332,7 @@ void AnnotatedCameraWidget::drawBottomIcons(QPainter &p) {
   const int y = rect().bottom() - UI_FOOTER_HEIGHT / 2 - 10;
 
   // cruise gap
-  int gap = car_state.getCruiseState().getGapAdjust();
+  int gap = car_state.getCruiseState().getLeadDistanceBars();
   int autoTrGap = car_control.getAutoTrGap();
 
   p.setPen(Qt::NoPen);

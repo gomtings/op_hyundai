@@ -25,6 +25,7 @@ MAX_ANGLE = 85
 MAX_ANGLE_FRAMES = 89
 MAX_ANGLE_CONSECUTIVE_FRAMES = 2
 
+
 def process_hud_alert(enabled, fingerprint, hud_control):
   sys_warning = (hud_control.visualAlert in (VisualAlert.steerRequired, VisualAlert.ldw))
 
@@ -127,7 +128,7 @@ class CarController(CarControllerBase):
       # steering control
       can_sends.extend(hyundaicanfd.create_steering_messages(self.packer, self.CP, self.CAN, CC.enabled, apply_steer_req, apply_steer))
 
-      # disable LFA on HDA2
+      # prevent LFA from activating on HDA2 by sending "no lane lines detected" to ADAS ECU
       if self.frame % 5 == 0 and hda2:
         can_sends.append(hyundaicanfd.create_suppress_lfa(self.packer, self.CAN, CS.hda2_lfa_block_msg,
                                                           self.CP.flags & HyundaiFlags.CANFD_HDA2_ALT_STEERING))
@@ -145,7 +146,7 @@ class CarController(CarControllerBase):
           can_sends.extend(hyundaicanfd.create_adrv_messages(self.packer, self.CAN, self.frame))
         if self.frame % 2 == 0:
           can_sends.append(hyundaicanfd.create_acc_control(self.packer, self.CAN, CC.enabled, self.accel_last, accel, stopping, CC.cruiseControl.override,
-                                                           set_speed_in_units))
+                                                           set_speed_in_units, hud_control))
           self.accel_last = accel
       else:
         # button presses
@@ -208,11 +209,11 @@ class CarController(CarControllerBase):
         if self.CP.sccBus == 0:
           use_fca = self.CP.flags & HyundaiFlags.USE_FCA.value
           can_sends.extend(hyundaican.create_acc_commands(self.packer, CC.enabled, accel, jerk, int(self.frame / 2),
-                                                        hud_control.leadVisible, set_speed_in_units, stopping,
+                                                        hud_control, set_speed_in_units, stopping,
                                                           CC.cruiseControl.override, use_fca, CS, stock_cam))
         else:
           can_sends.extend(hyundaican_community.create_acc_commands(self.packer, CC.enabled, accel, accel_req, jerk, int(self.frame / 2),
-                                                          hud_control.leadVisible, set_speed_in_units, stopping,
+                                                          hud_control, set_speed_in_units, stopping,
                                                           CC.cruiseControl.override, CS, stock_cam))
 
       # 20 Hz LFA MFA message
