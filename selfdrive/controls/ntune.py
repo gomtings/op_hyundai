@@ -213,6 +213,9 @@ class nTune():
     if self.checkValue("longLeadSensitivity", 0.5, 1.3, 0.9):
       updated = True
 
+    if self.checkValue("longDisableRadar", 0., 1., 0.):
+      updated = True
+
     return updated
 
   def updateIndi(self):

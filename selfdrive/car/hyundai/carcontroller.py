@@ -25,7 +25,6 @@ MAX_ANGLE = 85
 MAX_ANGLE_FRAMES = 89
 MAX_ANGLE_CONSECUTIVE_FRAMES = 2
 
-
 def process_hud_alert(enabled, fingerprint, hud_control):
   sys_warning = (hud_control.visualAlert in (VisualAlert.steerRequired, VisualAlert.ldw))
 
@@ -196,6 +195,8 @@ class CarController(CarControllerBase):
       if self.frame % 2 == 0 and self.CP.openpilotLongitudinalControl:
         # TODO: unclear if this is needed
         jerk = 3.0 if actuators.longControlState == LongCtrlState.pid else 1.0
+        accel_req = clip(accel, self.accel_last - jerk/50., self.accel_last + jerk/50.)
+        self.accel_last = accel
 
         stock_cam = False
         if self.CP.sccBus == 2:
@@ -203,13 +204,14 @@ class CarController(CarControllerBase):
           if not SpeedLimiter.instance().get_active() and ACCEL_MIN <= aReqValue <= ACCEL_MAX:
             accel, stock_cam = self.get_stock_cam_accel(accel, aReqValue, CS.scc11)
 
+
         if self.CP.sccBus == 0:
           use_fca = self.CP.flags & HyundaiFlags.USE_FCA.value
           can_sends.extend(hyundaican.create_acc_commands(self.packer, CC.enabled, accel, jerk, int(self.frame / 2),
                                                         hud_control.leadVisible, set_speed_in_units, stopping,
                                                           CC.cruiseControl.override, use_fca, CS, stock_cam))
         else:
-          can_sends.extend(hyundaican_community.create_acc_commands(self.packer, CC.enabled, accel, jerk, int(self.frame / 2),
+          can_sends.extend(hyundaican_community.create_acc_commands(self.packer, CC.enabled, accel, accel_req, jerk, int(self.frame / 2),
                                                           hud_control.leadVisible, set_speed_in_units, stopping,
                                                           CC.cruiseControl.override, CS, stock_cam))
 

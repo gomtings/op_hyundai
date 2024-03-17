@@ -25,6 +25,8 @@ nTuneMainWidget::nTuneMainWidget(QWidget *parent)
                      1.4f, 0.7f, 1.7f, 0.05f, 2),
         TuneItemInfo("scc_v2.json", "longLeadSensitivity", tr("Sensitivity lead, the higher it is, the more sensitive the response to the lead."),
                      0.9f, 0.5f, 1.3f, 0.05f, 2),
+        TuneItemInfo("scc_v2.json", "longDisableRadar", "(0: Use radar, 1: Do not use radar)",
+                     0.0f, 0.0f, 1.0f, 1.0f, 0),
     },
     {
         TuneItemInfo("lat_torque_v4.json", "latAccelFactor", "", 2.5f, 0.5f, 4.5f, 0.1f, 2),

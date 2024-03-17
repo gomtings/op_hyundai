@@ -18,7 +18,7 @@ def create_mdps12(packer, frame, mdps12):
 
   return packer.make_can_msg("MDPS12", 2, values)
 
-def create_acc_commands(packer, enabled, accel, upper_jerk, idx, lead_visible,
+def create_acc_commands(packer, enabled, accel, accel_req, upper_jerk, idx, lead_visible,
                         set_speed, stopping, long_override, CS, stock_cam):
   commands = []
 
@@ -50,7 +50,7 @@ def create_acc_commands(packer, enabled, accel, upper_jerk, idx, lead_visible,
   values["ACCMode"] = 2 if cruise_enabled and long_override else 1 if cruise_enabled else 0
   values["StopReq"] = 1 if cruise_enabled and stopping else 0
   values["aReqRaw"] = accel
-  values["aReqValue"] = accel
+  values["aReqValue"] = accel_req
   #values["CR_VSM_Alive"] = idx % 0xF
   values["CR_VSM_ChkSum"] = 0
   scc12_dat = packer.make_can_msg("SCC12", 0, values)[2]
