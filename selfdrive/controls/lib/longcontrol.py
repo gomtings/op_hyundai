@@ -81,7 +81,7 @@ class LongControl:
       a_target_upper = 2 * (v_target_upper - v_target_now) / self.CP.longitudinalActuatorDelayUpperBound - a_target_now
 
       v_target = min(v_target_lower, v_target_upper)
-      a_target = min(a_target_lower, a_target_upper) * ntune_scc_get('longLeadSensitivity') * (0.9 if is_blend else 1.0)
+      a_target = min(a_target_lower, a_target_upper) * ntune_scc_get('longLeadSensitivity') * (0.8 if is_blend else 1.0)
 
       v_target_1sec = interp(self.CP.longitudinalActuatorDelayUpperBound + t_since_plan + 1.0, ModelConstants.T_IDXS[:CONTROL_N], speeds)
     else:
