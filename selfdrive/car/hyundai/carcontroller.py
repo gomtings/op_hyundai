@@ -11,7 +11,7 @@ from openpilot.selfdrive.car.hyundai.hyundaicanfd import CanBus
 from openpilot.selfdrive.car.hyundai.values import HyundaiFlags, Buttons, CarControllerParams, CANFD_CAR, CAR, \
   LEGACY_SAFETY_MODE_CAR, CAN_GEARS
 from openpilot.selfdrive.car.interfaces import ACCEL_MAX, ACCEL_MIN
-from openpilot.selfdrive.controls.neokii.cruise_state_manager import CruiseStateManager
+from openpilot.selfdrive.controls.neokii.cruise_state_manager import CruiseStateManager, is_radar_disabler
 from openpilot.selfdrive.controls.neokii.navi_controller import SpeedLimiter
 from openpilot.common.params import Params
 from openpilot.selfdrive.car.interfaces import CarControllerBase
@@ -109,7 +109,7 @@ class CarController(CarControllerBase):
     # *** common hyundai stuff ***
 
     # tester present - w/ no response (keeps relevant ECU disabled)
-    if self.frame % 100 == 0 and not (self.CP.flags & HyundaiFlags.CANFD_CAMERA_SCC.value) and self.CP.openpilotLongitudinalControl and self.CP.sccBus == 0:
+    if self.frame % 100 == 0 and not (self.CP.flags & HyundaiFlags.CANFD_CAMERA_SCC.value) and is_radar_disabler(self.CP):
       # for longitudinal control, either radar or ADAS driving ECU
       addr, bus = 0x7d0, 0
       if self.CP.flags & HyundaiFlags.CANFD_HDA2.value:

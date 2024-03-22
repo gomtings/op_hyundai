@@ -14,9 +14,8 @@ V_CRUISE_DELTA_MI = 5 * CV.MPH_TO_KPH
 V_CRUISE_DELTA_KM = 10
 ButtonType = car.CarState.ButtonEvent.Type
 
-def is_radar_point(CP):
-  return (CP.openpilotLongitudinalControl and CP.carFingerprint in CANFD_CAR) or \
-    (CP.openpilotLongitudinalControl and CP.sccBus == 0)
+def is_radar_disabler(CP):
+  return CP.openpilotLongitudinalControl and CP.sccBus == 0
 
 def create_button_event(cur_but: int, prev_but: int, buttons_dict: Dict[int, capnp.lib.capnp._EnumModule],
                         unpressed: int = 0) -> capnp.lib.capnp._DynamicStructBuilder:
@@ -70,7 +69,7 @@ class CruiseStateManager:
     self.cruise_state_control = self.params.get_bool('CruiseStateControl')
 
   def is_resume_spam_allowed(self, CP):
-    if is_radar_point(CP):
+    if is_radar_disabler(CP):
       return False
     return not self.cruise_state_control
 
