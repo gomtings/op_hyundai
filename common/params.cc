@@ -221,6 +221,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"ShowDebugMessage", PERSISTENT},
     {"EnableLogging", PERSISTENT},
     {"DriverCameraOnReverse", PERSISTENT},
+    {"CanFdHda2", PERSISTENT},
 };
 
 } // namespace
