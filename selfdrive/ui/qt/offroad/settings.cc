@@ -585,8 +585,9 @@ CommunityPanel::CommunityPanel(SettingsWindow *parent) : ListWidget(parent) {
     {
       "CanFdHda2",
       tr("CAN-FD HDA2"),
+      "",
       "../assets/offroad/icon_road.png",
-    }
+    },
 
     {
       "CruiseStateControl",
