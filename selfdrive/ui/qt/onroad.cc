@@ -104,22 +104,26 @@ void OnroadWindow::mousePressEvent(QMouseEvent* e) {
   QWidget::mousePressEvent(e);
 }
 
+void OnroadWindow::createMapWidget() {
+#ifdef ENABLE_MAPS
+  auto m = new MapPanel(get_mapbox_settings());
+  map = m;
+  QObject::connect(m, &MapPanel::mapPanelRequested, this, &OnroadWindow::mapPanelRequested);
+  QObject::connect(nvg->map_settings_btn, &MapSettingsButton::clicked, m, &MapPanel::toggleMapSettings);
+  nvg->map_settings_btn->setEnabled(!Params().getBool("UseExternalNaviRoutes"));
+
+  m->setFixedWidth(topWidget(this)->width() / 2 - UI_BORDER_SIZE);
+  split->insertWidget(0, m);
+  // hidden by default, made visible when navRoute is published
+  m->setVisible(false);
+#endif
+}
+
 void OnroadWindow::offroadTransition(bool offroad) {
 #ifdef ENABLE_MAPS
   if (!offroad) {
     if (map == nullptr && (uiState()->hasPrime() || !MAPBOX_TOKEN.isEmpty())) {
-      auto m = new MapPanel(get_mapbox_settings());
-      map = m;
-
-      QObject::connect(m, &MapPanel::mapPanelRequested, this, &OnroadWindow::mapPanelRequested);
-      QObject::connect(nvg->map_settings_btn, &MapSettingsButton::clicked, m, &MapPanel::toggleMapSettings);
-      nvg->map_settings_btn->setEnabled(!Params().getBool("UseExternalNaviRoutes"));
-
-      m->setFixedWidth(topWidget(this)->width() / 2 - UI_BORDER_SIZE);
-      split->insertWidget(0, m);
-
-      // hidden by default, made visible when navRoute is published
-      m->setVisible(false);
+      createMapWidget();
     }
   }
 #endif
@@ -134,6 +138,8 @@ void OnroadWindow::primeChanged(bool prime) {
     nvg->map_settings_btn->setVisible(false);
     map->deleteLater();
     map = nullptr;
+  } else if (!map && (prime || !MAPBOX_TOKEN.isEmpty())) {
+    createMapWidget();
   }
 #endif
 }

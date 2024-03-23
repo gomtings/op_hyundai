@@ -166,6 +166,7 @@ signals:
   void mapPanelRequested();
 
 private:
+  void createMapWidget();
   void paintEvent(QPaintEvent *event);
   void mousePressEvent(QMouseEvent* e) override;
   OnroadAlerts *alerts;
