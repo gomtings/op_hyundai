@@ -5,6 +5,8 @@
 #include <string>
 #include <tuple>
 #include <vector>
+#include <thread>
+#include <cstdlib>
 
 #include <QDebug>
 
@@ -22,6 +24,7 @@
 #include "selfdrive/ui/ui.h"
 #include "selfdrive/ui/qt/util.h"
 #include "selfdrive/ui/qt/qt_window.h"
+#include "selfdrive/ui/qt/ntune/ntunepannel.h"
 
 #include <QComboBox>
 #include <QAbstractItemView>
@@ -32,12 +35,12 @@
 TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
   // param, title, desc, icon
   std::vector<std::tuple<QString, QString, QString, QString>> toggle_defs{
-    {
+    /*{
       "OpenpilotEnabledToggle",
       tr("Enable openpilot"),
       tr("Use the openpilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature. Changing this setting takes effect when the car is powered off."),
       "../assets/offroad/icon_openpilot.png",
-    },
+    },*/
     {
       "ExperimentalLongitudinalEnabled",
       tr("openpilot Longitudinal Control (Alpha)"),
@@ -53,24 +56,24 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       "",
       "../assets/img_experimental_white.svg",
     },
-    {
+    /*{
       "DisengageOnAccelerator",
       tr("Disengage on Accelerator Pedal"),
       tr("When enabled, pressing the accelerator pedal will disengage openpilot."),
       "../assets/offroad/icon_disengage_on_accelerator.svg",
-    },
+    },*/
     {
       "IsLdwEnabled",
       tr("Enable Lane Departure Warnings"),
       tr("Receive alerts to steer back into the lane when your vehicle drifts over a detected lane line without a turn signal activated while driving over 31 mph (50 km/h)."),
       "../assets/offroad/icon_warning.png",
     },
-    {
+    /*{
       "RecordFront",
       tr("Record and Upload Driver Camera"),
       tr("Upload data from the driver facing camera and help improve the driver monitoring algorithm."),
       "../assets/offroad/icon_monitoring.png",
-    },
+    },*/
     {
       "IsMetric",
       tr("Use Metric System"),
@@ -97,9 +100,14 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
   std::vector<QString> longi_button_texts{tr("Aggressive"), tr("Standard"), tr("Relaxed")};
   long_personality_setting = new ButtonParamControl("LongitudinalPersonality", tr("Driving Personality"),
                                           tr("Standard is recommended. In aggressive mode, openpilot will follow lead cars closer and be more aggressive with the gas and brake. "
-                                             "In relaxed mode openpilot will stay further away from lead cars."),
+                                             "In relaxed mode openpilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with "
+                                             "your steering wheel distance button."),
                                           "../assets/offroad/icon_speed_limit.png",
                                           longi_button_texts);
+
+  // set up uiState update for personality setting
+  QObject::connect(uiState(), &UIState::uiUpdate, this, &TogglesPanel::updateState);
+
   for (auto &[param, title, desc, icon] : toggle_defs) {
     auto toggle = new ParamControl(param, title, desc, icon, this);
 
@@ -123,6 +131,18 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
   connect(toggles["ExperimentalLongitudinalEnabled"], &ToggleControl::toggleFlipped, [=]() {
     updateToggles();
   });
+}
+
+void TogglesPanel::updateState(const UIState &s) {
+  const SubMaster &sm = *(s.sm);
+
+  if (sm.updated("controlsState")) {
+    auto personality = sm["controlsState"].getControlsState().getPersonality();
+    if (personality != s.scene.personality && s.scene.started && isVisible()) {
+      long_personality_setting->setCheckedButton(static_cast<int>(personality));
+    }
+    uiState()->scene.personality = personality;
+  }
 }
 
 void TogglesPanel::expandToggleDescription(const QString &param) {
@@ -297,6 +317,11 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
   power_layout->addWidget(reboot_btn);
   QObject::connect(reboot_btn, &QPushButton::clicked, this, &DevicePanel::reboot);
 
+  QPushButton *rebuild_btn = new QPushButton(tr("Rebuild"));
+  rebuild_btn->setObjectName("rebuild_btn");
+  power_layout->addWidget(rebuild_btn);
+  QObject::connect(rebuild_btn, &QPushButton::clicked, this, &DevicePanel::rebuild);
+
   QPushButton *poweroff_btn = new QPushButton(tr("Power Off"));
   poweroff_btn->setObjectName("poweroff_btn");
   power_layout->addWidget(poweroff_btn);
@@ -309,6 +334,8 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
   setStyleSheet(R"(
     #reboot_btn { height: 120px; border-radius: 15px; background-color: #393939; }
     #reboot_btn:pressed { background-color: #4a4a4a; }
+    #rebuild_btn { height: 120px; border-radius: 15px; background-color: #393939; }
+    #rebuild_btn:pressed { background-color: #4a4a4a; }
     #poweroff_btn { height: 120px; border-radius: 15px; background-color: #E22C2C; }
     #poweroff_btn:pressed { background-color: #FF2424; }
   )");
@@ -349,6 +376,24 @@ void DevicePanel::reboot() {
     }
   } else {
     ConfirmationDialog::alert(tr("Disengage to Reboot"), this);
+  }
+}
+
+void execAndReboot(const std::string& cmd) {
+    system(cmd.c_str());
+    Params().putBool("DoReboot", true);
+}
+
+void DevicePanel::rebuild() {
+  if (!uiState()->engaged()) {
+    if (ConfirmationDialog::confirm(tr("Are you sure you want to rebuild?"), tr("Rebuild"), this)) {
+      if (!uiState()->engaged()) {
+        std::thread worker(execAndReboot, "cd /data/openpilot; scons -c; rm .sconsign.dblite; rm -rf /tmp/scons_cache; rm prebuilt");
+        worker.detach();
+      }
+    }
+  } else {
+    ConfirmationDialog::alert(tr("Disengage to Rebuild"), this);
   }
 }
 
@@ -422,6 +467,7 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
     {tr("Toggles"), toggles},
     {tr("Software"), new SoftwarePanel(this)},
     {tr("Community"), new CommunityPanel(this)},
+    {"nTune", new nTuneMainWidget(this)},
   };
 
   nav_btns = new QButtonGroup(this);
@@ -513,9 +559,14 @@ CommunityPanel::CommunityPanel(SettingsWindow *parent) : ListWidget(parent) {
 
   connect(changeCar, &ButtonControl::clicked, [=]() {
     QStringList items = get_list("/data/params/d/SupportedCars");
-    QString selection = MultiOptionDialog::getSelection(tr("Select a car"), items, selected_car, this);
+    items.insert(0, "[Not Selected]");
+    QString selection = MultiOptionDialog::getSelection(tr("Select your car"), items, selected_car, this);
     if (!selection.isEmpty()) {
-      Params().put("SelectedCar", selection.toStdString());
+      if(selection == "[Not Selected]")
+        Params().put("SelectedCar", "");
+      else
+        Params().put("SelectedCar", selection.toStdString());
+
       qApp->exit(18);
       watchdog_kick(0);
     }
@@ -528,6 +579,13 @@ CommunityPanel::CommunityPanel(SettingsWindow *parent) : ListWidget(parent) {
       "SccOnBus2",
       tr("SCC on BUS 2"),
       tr("If SCC is on bus 2, turn it on."),
+      "../assets/offroad/icon_road.png",
+    },
+
+    {
+      "CanFdHda2",
+      tr("CAN-FD HDA2"),
+      "",
       "../assets/offroad/icon_road.png",
     },
 

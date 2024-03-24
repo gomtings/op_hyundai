@@ -96,6 +96,10 @@ bool red_check_ignition(void) {
   return harness_check_ignition();
 }
 
+uint32_t red_read_voltage_mV(void){
+  return adc_get_mV(2) * 11U; // TODO: is this correct?
+}
+
 void red_init(void) {
   common_init_gpio();
 
@@ -136,8 +140,6 @@ void red_init(void) {
   // Initialize harness
   harness_init();
 
-  // Initialize RTC
-  rtc_init();
 
   // Enable CAN transceivers
   red_enable_can_transceivers(true);
@@ -176,7 +178,6 @@ const board board_red = {
   .has_obd = true,
   .has_spi = false,
   .has_canfd = true,
-  .has_rtc_battery = false,
   .fan_max_rpm = 0U,
   .avdd_mV = 3300U,
   .fan_stall_recovery = false,
@@ -188,7 +189,8 @@ const board board_red = {
   .set_led = red_set_led,
   .set_can_mode = red_set_can_mode,
   .check_ignition = red_check_ignition,
-  .read_current = unused_read_current,
+  .read_voltage_mV = red_read_voltage_mV,
+  .read_current_mA = unused_read_current,
   .set_fan_enabled = unused_set_fan_enabled,
   .set_ir_power = unused_set_ir_power,
   .set_siren = unused_set_siren,

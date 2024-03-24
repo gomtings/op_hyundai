@@ -288,6 +288,14 @@ AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* par
   ic_turn_signal_r = QPixmap("../assets/images/turn_signal_r.png");
   ic_satellite = QPixmap("../assets/images/satellite.png");
 
+  const int size = 150;
+  ic_ts_green[0] = QPixmap("../assets/images/ts/green_off.svg").scaled(size, size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+  ic_ts_green[1] = QPixmap("../assets/images/ts/green_on.svg").scaled(size, size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+  ic_ts_left[0] = QPixmap("../assets/images/ts/left_off.svg").scaled(size, size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+  ic_ts_left[1] = QPixmap("../assets/images/ts/left_on.svg").scaled(size, size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+  ic_ts_red[0] = QPixmap("../assets/images/ts/red_off.svg").scaled(size, size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+  ic_ts_red[1] = QPixmap("../assets/images/ts/red_on.svg").scaled(size, size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+
   // screen recoder - neokii
 
   record_timer = std::make_shared<QTimer>();
@@ -493,13 +501,15 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
 
   if (s->scene.world_objects_visible && !s->scene.show_driver_camera) {
     update_model(s, model, sm["uiPlan"].getUiPlan());
-    drawHud(p, model);
-
     // DMoji
     if (!hideBottomIcons && (sm.rcv_frame("driverStateV2") > s->scene.started_frame)) {
       update_dmonitoring(s, sm["driverStateV2"].getDriverStateV2(), dm_fade_state, false);
       drawDriverState(p, s);
     }
+  }
+
+  if(!s->scene.show_driver_camera) {
+    drawHud(p, model);
   }
 
   double cur_draw_t = millis_since_boot();
@@ -547,6 +557,21 @@ void AnnotatedCameraWidget::drawTextWithColor(QPainter &p, int x, int y, const Q
   p.drawText(real_rect.x(), real_rect.bottom(), text);
 }
 
+void AnnotatedCameraWidget::drawRoundedText(QPainter &p, int x, int y, const QString &text, QColor& color, QColor& bgColor, int cornerRadius) {
+  QFontMetrics fm(p.font());
+  QRect init_rect = fm.boundingRect(text);
+  QRect real_rect = fm.boundingRect(init_rect, 0, text);
+  real_rect.moveCenter({x, y - real_rect.height() / 2});
+  real_rect.adjust(-10, 0, 10, 0);
+
+  p.setBrush(QBrush(bgColor));
+  p.setPen(Qt::NoPen);
+  p.drawRoundedRect(real_rect, cornerRadius, cornerRadius);
+
+  p.setPen(color);
+  p.drawText(real_rect, Qt::AlignCenter, text);
+}
+
 void AnnotatedCameraWidget::drawText2(QPainter &p, int x, int y, int flags, const QString &text, const QColor& color) {
   QFontMetrics fm(p.font());
   QRect rect = fm.boundingRect(text);
@@ -589,7 +614,10 @@ void AnnotatedCameraWidget::drawHud(QPainter &p, const cereal::ModelDataV2::Read
   drawDeviceState(p);
   //drawTurnSignals(p);
   drawGpsStatus(p);
-  drawMisc(p);
+
+  if(!drawTrafficSignal(p))
+    drawMisc(p);
+
   drawDebugText(p);
 
   const auto controls_state = sm["controlsState"].getControlsState();
@@ -991,11 +1019,10 @@ void AnnotatedCameraWidget::drawDeviceState(QPainter &p) {
   const auto freeSpacePercent = deviceState.getFreeSpacePercent();
 
   const auto cpuTempC = deviceState.getCpuTempC();
-  //const auto gpuTempC = deviceState.getGpuTempC();
-  float ambientTemp = deviceState.getAmbientTempC();
+  const auto gpuTempC = deviceState.getGpuTempC();
 
   float cpuTemp = 0.f;
-  //float gpuTemp = 0.f;
+  float gpuTemp = 0.f;
 
   if(std::size(cpuTempC) > 0) {
     for(int i = 0; i < std::size(cpuTempC); i++) {
@@ -1004,13 +1031,13 @@ void AnnotatedCameraWidget::drawDeviceState(QPainter &p) {
     cpuTemp = cpuTemp / (float)std::size(cpuTempC);
   }
 
-  /*if(std::size(gpuTempC) > 0) {
+  if(std::size(gpuTempC) > 0) {
     for(int i = 0; i < std::size(gpuTempC); i++) {
       gpuTemp += gpuTempC[i];
     }
     gpuTemp = gpuTemp / (float)std::size(gpuTempC);
     cpuTemp = (cpuTemp + gpuTemp) / 2.f;
-  }*/
+  }
 
   int w = 192;
   int x = width() - (30 + w) + 8;
@@ -1051,10 +1078,10 @@ void AnnotatedCameraWidget::drawDeviceState(QPainter &p) {
 
   y += 80;
   p.setFont(InterFont(50, QFont::Bold));
-  str.sprintf("%.0f°C", ambientTemp);
+  str.sprintf("%.0f°C", gpuTemp);
   rect = QRect(x, y, w, w);
-  r = interp<float>(ambientTemp, {35.f, 60.f}, {200.f, 255.f}, false);
-  g = interp<float>(ambientTemp, {35.f, 60.f}, {255.f, 200.f}, false);
+  r = interp<float>(gpuTemp, {35.f, 60.f}, {200.f, 255.f}, false);
+  g = interp<float>(gpuTemp, {35.f, 60.f}, {255.f, 200.f}, false);
   p.setPen(QColor(r, g, 200, 200));
   p.drawText(rect, Qt::AlignCenter, str);
 
@@ -1062,7 +1089,7 @@ void AnnotatedCameraWidget::drawDeviceState(QPainter &p) {
   p.setFont(InterFont(25, QFont::Bold));
   rect = QRect(x, y, w, w);
   p.setPen(QColor(255, 255, 255, 200));
-  p.drawText(rect, Qt::AlignCenter, "AMBIENT");
+  p.drawText(rect, Qt::AlignCenter, "GPU");
 
   p.restore();
 }
@@ -1150,7 +1177,7 @@ void AnnotatedCameraWidget::drawTurnSignals(QPainter &p) {
 void AnnotatedCameraWidget::drawGpsStatus(QPainter &p) {
   const SubMaster &sm = *(uiState()->sm);
   auto gps = sm["gpsLocationExternal"].getGpsLocationExternal();
-  float accuracy = gps.getAccuracy();
+  float accuracy = gps.getHorizontalAccuracy();
   if(accuracy < 0.01f || accuracy > 20.f)
     return;
 
@@ -1305,7 +1332,7 @@ void AnnotatedCameraWidget::drawBottomIcons(QPainter &p) {
   const int y = rect().bottom() - UI_FOOTER_HEIGHT / 2 - 10;
 
   // cruise gap
-  int gap = car_state.getCruiseState().getGapAdjust();
+  int gap = car_state.getCruiseState().getLeadDistanceBars();
   int autoTrGap = car_control.getAutoTrGap();
 
   p.setPen(Qt::NoPen);
@@ -1377,3 +1404,64 @@ void AnnotatedCameraWidget::drawMisc(QPainter &p) {
 
   p.restore();
 }
+
+bool AnnotatedCameraWidget::drawTrafficSignal(QPainter &p) {
+  UIState *s = uiState();
+  const SubMaster &sm = *(s->sm);
+  const auto ts = sm["naviData"].getNaviData().getTs();
+
+  if(ts.getDistance() > 0) {
+    p.save();
+
+    bool narrow = width() < 1080;
+
+    int ic_size = narrow ? 110 : 130;
+    int ic_gap = narrow ? 20 : 30;
+    int text_h_margin = 80;
+    int center_x = narrow ? ((width()-(UI_BORDER_SIZE*2))/2 + UI_BORDER_SIZE) : ((width()-(UI_BORDER_SIZE*2))/4 + UI_BORDER_SIZE + 40);
+    int y = narrow ? 380 : 100;
+    int text_size = narrow ? 60 : 70;
+
+    // border
+    int border_margin = 10;
+    int border_x = center_x - ic_gap - ic_size - ic_size/2 - border_margin;
+    QRect border_rect(border_x, y - border_margin, ic_gap*2 + ic_size*3 + border_margin*2,
+                      ic_size + border_margin*2);
+    p.setRenderHint(QPainter::Antialiasing, true);
+    QColor backgroundColor(0x00, 0x00, 0x00, 0xCC);
+    p.setBrush(QBrush(backgroundColor));
+    p.setPen(Qt::NoPen);
+    p.drawRoundedRect(border_rect, ic_size/2 + border_margin, ic_size/2 + border_margin);
+
+    // signal
+    p.drawPixmap(center_x-ic_size/2 - ic_size - ic_gap, y, ic_size, ic_size, ts.getIsRedLightOn() ? ic_ts_red[1] : ic_ts_red[0]);
+    p.drawPixmap(center_x-ic_size/2, y, ic_size, ic_size, ts.getIsLeftLightOn() ? ic_ts_left[1] : ic_ts_left[0]);
+    p.drawPixmap(center_x-ic_size/2 + ic_size + ic_gap, y, ic_size, ic_size, ts.getIsGreenLightOn() ? ic_ts_green[1] : ic_ts_green[0]);
+
+    p.setFont(InterFont(text_size, QFont::Bold));
+
+    if(ts.getRedLightRemainTime() > 0) {
+      QColor color = QColor(252, 45, 50, 230);
+      drawRoundedText(p, center_x - ic_size - ic_gap, y + ic_size + text_h_margin + 20, QString::number(ts.getRedLightRemainTime()),
+          color, backgroundColor, 20);
+    }
+
+    if(ts.getLeftLightRemainTime() > 0) {
+      QColor color = QColor(34, 195, 53, 230);
+      drawRoundedText(p, center_x, y + ic_size + text_h_margin + 20, QString::number(ts.getLeftLightRemainTime()),
+          color, backgroundColor, 20);
+    }
+
+    if(ts.getGreenLightRemainTime() > 0) {
+      QColor color = QColor(34, 195, 53, 230);
+      drawRoundedText(p, center_x + ic_size + ic_gap, y + ic_size + text_h_margin + 20, QString::number(ts.getGreenLightRemainTime()),
+          color, backgroundColor, 20);
+    }
+
+    p.restore();
+    return true;
+  }
+  return false;
+}
+
+

@@ -1,10 +1,10 @@
 import crcmod
-from openpilot.selfdrive.car.hyundai.values import CAR, CHECKSUM, HyundaiFlags
+from openpilot.selfdrive.car.hyundai.values import CAR, HyundaiFlags
 from openpilot.selfdrive.controls.neokii.navi_controller import SpeedLimiter
 
 hyundai_checksum = crcmod.mkCrcFun(0x11D, initCrc=0xFD, rev=False, xorOut=0xdf)
 
-def create_lkas11(packer, frame, car_fingerprint, apply_steer, steer_req,
+def create_lkas11(packer, frame, apply_steer, steer_req,
                   torque_fault, lkas11, sys_warning, sys_state, enabled,
                   left_lane, right_lane,
                   left_lane_depart, right_lane_depart, ldws_opt, CP):
@@ -53,7 +53,7 @@ def create_lkas11(packer, frame, car_fingerprint, apply_steer, steer_req,
     values["CF_Lkas_SysWarning"] = 4 if sys_warning else 0
 
   # Likely cars lacking the ability to show individual lane lines in the dash
-  elif car_fingerprint in (CAR.KIA_OPTIMA_G4, CAR.KIA_OPTIMA_G4_FL):
+  elif CP.carFingerprint in (CAR.KIA_OPTIMA_G4, CAR.KIA_OPTIMA_G4_FL):
     # SysWarning 4 = keep hands on wheel + beep
     values["CF_Lkas_SysWarning"] = 4 if sys_warning else 0
 
@@ -68,7 +68,7 @@ def create_lkas11(packer, frame, car_fingerprint, apply_steer, steer_req,
     values["CF_Lkas_LdwsActivemode"] = 0
     values["CF_Lkas_FcwOpt_USM"] = 0
 
-  elif car_fingerprint == CAR.HYUNDAI_GENESIS:
+  elif CP.carFingerprint == CAR.HYUNDAI_GENESIS:
     # This field is actually LdwsActivemode
     # Genesis and Optima fault when forwarding while engaged
     values["CF_Lkas_LdwsActivemode"] = 2
@@ -78,11 +78,11 @@ def create_lkas11(packer, frame, car_fingerprint, apply_steer, steer_req,
 
   dat = packer.make_can_msg("LKAS11", 0, values)[2]
 
-  if car_fingerprint in CHECKSUM["crc8"]:
+  if CP.flags & HyundaiFlags.CHECKSUM_CRC8:
     # CRC Checksum as seen on 2019 Hyundai Santa Fe
     dat = dat[:6] + dat[7:8]
     checksum = hyundai_checksum(dat)
-  elif car_fingerprint in CHECKSUM["6B"]:
+  elif CP.flags & HyundaiFlags.CHECKSUM_6B:
     # Checksum of first 6 Bytes, as seen on 2018 Kia Sorento
     checksum = sum(dat[:6]) % 256
   else:
@@ -123,22 +123,21 @@ def create_lfahda_mfc(packer, enabled, hda_set_speed=0):
   }
   return packer.make_can_msg("LFAHDA_MFC", 0, values)
 
-def create_acc_commands(packer, enabled, accel, upper_jerk, idx, lead_visible, set_speed, stopping, long_override, use_fca, CS, stock_cam,vision_dist,RelSpd):
-#def create_acc_commands(packer, enabled, accel, upper_jerk, idx, lead_visible, set_speed, stopping, long_override, use_fca, CS, stock_cam):
+def create_acc_commands(packer, enabled, accel, upper_jerk, idx, hud_control, set_speed, stopping, long_override, use_fca, CS, stock_cam):
   commands = []
 
   cruise_enabled = enabled and CS.out.cruiseState.enabled
-  objGap = 0 if vision_dist == 0 else 2 if vision_dist < 25 else 3 if vision_dist < 40 else 4 if vision_dist < 70 else 5
+  hud_control.objGap = 0 if hud_control.vision_dist == 0 else 2 if hud_control.vision_dist < 25 else 3 if hud_control.vision_dist < 40 else 4 if hud_control.vision_dist < 70 else 5
   scc11_values = {
     "MainMode_ACC": CS.out.cruiseState.available,
-    "TauGapSet": CS.out.cruiseState.gapAdjust,
+    "TauGapSet": CS.out.cruiseState.leadDistanceBars,
     "VSetDis": set_speed if cruise_enabled else 0,
     "AliveCounterACC": idx % 0x10,
     "ObjValid": 1, # close lead makes controls tighter
     "ACC_ObjStatus": 1, # close lead makes controls tighter
     "ACC_ObjLatPos": 0,
-    "ACC_ObjRelSpd": RelSpd,
-    "ACC_ObjDist": vision_dist, # close lead makes controls tighter
+    "ACC_ObjRelSpd": 0,
+    "ACC_ObjDist": hud_control.objGap, # close lead makes controls tighter
     }
 
   if not stock_cam:
@@ -173,7 +172,7 @@ def create_acc_commands(packer, enabled, accel, upper_jerk, idx, lead_visible, s
     "JerkUpperLimit": upper_jerk, # stock usually is 1.0 but sometimes uses higher values
     "JerkLowerLimit": 5.0, # stock usually is 0.5 but sometimes uses higher values
     "ACCMode": 2 if enabled and long_override else 1 if enabled else 4, # stock will always be 4 instead of 0 after first disengage
-    "ObjGap": objGap #2 if lead_visible else 0, # 5: >30, m, 4: 25-30 m, 3: 20-25 m, 2: < 20 m, 0: no lead
+    "ObjGap": 2 if hud_control.leadVisible else 0, # 5: >30, m, 4: 25-30 m, 3: 20-25 m, 2: < 20 m, 0: no lead
   }
   commands.append(packer.make_can_msg("SCC14", 0, scc14_values))
 

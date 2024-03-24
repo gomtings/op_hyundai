@@ -124,8 +124,13 @@ void white_set_can_mode(uint8_t mode){
   }
 }
 
-uint32_t white_read_current(void){
-  return adc_get_raw(ADCCHAN_CURRENT);
+uint32_t white_read_voltage_mV(void){
+  return adc_get_mV(12) * 11U;
+}
+
+uint32_t white_read_current_mA(void){
+  // This isn't in mA, but we're keeping it for backwards compatibility
+  return adc_get_raw(13);
 }
 
 bool white_check_ignition(void){
@@ -182,8 +187,6 @@ void white_grey_init(void) {
   set_gpio_alternate(GPIOC, 11, GPIO_AF7_USART3);
   set_gpio_pullup(GPIOC, 11, PULL_UP);
 
-  // Initialize RTC
-  rtc_init();
 
   // Enable CAN transceivers
   white_enable_can_transceivers(true);
@@ -197,10 +200,9 @@ void white_grey_init(void) {
   white_set_can_mode(CAN_MODE_NORMAL);
 
   // Init usb power mode
-  uint32_t voltage = adc_get_mV(ADCCHAN_VIN) * VIN_READOUT_DIVIDER;
   // Init in CDP mode only if panda is powered by 12V.
   // Otherwise a PC would not be able to flash a standalone panda
-  if (voltage > 8000U) {  // 8V threshold
+  if (white_read_voltage_mV() > 8000U) {  // 8V threshold
     white_set_usb_power_mode(USB_POWER_CDP);
   } else {
     white_set_usb_power_mode(USB_POWER_CLIENT);
@@ -227,7 +229,6 @@ const board board_white = {
   .has_obd = false,
   .has_spi = false,
   .has_canfd = false,
-  .has_rtc_battery = false,
   .fan_max_rpm = 0U,
   .avdd_mV = 3300U,
   .fan_stall_recovery = false,
@@ -239,7 +240,8 @@ const board board_white = {
   .set_led = white_set_led,
   .set_can_mode = white_set_can_mode,
   .check_ignition = white_check_ignition,
-  .read_current = white_read_current,
+  .read_voltage_mV = white_read_voltage_mV,
+  .read_current_mA = white_read_current_mA,
   .set_fan_enabled = unused_set_fan_enabled,
   .set_ir_power = unused_set_ir_power,
   .set_siren = unused_set_siren,

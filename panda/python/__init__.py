@@ -6,10 +6,8 @@ import usb1
 import struct
 import hashlib
 import binascii
-import datetime
 import logging
 from functools import wraps, partial
-from typing import Optional
 from itertools import accumulate
 
 from .base import BaseHandle
@@ -175,7 +173,6 @@ class Panda:
   HEALTH_STRUCT = struct.Struct("<IIIIIIIIIBBBBBHBBBHfBBHBHHB")
   CAN_HEALTH_STRUCT = struct.Struct("<BIBBBBBBBBIIIIIIIHHBBBIIII")
 
-  F2_DEVICES = [HW_TYPE_PEDAL, ]
   F4_DEVICES = [HW_TYPE_WHITE_PANDA, HW_TYPE_GREY_PANDA, HW_TYPE_BLACK_PANDA, HW_TYPE_UNO, HW_TYPE_DOS]
   H7_DEVICES = [HW_TYPE_RED_PANDA, HW_TYPE_RED_PANDA_V2, HW_TYPE_TRES, HW_TYPE_CUATRO]
 
@@ -216,6 +213,7 @@ class Panda:
 
   FLAG_TESLA_POWERTRAIN = 1
   FLAG_TESLA_LONG_CONTROL = 2
+  FLAG_TESLA_RAVEN = 4
 
   FLAG_VOLKSWAGEN_LONG_CONTROL = 1
 
@@ -235,7 +233,7 @@ class Panda:
   FLAG_FORD_LONG_CONTROL = 1
   FLAG_FORD_CANFD = 2
 
-  def __init__(self, serial: Optional[str] = None, claim: bool = True, disable_checks: bool = True, can_speed_kbps: int = 500):
+  def __init__(self, serial: str | None = None, claim: bool = True, disable_checks: bool = True, can_speed_kbps: int = 500):
     self._connect_serial = serial
     self._disable_checks = disable_checks
 
@@ -410,7 +408,7 @@ class Panda:
           if device.getVendorID() == 0xbbaa and device.getProductID() in cls.USB_PIDS:
             try:
               serial = device.getSerialNumber()
-              if len(serial) == 24 or serial == "pedal":
+              if len(serial) == 24:
                 ret.append(serial)
               else:
                 logging.warning(f"found device with panda descriptors but invalid serial: {serial}", RuntimeWarning)
@@ -531,7 +529,7 @@ class Panda:
     if reconnect:
       self.reconnect()
 
-  def recover(self, timeout: Optional[int] = 60, reset: bool = True) -> bool:
+  def recover(self, timeout: int | None = 60, reset: bool = True) -> bool:
     dfu_serial = self.get_dfu_serial()
 
     if reset:
@@ -550,7 +548,7 @@ class Panda:
     return True
 
   @staticmethod
-  def wait_for_dfu(dfu_serial: Optional[str], timeout: Optional[int] = None) -> bool:
+  def wait_for_dfu(dfu_serial: str | None, timeout: int | None = None) -> bool:
     t_start = time.monotonic()
     dfu_list = PandaDFU.list()
     while (dfu_serial is None and len(dfu_list) == 0) or (dfu_serial is not None and dfu_serial not in dfu_list):
@@ -562,7 +560,7 @@ class Panda:
     return True
 
   @staticmethod
-  def wait_for_panda(serial: Optional[str], timeout: int) -> bool:
+  def wait_for_panda(serial: str | None, timeout: int) -> bool:
     t_start = time.monotonic()
     serials = Panda.list()
     while (serial is None and len(serials) == 0) or (serial is not None and serial not in serials):
@@ -698,9 +696,7 @@ class Panda:
 
   def get_mcu_type(self) -> McuType:
     hw_type = self.get_type()
-    if hw_type in Panda.F2_DEVICES:
-      return McuType.F2
-    elif hw_type in Panda.F4_DEVICES:
+    if hw_type in Panda.F4_DEVICES:
       return McuType.F4
     elif hw_type in Panda.H7_DEVICES:
       return McuType.H7
@@ -896,21 +892,6 @@ class Panda:
   # sending a heartbeat will reenable the checks
   def set_heartbeat_disabled(self):
     self._handle.controlWrite(Panda.REQUEST_OUT, 0xf8, 0, 0, b'')
-
-  # ******************* RTC *******************
-  def set_datetime(self, dt):
-    self._handle.controlWrite(Panda.REQUEST_OUT, 0xa1, int(dt.year), 0, b'')
-    self._handle.controlWrite(Panda.REQUEST_OUT, 0xa2, int(dt.month), 0, b'')
-    self._handle.controlWrite(Panda.REQUEST_OUT, 0xa3, int(dt.day), 0, b'')
-    self._handle.controlWrite(Panda.REQUEST_OUT, 0xa4, int(dt.isoweekday()), 0, b'')
-    self._handle.controlWrite(Panda.REQUEST_OUT, 0xa5, int(dt.hour), 0, b'')
-    self._handle.controlWrite(Panda.REQUEST_OUT, 0xa6, int(dt.minute), 0, b'')
-    self._handle.controlWrite(Panda.REQUEST_OUT, 0xa7, int(dt.second), 0, b'')
-
-  def get_datetime(self):
-    dat = self._handle.controlRead(Panda.REQUEST_IN, 0xa0, 0, 0, 8)
-    a = struct.unpack("HBBBBBB", dat)
-    return datetime.datetime(a[0], a[1], a[2], a[4], a[5], a[6])
 
   # ****************** Timer *****************
   def get_microsecond_timer(self):

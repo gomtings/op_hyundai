@@ -3,7 +3,9 @@ import json
 import os
 
 import select
+import signal
 import subprocess
+import sys
 import threading
 import time
 import socket
@@ -29,6 +31,7 @@ class Port:
 class NaviServer:
   def __init__(self):
     self.json_road_limit = None
+    self.json_traffic_signal = None
     self.active = 0
     self.last_updated = 0
     self.last_updated_active = 0
@@ -43,7 +46,13 @@ class NaviServer:
     broadcast.daemon = True
     broadcast.start()
 
-    self.gps_sm = messaging.SubMaster(['gpsLocationExternal'], poll=['gpsLocationExternal'])
+    subprocess.Popen([os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ngpsd')])
+
+    speed = Thread(target=self.speed_thread, args=[])
+    speed.daemon = True
+    speed.start()
+
+    self.gps_sm = messaging.SubMaster(['gpsLocationExternal'], poll='gpsLocationExternal')
     self.gps_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     self.location = None
@@ -73,7 +82,7 @@ class NaviServer:
             self.location.altitude,
             self.location.speed,
             self.location.bearingDeg,
-            self.location.accuracy,
+            self.location.horizontalAccuracy,
             self.location.unixTimestampMillis,
             # self.location.source,
             # self.location.vNED,
@@ -132,6 +141,16 @@ class NaviServer:
 
       except:
         pass
+
+  def speed_thread(self):
+    sm = messaging.SubMaster(['carState'], poll='carState')
+    while True:
+      sm.update(100)
+      if sm.updated['carState']:
+        v_ego = sm['carState'].vEgo
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+          data_in_bytes = struct.pack('!f', v_ego)
+          sock.sendto(data_in_bytes, ('127.0.0.1', 2847))
 
   def send_sdp(self, sock):
     try:
@@ -195,6 +214,9 @@ class NaviServer:
             self.json_road_limit = json_obj['road_limit']
             self.last_updated = time.monotonic()
 
+          if 'traffic_signal' in json_obj:
+            self.json_traffic_signal = json_obj['traffic_signal']
+
         finally:
           self.lock.release()
 
@@ -203,6 +225,7 @@ class NaviServer:
       try:
         self.lock.acquire()
         self.json_road_limit = None
+        self.json_traffic_signal = None
       finally:
         self.lock.release()
 
@@ -214,6 +237,7 @@ class NaviServer:
       try:
         self.lock.acquire()
         self.json_road_limit = None
+        self.json_traffic_signal = None
       finally:
         self.lock.release()
 
@@ -223,6 +247,9 @@ class NaviServer:
 
   def get_limit_val(self, key, default=None):
     return self.get_json_val(self.json_road_limit, key, default)
+
+  def get_ts_val(self, key, default=None):
+    return self.get_json_val(self.json_traffic_signal, key, default)
 
   def get_json_val(self, json, key, default=None):
 
@@ -238,8 +265,28 @@ class NaviServer:
 
     return default
 
+def navi_gps_thread():
+  naviGps = messaging.pub_sock('naviGps')
+  with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+    sock.bind(('0.0.0.0', 2931))
+    while True:
+      try:
+        data, address = sock.recvfrom(16)
+        floats = struct.unpack('ffff', data)
+        dat = messaging.new_message('naviGps', valid=True)
+        dat.naviGps.latitude = floats[0]
+        dat.naviGps.longitude = floats[1]
+        dat.naviGps.heading = floats[2]
+        dat.naviGps.speed = floats[3]
+        naviGps.send(dat.to_bytes())
+      except:
+        pass
 
 def main():
+  navi_gps = Thread(target=navi_gps_thread, args=[])
+  navi_gps.daemon = True
+  navi_gps.start()
+
   server = NaviServer()
   naviData = messaging.pub_sock('naviData')
 
@@ -249,26 +296,34 @@ def main():
       sock.setblocking(False)
 
       while True:
+        if server.udp_recv(sock):
+          dat = messaging.new_message('naviData', valid=True)
+          dat.naviData.active = server.active
+          dat.naviData.roadLimitSpeed = server.get_limit_val("road_limit_speed", 0)
+          dat.naviData.isHighway = server.get_limit_val("is_highway", False)
+          dat.naviData.camType = server.get_limit_val("cam_type", 0)
+          dat.naviData.camLimitSpeedLeftDist = server.get_limit_val("cam_limit_speed_left_dist", 0)
+          dat.naviData.camLimitSpeed = server.get_limit_val("cam_limit_speed", 0)
+          dat.naviData.sectionLimitSpeed = server.get_limit_val("section_limit_speed", 0)
+          dat.naviData.sectionLeftDist = server.get_limit_val("section_left_dist", 0)
+          dat.naviData.sectionAvgSpeed = server.get_limit_val("section_avg_speed", 0)
+          dat.naviData.sectionLeftTime = server.get_limit_val("section_left_time", 0)
+          dat.naviData.sectionAdjustSpeed = server.get_limit_val("section_adjust_speed", False)
+          dat.naviData.camSpeedFactor = server.get_limit_val("cam_speed_factor", CAMERA_SPEED_FACTOR)
+          dat.naviData.currentRoadName = server.get_limit_val("current_road_name", "")
+          dat.naviData.isNda2 = server.get_limit_val("is_nda2", False)
 
-        server.udp_recv(sock)
+          ts = {'isGreenLightOn': server.get_ts_val("isGreenLightOn", False),
+                'isLeftLightOn': server.get_ts_val("isLeftLightOn", False),
+                'isRedLightOn': server.get_ts_val("isRedLightOn", False),
+                'greenLightRemainTime': server.get_ts_val("greenLightRemainTime", 0),
+                'leftLightRemainTime': server.get_ts_val("leftLightRemainTime", 0),
+                'redLightRemainTime': server.get_ts_val("redLightRemainTime", 0),
+                'distance': server.get_ts_val("distance", 0)}
+          dat.naviData.ts = ts
 
-        dat = messaging.new_message('naviData', valid=True)
-        dat.naviData.active = server.active
-        dat.naviData.roadLimitSpeed = server.get_limit_val("road_limit_speed", 0)
-        dat.naviData.isHighway = server.get_limit_val("is_highway", False)
-        dat.naviData.camType = server.get_limit_val("cam_type", 0)
-        dat.naviData.camLimitSpeedLeftDist = server.get_limit_val("cam_limit_speed_left_dist", 0)
-        dat.naviData.camLimitSpeed = server.get_limit_val("cam_limit_speed", 0)
-        dat.naviData.sectionLimitSpeed = server.get_limit_val("section_limit_speed", 0)
-        dat.naviData.sectionLeftDist = server.get_limit_val("section_left_dist", 0)
-        dat.naviData.sectionAvgSpeed = server.get_limit_val("section_avg_speed", 0)
-        dat.naviData.sectionLeftTime = server.get_limit_val("section_left_time", 0)
-        dat.naviData.sectionAdjustSpeed = server.get_limit_val("section_adjust_speed", False)
-        dat.naviData.camSpeedFactor = server.get_limit_val("cam_speed_factor", CAMERA_SPEED_FACTOR)
-        dat.naviData.currentRoadName = server.get_limit_val("current_road_name", "")
-        dat.naviData.isNda2 = server.get_limit_val("is_nda2", False)
+          naviData.send(dat.to_bytes())
 
-        naviData.send(dat.to_bytes())
         server.send_sdp(sock)
         server.check()
 
@@ -444,6 +499,10 @@ class SpeedLimiter:
     self.slowing_down = False
     return 0, 0, 0, False, log
 
+def signal_handler(sig, frame):
+  print('Ctrl+C pressed, exiting.')
+  sys.exit(0)
 
 if __name__ == "__main__":
+  signal.signal(signal.SIGINT, signal_handler)
   main()

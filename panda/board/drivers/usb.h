@@ -79,7 +79,7 @@ void refresh_can_tx_slots_available(void);
 #define STS_SETUP_COMP                         4
 #define STS_SETUP_UPDT                         6
 
-uint8_t resp[USBPACKET_MAX_SIZE];
+uint8_t response[USBPACKET_MAX_SIZE];
 
 // for the repeating interfaces
 #define DSCR_INTERFACE_LEN 9
@@ -198,13 +198,8 @@ uint16_t string_product_desc[] = {
 
 // default serial number when we're not a panda
 uint16_t string_serial_desc[] = {
-#ifdef PEDAL
-  STRING_DESCRIPTOR_HEADER(5),
-  'p', 'e', 'd', 'a', 'l'
-#else
   STRING_DESCRIPTOR_HEADER(4),
   'n', 'o', 'n', 'e'
-#endif
 };
 
 // a string containing the default configuration index
@@ -369,7 +364,7 @@ int current_int0_alt_setting = 0;
 
 void *USB_ReadPacket(void *dest, uint16_t len) {
   uint32_t *dest_copy = (uint32_t *)dest;
-  uint32_t count32b = (len + 3U) / 4U;
+  uint32_t count32b = ((uint32_t)len + 3U) / 4U;
 
   for (uint32_t i = 0; i < count32b; i++) {
     *dest_copy = USBx_DFIFO(0);
@@ -384,9 +379,9 @@ void USB_WritePacket(const void *src, uint16_t len, uint32_t ep) {
   hexdump(src, len);
   #endif
 
-  uint32_t numpacket = (len + (USBPACKET_MAX_SIZE - 1U)) / USBPACKET_MAX_SIZE;
+  uint32_t numpacket = ((uint32_t)len + (USBPACKET_MAX_SIZE - 1U)) / USBPACKET_MAX_SIZE;
   uint32_t count32b = 0;
-  count32b = (len + 3U) / 4U;
+  count32b = ((uint32_t)len + 3U) / 4U;
 
   // TODO: revisit this
   USBx_INEP(ep)->DIEPTSIZ = ((numpacket << 19) & USB_OTG_DIEPTSIZ_PKTCNT) |
@@ -466,12 +461,12 @@ void usb_reset(void) {
   USBx_OUTEP(0)->DOEPTSIZ = USB_OTG_DOEPTSIZ_STUPCNT | (USB_OTG_DOEPTSIZ_PKTCNT & (1UL << 19)) | (3U << 3);
 }
 
-char to_hex_char(int a) {
+char to_hex_char(uint8_t a) {
   char ret;
-  if (a < 10) {
+  if (a < 10U) {
     ret = '0' + a;
   } else {
-    ret = 'a' + (a - 10);
+    ret = 'a' + (a - 10U);
   }
   return ret;
 }
@@ -557,19 +552,19 @@ void usb_setup(void) {
               break;
             case STRING_OFFSET_ISERIAL:
               #ifdef UID_BASE
-                resp[0] = 0x02 + (12 * 4);
-                resp[1] = 0x03;
+                response[0] = 0x02 + (12 * 4);
+                response[1] = 0x03;
 
                 // 96 bits = 12 bytes
                 for (int i = 0; i < 12; i++){
                   uint8_t cc = ((uint8_t *)UID_BASE)[i];
-                  resp[2 + (i * 4)] = to_hex_char((cc >> 4) & 0xFU);
-                  resp[2 + (i * 4) + 1] = '\0';
-                  resp[2 + (i * 4) + 2] = to_hex_char((cc >> 0) & 0xFU);
-                  resp[2 + (i * 4) + 3] = '\0';
+                  response[2 + (i * 4)] = to_hex_char((cc >> 4) & 0xFU);
+                  response[2 + (i * 4) + 1] = '\0';
+                  response[2 + (i * 4) + 2] = to_hex_char((cc >> 0) & 0xFU);
+                  response[2 + (i * 4) + 3] = '\0';
                 }
 
-                USB_WritePacket(resp, MIN(resp[0], setup.b.wLength.w), 0);
+                USB_WritePacket(response, MIN(response[0], setup.b.wLength.w), 0);
               #else
                 USB_WritePacket((const uint8_t *)string_serial_desc, MIN(sizeof(string_serial_desc), setup.b.wLength.w), 0);
               #endif
@@ -599,10 +594,10 @@ void usb_setup(void) {
       }
       break;
     case USB_REQ_GET_STATUS:
-      // empty resp?
-      resp[0] = 0;
-      resp[1] = 0;
-      USB_WritePacket((void*)&resp, 2, 0);
+      // empty response?
+      response[0] = 0;
+      response[1] = 0;
+      USB_WritePacket((void*)&response, 2, 0);
       USBx_OUTEP(0)->DOEPCTL |= USB_OTG_DOEPCTL_CNAK;
       break;
     case USB_REQ_SET_INTERFACE:
@@ -648,10 +643,10 @@ void usb_setup(void) {
       control_req.param2 = setup.b.wIndex.w;
       control_req.length = setup.b.wLength.w;
 
-      resp_len = comms_control_handler(&control_req, resp);
+      resp_len = comms_control_handler(&control_req, response);
       // response pending if -1 was returned
       if (resp_len != -1) {
-        USB_WritePacket(resp, MIN(resp_len, setup.b.wLength.w), 0);
+        USB_WritePacket(response, MIN(resp_len, setup.b.wLength.w), 0);
         USBx_OUTEP(0)->DOEPCTL |= USB_OTG_DOEPCTL_CNAK;
       }
   }
@@ -877,7 +872,7 @@ void usb_irqhandler(void) {
           print("  IN PACKET QUEUE\n");
           #endif
           // TODO: always assuming max len, can we get the length?
-          USB_WritePacket((void *)resp, comms_can_read(resp, 0x40), 1);
+          USB_WritePacket((void *)response, comms_can_read(response, 0x40), 1);
         }
         break;
 
@@ -888,9 +883,9 @@ void usb_irqhandler(void) {
           print("  IN PACKET QUEUE\n");
           #endif
           // TODO: always assuming max len, can we get the length?
-          int len = comms_can_read(resp, 0x40);
+          int len = comms_can_read(response, 0x40);
           if (len > 0) {
-            USB_WritePacket((void *)resp, len, 1);
+            USB_WritePacket((void *)response, len, 1);
           }
         }
         break;

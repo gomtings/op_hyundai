@@ -18,7 +18,7 @@ def create_mdps12(packer, frame, mdps12):
 
   return packer.make_can_msg("MDPS12", 2, values)
 
-def create_acc_commands(packer, enabled, accel, upper_jerk, idx, lead_visible,
+def create_acc_commands(packer, enabled, accel, upper_jerk, idx, hud_control,
                         set_speed, stopping, long_override, CS, stock_cam):
   commands = []
 
@@ -26,10 +26,10 @@ def create_acc_commands(packer, enabled, accel, upper_jerk, idx, lead_visible,
 
   values = CS.scc11
   values["MainMode_ACC"] = CS.out.cruiseState.available
-  values["TauGapSet"] = CS.out.cruiseState.gapAdjust
+  values["TauGapSet"] = CS.out.cruiseState.leadDistanceBars
   values["VSetDis"] = set_speed if cruise_enabled else 0
   values["AliveCounterACC"] = idx % 0x10
-  values["ObjValid"] = lead_visible
+  values["ObjValid"] = hud_control.leadVisible
 
   if CruiseStateManager.instance().cruise_state_control:
     values["DriverAlertDisplay"] = 0
@@ -59,7 +59,7 @@ def create_acc_commands(packer, enabled, accel, upper_jerk, idx, lead_visible,
   commands.append(packer.make_can_msg("SCC12", 0, values))
 
   if CS.scc14 is not None:
-    obj_gap = 2 if lead_visible else 0
+    obj_gap = 2 if hud_control.leadVisible else 0
 
     # TODO
     #lead = self.scc_smoother.get_lead(controls.sm)

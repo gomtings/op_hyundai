@@ -46,6 +46,7 @@ services: dict[str, tuple] = {
   "androidLog": (True, 0.),
   "carState": (True, 100., 10),
   "carControl": (True, 100., 10),
+  "carOutput": (True, 100., 10),
   "longitudinalPlan": (True, 20., 5),
   "procLog": (True, 0.5, 15),
   "gpsLocationExternal": (True, 10., 10),
@@ -53,7 +54,7 @@ services: dict[str, tuple] = {
   "ubloxGnss": (True, 10.),
   "qcomGnss": (True, 2.),
   "gnssMeasurements": (True, 10., 10),
-  "clocks": (True, 1., 1),
+  "clocks": (True, 0.1, 1),
   "ubloxRaw": (True, 20.),
   "liveLocationKalman": (True, 20., 5),
   "liveParameters": (True, 20., 5),
@@ -81,7 +82,8 @@ services: dict[str, tuple] = {
   "userFlag": (True, 0., 1),
   "microphone": (True, 10., 10),
   
-  "naviData": (False, 0.),
+  "naviData": (True, 1.),
+  "naviGps": (True, 10.),
 
   # debug
   "uiDebug": (True, 0., 1),

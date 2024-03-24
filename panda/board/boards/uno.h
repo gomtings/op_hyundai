@@ -147,8 +147,6 @@ void uno_init(void) {
   // Initialize harness
   harness_init();
 
-  // Initialize RTC
-  rtc_init();
 
   // Enable CAN transceivers
   uno_enable_can_transceivers(true);
@@ -167,7 +165,7 @@ void uno_init(void) {
   }
 
   // Switch to phone usb mode if harness connection is powered by less than 7V
-  if((adc_get_mV(ADCCHAN_VIN) * VIN_READOUT_DIVIDER) < 7000U){
+  if(white_read_voltage_mV() < 7000U){
     uno_set_usb_switch(true);
   } else {
     uno_set_usb_switch(false);
@@ -203,7 +201,6 @@ const board board_uno = {
   .has_obd = true,
   .has_spi = false,
   .has_canfd = false,
-  .has_rtc_battery = true,
   .fan_max_rpm = 5100U,
   .avdd_mV = 3300U,
   .fan_stall_recovery = false,
@@ -215,7 +212,8 @@ const board board_uno = {
   .set_led = uno_set_led,
   .set_can_mode = uno_set_can_mode,
   .check_ignition = uno_check_ignition,
-  .read_current = unused_read_current,
+  .read_voltage_mV = white_read_voltage_mV,
+  .read_current_mA = unused_read_current,
   .set_fan_enabled = uno_set_fan_enabled,
   .set_ir_power = uno_set_ir_power,
   .set_siren = unused_set_siren,

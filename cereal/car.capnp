@@ -255,7 +255,7 @@ struct CarState {
     speedOffset @3 :Float32;
     standstill @4 :Bool;
     nonAdaptive @5 :Bool;
-    gapAdjust @7 :Int8;
+    leadDistanceBars @7 :Int8;
   }
 
   enum GearShifter {
@@ -344,13 +344,11 @@ struct CarControl {
   # Actuator commands as computed by controlsd
   actuators @6 :Actuators;
 
+  # moved to CarOutput
+  actuatorsOutputDEPRECATED @10 :Actuators;
+
   leftBlinker @15: Bool;
   rightBlinker @16: Bool;
-
-  # Any car specific rate limits or quirks applied by
-  # the CarController are reflected in actuatorsOutput
-  # and matches what is sent to the car
-  actuatorsOutput @10 :Actuators;
 
   orientationNED @13 :List(Float32);
   angularVelocity @14 :List(Float32);
@@ -411,9 +409,10 @@ struct CarControl {
     leftLaneVisible @7: Bool;
     rightLaneDepart @8: Bool;
     leftLaneDepart @9: Bool;
-    objDist @10: Int32;
-    objRelSpd @11: Float32;
-    
+    leadDistanceBars @10: Int8;  # 1-3: 1 is closest, 3 is farthest. some ports may utilize 2-4 bars instead
+    objDist @11: Int32;
+    objRelSpd @12: Float32;
+
     enum VisualAlert {
       # these are the choices from the Honda
       # map as good as you can for your car
@@ -453,6 +452,13 @@ struct CarControl {
   activeDEPRECATED @7 :Bool;
   rollDEPRECATED @8 :Float32;
   pitchDEPRECATED @9 :Float32;
+}
+
+struct CarOutput {
+  # Any car specific rate limits or quirks applied by
+  # the CarController are reflected in actuatorsOutput
+  # and matches what is sent to the car
+  actuatorsOutput @0 :CarControl.Actuators;
 }
 
 # ****** car param ******
@@ -633,6 +639,8 @@ struct CarParams {
     body @27;
     hyundaiCanfd @28;
     volkswagenMqbEvo @29;
+    chryslerCusw @30;
+    psa @31;
   }
 
   enum SteerControlType {

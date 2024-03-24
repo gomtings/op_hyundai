@@ -28,8 +28,8 @@ extern int can_live;
 extern int pending_can_live;
 
 // must reinit after changing these
-extern int can_loopback;
 extern int can_silent;
+extern bool can_loopback;
 
 // Ignition detected from CAN meessages
 bool ignition_can = false;
@@ -40,8 +40,8 @@ uint32_t ignition_can_cnt = 0U;
 
 int can_live = 0;
 int pending_can_live = 0;
-int can_loopback = 0;
 int can_silent = ALL_CAN_SILENT;
+bool can_loopback = false;
 
 // ******************* functions prototypes *********************
 bool can_init(uint8_t can_number);
@@ -277,10 +277,10 @@ void can_send(CANPacket_t *to_push, uint8_t bus_number, bool skip_tx_hook) {
   }
 }
 
-bool is_speed_valid(uint32_t speed, const uint32_t *speeds, uint8_t len) {
+bool is_speed_valid(uint32_t speed, const uint32_t *all_speeds, uint8_t len) {
   bool ret = false;
   for (uint8_t i = 0U; i < len; i++) {
-    if (speeds[i] == speed) {
+    if (all_speeds[i] == speed) {
       ret = true;
     }
   }

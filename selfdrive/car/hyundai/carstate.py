@@ -63,7 +63,6 @@ class CarState(CarStateBase):
     self.lfa_btn = 0
     self.lfa_enabled = False
     self.gear_shifter = GearShifter.park
-
   def update(self, cp, cp_cam):
     if self.CP.carFingerprint in CANFD_CAR:
       return self.update_canfd(cp, cp_cam)
@@ -94,8 +93,7 @@ class CarState(CarStateBase):
     vEgoClu = cluSpeed * speed_conv
     ret.vEgoCluster, _ = self.update_clu_speed_kf(vEgoClu)
 
-    vEgoRaw = (ret.wheelSpeeds.fl + ret.wheelSpeeds.fr + ret.wheelSpeeds.rl + ret.wheelSpeeds.rr) / 4.
-    ret.vEgoRaw = interp(vEgoRaw, [0., 3.], [(vEgoRaw + vEgoClu) / 2., vEgoRaw])
+    ret.vEgoRaw = (ret.wheelSpeeds.fl + ret.wheelSpeeds.fr + ret.wheelSpeeds.rl + ret.wheelSpeeds.rr) / 4.
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
     ret.standstill = ret.wheelSpeeds.fl <= STANDSTILL_THRESHOLD and ret.wheelSpeeds.rr <= STANDSTILL_THRESHOLD
 
@@ -136,7 +134,7 @@ class CarState(CarStateBase):
       ret.cruiseState.standstill = cp_cruise.vl["SCC11"]["SCCInfoDisplay"] == 4.
       ret.cruiseState.nonAdaptive = cp_cruise.vl["SCC11"]["SCCInfoDisplay"] == 2.  # Shows 'Cruise Control' on dash
       ret.cruiseState.speed = cp_cruise.vl["SCC11"]["VSetDis"] * speed_conv
-      ret.cruiseState.gapAdjust = cp_cruise.vl["SCC11"]["TauGapSet"]
+      ret.cruiseState.leadDistanceBars = cp_cruise.vl["SCC11"]["TauGapSet"]
 
     # TODO: Find brake pressure
     ret.brake = 0
@@ -159,8 +157,6 @@ class CarState(CarStateBase):
     # as this seems to be standard over all cars, but is not the preferred method.
     if self.CP.flags & (HyundaiFlags.HYBRID | HyundaiFlags.EV):
       gear = cp.vl["ELECT_GEAR"]["Elect_Gear_Shifter"]
-    elif self.CP.carFingerprint in CAN_GEARS["use_cluster_gears"]:
-      gear = cp.vl["ELECT_GEAR"]["Elect_Gear_Shifter"]
       gear_shifter = GearShifter.unknown
 
       if gear == 1546:  # Thank you for Neokii 
@@ -176,6 +172,8 @@ class CarState(CarStateBase):
         self.gear_shifter = gear_shifter
 
       ret.gearShifter = self.gear_shifter
+    elif self.CP.carFingerprint in CAN_GEARS["use_cluster_gears"]:
+      gear = cp.vl["CLU15"]["CF_Clu_Gear"]
     elif self.CP.carFingerprint in CAN_GEARS["use_tcu_gears"]:
       gear = cp.vl["TCU12"]["CUR_GR"]
     else:
@@ -249,6 +247,7 @@ class CarState(CarStateBase):
     if self.CP.openpilotLongitudinalControl and CruiseStateManager.instance().cruise_state_control:
       available = ret.cruiseState.available if self.CP.sccBus == 2 else -1
       CruiseStateManager.instance().update(ret, self.main_buttons, self.cruise_buttons, BUTTONS_DICT, available)
+
     return ret
 
   def update_canfd(self, cp, cp_cam):

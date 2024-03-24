@@ -33,6 +33,7 @@ struct InitData {
   deviceType @3 :DeviceType;
   version @4 :Text;
   gitCommit @10 :Text;
+  gitCommitDate @21 :Text;
   gitBranch @11 :Text;
   gitRemote @13 :Text;
 
@@ -56,6 +57,7 @@ struct InitData {
     tici @4;
     pc @5;
     tizi @6;
+    mici @7;
   }
 
   struct PandaInfo {
@@ -249,7 +251,7 @@ struct SensorEventData {
 
 # android struct GpsLocation
 struct GpsLocationData {
-  # Contains GpsLocationFlags bits.
+  # Contains module-specific flags.
   flags @0 :UInt16;
 
   # Represents latitude in degrees.
@@ -267,8 +269,8 @@ struct GpsLocationData {
   # Represents heading in degrees.
   bearingDeg @5 :Float32;
 
-  # Represents expected accuracy in meters. (presumably 1 sigma?)
-  accuracy @6 :Float32;
+  # Represents expected horizontal accuracy in meters.
+  horizontalAccuracy @6 :Float32;
 
   unixTimestampMillis @7 :Int64;
 
@@ -286,6 +288,8 @@ struct GpsLocationData {
   # Represents velocity accuracy in m/s. (presumably 1 sigma?)
   speedAccuracy @12 :Float32;
 
+  hasFix @13 :Bool;
+
   enum SensorSource {
     android @0;
     iOS @1;
@@ -296,6 +300,7 @@ struct GpsLocationData {
     ublox @6;
     trimble @7;
     qcomdiag @8;
+    unicore @9;
   }
 }
 
@@ -330,6 +335,8 @@ struct CanData {
 }
 
 struct DeviceState @0xa4d8b5af2aa492eb {
+  deviceType @45 :InitData.DeviceType;
+
   networkType @22 :NetworkType;
   networkInfo @31 :NetworkInfo;
   networkStrength @24 :NetworkStrength;
@@ -356,7 +363,6 @@ struct DeviceState @0xa4d8b5af2aa492eb {
   cpuTempC @26 :List(Float32);
   gpuTempC @27 :List(Float32);
   memoryTempC @28 :Float32;
-  ambientTempC @30 :Float32;
   nvmeTempC @35 :List(Float32);
   modemTempC @36 :List(Float32);
   pmicTempC @39 :List(Float32);
@@ -429,6 +435,7 @@ struct DeviceState @0xa4d8b5af2aa492eb {
   chargingErrorDEPRECATED @17 :Bool;
   chargingDisabledDEPRECATED @18 :Bool;
   usbOnlineDEPRECATED @12 :Bool;
+  ambientTempCDEPRECATED @30 :Float32;
 }
 
 struct PandaState @0xa7649e2575e4591e {
@@ -680,6 +687,7 @@ struct ControlsState @0x97ff69c53601abf1 {
   active @36 :Bool;
 
   experimentalMode @64 :Bool;
+  personality @66 :LongitudinalPersonality;
 
   longControlState @30 :Car.CarControl.Actuators.LongControlState;
   vPid @2 :Float32;
@@ -1049,7 +1057,6 @@ struct LongitudinalPlan @0xe00b5b3eba12876c {
   jerks @34 :List(Float32);
 
   solverExecutionTime @35 :Float32;
-  personality @36 :LongitudinalPersonality;
 
   enum LongitudinalPlanSource {
     cruise @0;
@@ -1087,6 +1094,7 @@ struct LongitudinalPlan @0xe00b5b3eba12876c {
   eventsDEPRECATED @13 :List(Car.CarEvent);
   gpsTrajectoryDEPRECATED @12 :GpsTrajectory;
   gpsPlannerActiveDEPRECATED @19 :Bool;
+  personalityDEPRECATED @36 :LongitudinalPersonality;
 
   struct GpsTrajectory {
     x @0 :List(Float32);
@@ -1880,11 +1888,12 @@ struct QcomGnss @0xde94674b07ae51c1 {
 }
 
 struct Clocks {
-  bootTimeNanos @0 :UInt64;
-  monotonicNanos @1 :UInt64;
-  monotonicRawNanos @2 :UInt64;
-  wallTimeNanos @3 :UInt64;
-  modemUptimeMillis @4 :UInt64;
+  wallTimeNanos @3 :UInt64;  # unix epoch time
+
+  bootTimeNanosDEPRECATED @0 :UInt64;
+  monotonicNanosDEPRECATED @1 :UInt64;
+  monotonicRawNanosDEPRECATD @2 :UInt64;
+  modemUptimeMillisDEPRECATED @4 :UInt64;
 }
 
 struct LiveMpcData {
@@ -2254,6 +2263,7 @@ struct Event {
     liveCalibration @19 :LiveCalibrationData;
     carState @22 :Car.CarState;
     carControl @23 :Car.CarControl;
+    carOutput @127 :Car.CarOutput;
     longitudinalPlan @24 :LongitudinalPlan;
     uiPlan @106 :UiPlan;
     ubloxGnss @34 :UbloxGnss;
@@ -2338,7 +2348,8 @@ struct Event {
     customReserved9 @116 :Custom.CustomReserved9;
     
     # neokii
-    naviData @127 :NaviData;
+    naviData @128 :NaviData;
+    naviGps @129 :NaviGps;
 
     # *********** legacy + deprecated ***********
     model @9 :Legacy.ModelData; # TODO: rename modelV2 and mark this as deprecated
@@ -2397,4 +2408,22 @@ struct NaviData {
     camSpeedFactor @11 :Float32;
     currentRoadName @12 :Text;
     isNda2 @13 :Bool;
+    ts @14 :TrafficSignal;
+
+    struct TrafficSignal {
+      isGreenLightOn @0 :Bool;
+      isLeftLightOn @1 :Bool;
+      isRedLightOn @2 :Bool;
+      greenLightRemainTime @3 :Int16;
+      leftLightRemainTime @4 :Int16;
+      redLightRemainTime @5 :Int16;
+      distance @6 :Int16;
+  }
+}
+
+struct NaviGps {
+  latitude @0 :Float32;
+  longitude @1 :Float32;
+  heading @2 :Float32;
+  speed @3 :Float32;
 }
