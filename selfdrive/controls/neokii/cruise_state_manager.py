@@ -14,9 +14,8 @@ V_CRUISE_DELTA_MI = 5 * CV.MPH_TO_KPH
 V_CRUISE_DELTA_KM = 10
 ButtonType = car.CarState.ButtonEvent.Type
 
-def is_radar_point(CP):
-  return (CP.openpilotLongitudinalControl and CP.carFingerprint in CANFD_CAR) or \
-    (CP.openpilotLongitudinalControl and CP.sccBus == 0)
+def is_radar_disabler(CP):
+  return CP.openpilotLongitudinalControl and CP.sccBus == 0
 
 def create_button_event(cur_but: int, prev_but: int, buttons_dict: Dict[int, capnp.lib.capnp._EnumModule],
                         unpressed: int = 0) -> capnp.lib.capnp._DynamicStructBuilder:
@@ -50,9 +49,9 @@ class CruiseStateManager:
     self.enabled = False
     self.speed = V_CRUISE_ENABLE_MIN * CV.KPH_TO_MS
     gap = self.params.get('SccGapAdjust')
-    self.gapAdjust = int(gap) if gap is not None else 4
-    if self.gapAdjust < 1 or self.gapAdjust > 4:
-      self.gapAdjust = 4
+    self.leadDistanceBars = int(gap) if gap is not None else 4
+    if self.leadDistanceBars < 1 or self.leadDistanceBars > 4:
+      self.leadDistanceBars = 4
 
     self.prev_speed = 0
     self.prev_main_buttons = 0
@@ -70,7 +69,7 @@ class CruiseStateManager:
     self.cruise_state_control = self.params.get_bool('CruiseStateControl')
 
   def is_resume_spam_allowed(self, CP):
-    if is_radar_point(CP):
+    if is_radar_disabler(CP):
       return False
     return not self.cruise_state_control
 
@@ -113,7 +112,7 @@ class CruiseStateManager:
       CS.cruiseState.enabled = self.enabled
       CS.cruiseState.standstill = False
       CS.cruiseState.speed = self.speed
-      CS.cruiseState.gapAdjust = self.gapAdjust
+      CS.cruiseState.leadDistanceBars = self.leadDistanceBars
 
   def update_buttons(self):
     if self.button_events is None:
@@ -177,11 +176,14 @@ class CruiseStateManager:
           v_cruise_kph = clip(round(self.speed * CV.MS_TO_KPH, 1), V_CRUISE_ENABLE_MIN, V_CRUISE_MAX)
           v_cruise_kph = clip(v_cruise_kph, round(CS.vEgoCluster * CV.MS_TO_KPH, 1), V_CRUISE_MAX)
 
-    if btn == ButtonType.gapAdjustCruise and not self.btn_long_pressed:
-      self.gapAdjust -= 1
-      if self.gapAdjust < 1:
-        self.gapAdjust = 4
-      self.params.put_nonblocking("SccGapAdjust", str(self.gapAdjust))
+    if btn == ButtonType.gapAdjustCruise:
+      if not self.btn_long_pressed:
+        self.leadDistanceBars -= 1
+        if self.leadDistanceBars < 1:
+          self.leadDistanceBars = 4
+        self.params.put_nonblocking("SccGapAdjust", str(self.leadDistanceBars))
+      else:
+        self.params.put_bool("ExperimentalMode", not self.params.get_bool("ExperimentalMode"))
 
     if btn == ButtonType.cancel:
       self.enabled = False

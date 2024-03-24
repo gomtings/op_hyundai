@@ -10,7 +10,7 @@ from openpilot.selfdrive.car.hyundai.radar_interface import RADAR_START_ADDR
 from openpilot.selfdrive.car import create_button_events, get_safety_config
 from openpilot.selfdrive.car.interfaces import CarInterfaceBase, ACCEL_MIN, ACCEL_MAX
 from openpilot.selfdrive.car.disable_ecu import disable_ecu
-from openpilot.selfdrive.controls.neokii.cruise_state_manager import is_radar_point
+from openpilot.selfdrive.controls.neokii.cruise_state_manager import is_radar_disabler
 from openpilot.common.params import Params
 
 Ecu = car.CarParams.Ecu
@@ -40,7 +40,10 @@ class CarInterface(CarInterfaceBase):
     # FIXME: the Optima Hybrid 2017 uses a different SCC12 checksum
     ret.dashcamOnly = candidate in {CAR.KIA_OPTIMA_H, }
 
-    hda2 = Ecu.adas in [fw.ecu for fw in car_fw] or candidate == CAR.GENESIS_GV80_MR_MOON
+    print(fingerprint)
+
+    #adas = any(0x1e5 in fingerprint[i] for i in range(3)) # TEST
+    hda2 = Ecu.adas in [fw.ecu for fw in car_fw] or Params().get_bool('CanFdHda2')
     CAN = CanBus(None, hda2, fingerprint)
 
     if candidate in CANFD_CAR:
@@ -55,20 +58,19 @@ class CarInterface(CarInterfaceBase):
         ret.flags |= HyundaiFlags.CANFD_HDA2.value
         if 0x110 in fingerprint[CAN.CAM]:
           ret.flags |= HyundaiFlags.CANFD_HDA2_ALT_STEERING.value
-        if candidate == CAR.GENESIS_GV80_MR_MOON:
-          ret.flags |= HyundaiFlags.CANFD_ALT_GEARS.value
       else:
         # non-HDA2
         if 0x1cf not in fingerprint[CAN.ECAN]:
           ret.flags |= HyundaiFlags.CANFD_ALT_BUTTONS.value
-        # ICE cars do not have 0x130; GEARS message on 0x40 or 0x70 instead
-        if 0x130 not in fingerprint[CAN.ECAN]:
-          if 0x40 not in fingerprint[CAN.ECAN]:
-            ret.flags |= HyundaiFlags.CANFD_ALT_GEARS_2.value
-          else:
-            ret.flags |= HyundaiFlags.CANFD_ALT_GEARS.value
         if candidate not in CANFD_RADAR_SCC_CAR:
           ret.flags |= HyundaiFlags.CANFD_CAMERA_SCC.value
+
+      # ICE cars do not have 0x130; GEARS message on 0x40 or 0x70 instead
+      if 0x130 not in fingerprint[CAN.ECAN]:
+        if 0x40 not in fingerprint[CAN.ECAN]:
+          ret.flags |= HyundaiFlags.CANFD_ALT_GEARS_2.value
+        else:
+          ret.flags |= HyundaiFlags.CANFD_ALT_GEARS.value
     else:
       # TODO: detect EV and hybrid
       if candidate in HYBRID_CAR:
@@ -104,7 +106,7 @@ class CarInterface(CarInterfaceBase):
     ret.pcmCruise = not ret.openpilotLongitudinalControl
 
     ret.stoppingControl = True
-    ret.startingState = False
+    ret.startingState = True
     ret.stoppingDecelRate = 0.3
     ret.steerActuatorDelay = 0.2
     ret.steerLimitTimer = 2.0
@@ -112,8 +114,8 @@ class CarInterface(CarInterfaceBase):
     ret.vEgoStarting = 0.1
     ret.vEgoStopping = 0.1
     ret.startAccel = 1.0
-    #ret.longitudinalActuatorDelayLowerBound = 0.5
-    #ret.longitudinalActuatorDelayUpperBound = 0.5
+    ret.longitudinalActuatorDelayLowerBound = 0.25
+    ret.longitudinalActuatorDelayUpperBound = 0.25
     ret.radarTimeStep = 0.02  # 50hz
 
     # *** feature detection ***
@@ -121,6 +123,8 @@ class CarInterface(CarInterfaceBase):
       ret.enableBsm = 0x1e5 in fingerprint[CAN.ECAN]
     else:
       ret.enableBsm = 0x58b in fingerprint[0]
+
+    ret.sccBus = 2 if (candidate in CAMERA_SCC_CAR or Params().get_bool('SccOnBus2')) else 0
 
     # *** panda safety config ***
     if candidate in CANFD_CAR:
@@ -138,7 +142,10 @@ class CarInterface(CarInterfaceBase):
       if ret.flags & HyundaiFlags.CANFD_CAMERA_SCC:
         ret.safetyConfigs[-1].safetyParam |= Panda.FLAG_HYUNDAI_CAMERA_SCC
 
-      ret.sccBus = 0
+      if ret.sccBus == 2:
+        ret.openpilotLongitudinalControl = True
+        ret.radarUnavailable = False
+
     else:
       if candidate in LEGACY_SAFETY_MODE_CAR:
         # these cars require a special panda safety mode due to missing counters and checksums in the messages
@@ -146,7 +153,6 @@ class CarInterface(CarInterfaceBase):
       else:
         ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.hyundai, 0)]
 
-      ret.sccBus = 2 if (candidate in CAMERA_SCC_CAR or Params().get_bool('SccOnBus2')) else 0
       ret.hasAutoHold = 1151 in fingerprint[0]
       ret.hasLfaHda = 1157 in fingerprint[0]
       ret.hasNav = 1348 in fingerprint[0]
@@ -184,7 +190,7 @@ class CarInterface(CarInterfaceBase):
 
   @staticmethod
   def init(CP, logcan, sendcan):
-    if is_radar_point(CP) and not (CP.flags & HyundaiFlags.CANFD_CAMERA_SCC.value):
+    if is_radar_disabler(CP) and not (CP.flags & HyundaiFlags.CANFD_CAMERA_SCC.value):
       addr, bus = 0x7d0, 0
       if CP.flags & HyundaiFlags.CANFD_HDA2.value:
         addr, bus = 0x730, CanBus(CP).ECAN

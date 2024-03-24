@@ -207,10 +207,13 @@ class nTune():
   def checkValidSCC(self):
     updated = False
 
-    if self.checkValue("longStartingFactor", 0.7, 1.7, 1.4):
+    if self.checkValue("longStartingFactor", 0.7, 1.7, 1.3):
       updated = True
 
-    if self.checkValue("longLeadSensitivity", 0.5, 1.3, 0.9):
+    if self.checkValue("longLeadSensitivity", 0.4, 1.2, 0.7):
+      updated = True
+
+    if self.checkValue("longDisableRadar", 0., 1., 0.):
       updated = True
 
     return updated

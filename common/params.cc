@@ -207,7 +207,6 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"UpdaterTargetBranch", CLEAR_ON_MANAGER_START},
     {"UpdaterLastFetchTime", PERSISTENT},
     {"Version", PERSISTENT},
-    {"VisionRadarToggle", PERSISTENT},
 
     // Community
     {"MapboxToken", PERSISTENT},
@@ -222,6 +221,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"ShowDebugMessage", PERSISTENT},
     {"EnableLogging", PERSISTENT},
     {"DriverCameraOnReverse", PERSISTENT},
+    {"CanFdHda2", PERSISTENT},
 };
 
 } // namespace

@@ -294,7 +294,7 @@ class LongitudinalMpc:
     elif self.mode == 'blended':
       a_change_cost = 40.0 if prev_accel_constraint else 0
       cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost, 1.0]
-      constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, 50.0]
+      constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, 100.0]
     else:
       raise NotImplementedError(f'Planner mode {self.mode} not recognized in planner cost set')
     self.set_cost_weights(cost_weights, constraint_cost_weights)
@@ -353,8 +353,8 @@ class LongitudinalMpc:
     lead_xv_1 = self.process_lead(radarstate.leadTwo)
 
     # neokii
-    gapAdjust = carstate.cruiseState.gapAdjust
-    cruise_gap = int(clip(gapAdjust, 1., 4.)) if gapAdjust > 0 else 4
+    leadDistanceBars = carstate.cruiseState.leadDistanceBars
+    cruise_gap = int(clip(leadDistanceBars, 1., 4.)) if leadDistanceBars > 0 else 4
     self.t_follow = interp(float(cruise_gap), CRUISE_GAP_BP, CRUISE_GAP_V if self.mode == 'acc' else CRUISE_GAP_E2E_V)
     self.t_follow *= get_T_FOLLOW_Factor(personality)
 

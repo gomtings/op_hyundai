@@ -12,7 +12,7 @@ from openpilot.common.realtime import DT_CTRL, Ratekeeper, Priority, config_real
 from openpilot.common.swaglog import cloudlog
 
 from openpilot.common.simple_kalman import KF1D
-
+from openpilot.selfdrive.controls.ntune import ntune_scc_get
 
 # Default lead acceleration decay set to 50% at 1s
 _LEAD_ACCEL_TAU = 1.5
@@ -133,7 +133,7 @@ def match_vision_to_track(v_ego: float, lead: capnp._DynamicStructReader, tracks
     prob_y = laplacian_pdf(c.yRel, -lead.y[0], lead.yStd[0])
     prob_v = laplacian_pdf(c.vRel + v_ego, lead.v[0], lead.vStd[0])
 
-    # This is isn't exactly right, but good heuristic
+    # This isn't exactly right, but it's a good heuristic
     return prob_d * prob_y * prob_v
 
   track = max(tracks.values(), key=prob)
@@ -156,8 +156,8 @@ def get_RadarState_from_vision(lead_msg: capnp._DynamicStructReader, v_ego: floa
     "vRel": float(lead_v_rel_pred),
     "vLead": float(v_ego + lead_v_rel_pred),
     "vLeadK": float(v_ego + lead_v_rel_pred),
-    "aLeadK": 0.0,
-    "aLeadTau": 0.3,
+    "aLeadK": float(lead_msg.a[0]),
+    "aLeadTau": 0.1,
     "fcw": False,
     "modelProb": float(lead_msg.prob),
     "status": True,
@@ -211,6 +211,9 @@ class RadarD:
   def update(self, sm: messaging.SubMaster, rr: Optional[car.RadarData]):
     self.ready = sm.seen['modelV2']
     self.current_time = 1e-9*max(sm.logMonoTime.values())
+
+    if ntune_scc_get('longDisableRadar') > 0.5:
+      rr = None
 
     radar_points = []
     radar_errors = []

@@ -93,8 +93,7 @@ class CarState(CarStateBase):
     vEgoClu = cluSpeed * speed_conv
     ret.vEgoCluster, _ = self.update_clu_speed_kf(vEgoClu)
 
-    vEgoRaw = (ret.wheelSpeeds.fl + ret.wheelSpeeds.fr + ret.wheelSpeeds.rl + ret.wheelSpeeds.rr) / 4.
-    ret.vEgoRaw = interp(vEgoRaw, [0., 3.], [(vEgoRaw + vEgoClu) / 2., vEgoRaw])
+    ret.vEgoRaw = (ret.wheelSpeeds.fl + ret.wheelSpeeds.fr + ret.wheelSpeeds.rl + ret.wheelSpeeds.rr) / 4.
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
     ret.standstill = ret.wheelSpeeds.fl <= STANDSTILL_THRESHOLD and ret.wheelSpeeds.rr <= STANDSTILL_THRESHOLD
 
@@ -135,7 +134,7 @@ class CarState(CarStateBase):
       ret.cruiseState.standstill = cp_cruise.vl["SCC11"]["SCCInfoDisplay"] == 4.
       ret.cruiseState.nonAdaptive = cp_cruise.vl["SCC11"]["SCCInfoDisplay"] == 2.  # Shows 'Cruise Control' on dash
       ret.cruiseState.speed = cp_cruise.vl["SCC11"]["VSetDis"] * speed_conv
-      ret.cruiseState.gapAdjust = cp_cruise.vl["SCC11"]["TauGapSet"]
+      ret.cruiseState.leadDistanceBars = cp_cruise.vl["SCC11"]["TauGapSet"]
 
     # TODO: Find brake pressure
     ret.brake = 0
