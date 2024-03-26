@@ -61,6 +61,7 @@ class HyundaiFlags(IntFlag):
   # these cars use a different gas signal
   HYBRID = 2 ** 10
   EV = 2 ** 11
+  FCEV = 2 ** 24
 
   # Static flags
 
@@ -346,7 +347,7 @@ class CAR(Platforms):
     "HYUNDAI NEXO",
     [HyundaiCarDocs("Hyundai HYUNDAI NEXO 2020", "Highway Driving Assist", car_parts=CarParts.common([CarHarness.hyundai_h]))],
     CarSpecs(mass=1885, wheelbase=2.79, steerRatio=14.19, tireStiffnessFactor=0.385),
-    flags=HyundaiFlags.EV,
+    flags=HyundaiFlags.FCEV,
   )
   TUCSON_4TH_GEN = HyundaiCanFDPlatformConfig(
     "HYUNDAI TUCSON 4TH GEN",
@@ -928,6 +929,7 @@ CAMERA_SCC_CAR = CAR.with_flags(HyundaiFlags.CAMERA_SCC)
 HYBRID_CAR = CAR.with_flags(HyundaiFlags.HYBRID)
 
 EV_CAR = CAR.with_flags(HyundaiFlags.EV)
+FCEV_CAR = CAR.with_flags(HyundaiFlags.FCEV)
 
 LEGACY_SAFETY_MODE_CAR = CAR.with_flags(HyundaiFlags.LEGACY)
 
