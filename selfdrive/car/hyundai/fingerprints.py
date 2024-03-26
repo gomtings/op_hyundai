@@ -1802,9 +1802,6 @@ FW_VERSIONS = {
     ],
   },
   CAR.NEXO: {
-    (Ecu.esp, 0x7D1, None): [
-      b'\xf1\x00FE IEB \x01 312 \x11\x13 58520-M5000',
-    ],
     (Ecu.fwdCamera, 0x7C4, None): [
       b'\xf1\x00FE  MFC  AT KOR LHD 1.00 1.04 99211-M5000 180918',
     ],
