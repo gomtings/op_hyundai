@@ -4,8 +4,6 @@ from collections.abc import Callable
 
 from cereal import car
 from openpilot.common.params import Params
-from openpilot.common.basedir import BASEDIR
-from openpilot.system.version import is_comma_remote, is_tested_branch
 from openpilot.selfdrive.car.interfaces import get_interface_attr
 from openpilot.selfdrive.car.fingerprints import eliminate_incompatible_cars, all_legacy_fingerprint_cars
 from openpilot.selfdrive.car.vin import get_vin, is_valid_vin, VIN_UNKNOWN
@@ -13,8 +11,8 @@ from openpilot.selfdrive.car.fw_versions import get_fw_versions_ordered, get_pre
 from openpilot.selfdrive.car.mock.values import CAR as MOCK
 from openpilot.common.swaglog import cloudlog
 import cereal.messaging as messaging
-from openpilot.selfdrive.car import gen_empty_fingerprint, PlatformConfig
-from openpilot.selfdrive.car.values import BRANDS
+from openpilot.selfdrive.car import gen_empty_fingerprint
+from openpilot.system.version import get_build_metadata
 
 FRAME_FINGERPRINT = 100  # 1s
 
@@ -46,17 +44,8 @@ def load_interfaces(brand_names):
   for brand_name in brand_names:
     path = f'openpilot.selfdrive.car.{brand_name}'
     CarInterface = __import__(path + '.interface', fromlist=['CarInterface']).CarInterface
-
-    if os.path.exists(BASEDIR + '/' + path.replace('.', '/') + '/carstate.py'):
-      CarState = __import__(path + '.carstate', fromlist=['CarState']).CarState
-    else:
-      CarState = None
-
-    if os.path.exists(BASEDIR + '/' + path.replace('.', '/') + '/carcontroller.py'):
-      CarController = __import__(path + '.carcontroller', fromlist=['CarController']).CarController
-    else:
-      CarController = None
-
+    CarState = __import__(path + '.carstate', fromlist=['CarState']).CarState
+    CarController = __import__(path + '.carcontroller', fromlist=['CarController']).CarController
     for model_name in brand_names[brand_name]:
       ret[model_name] = (CarInterface, CarController, CarState)
   return ret
@@ -202,15 +191,16 @@ def get_car(logcan, sendcan, experimental_long_allowed, num_pandas=1):
 
   if candidate is None:
     cloudlog.event("car doesn't match any fingerprints", fingerprints=repr(fingerprints), error=True)
-    candidate = "mock"
+    candidate = "MOCK"
 
-  selected_car = Params().get("SelectedCar")
+  selected_car = Params().get("SelectedCar_v2")
   if selected_car:
     def find_platform_from_hyundai(name: str):
       from openpilot.selfdrive.car.hyundai.values import CAR as HYUNDAI
       for platform in HYUNDAI:
-        if platform.config.platform_str == name:
-          return platform
+        for doc in platform.config.car_docs:
+          if name == doc.name:
+            return platform
       return None
     found_platform = find_platform_from_hyundai(selected_car.decode("utf-8"))
     if found_platform is not None:
