@@ -94,7 +94,8 @@ class SpeedController:
 
     self.speed_conv_to_ms = CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS
     self.speed_conv_to_clu = CV.MS_TO_KPH if self.is_metric else CV.MS_TO_MPH
-    self.min_set_speed_clu = self.kph_to_clu(V_CRUISE_MIN) # TODO - neokii
+    self.min_set_speed_stock = 30
+    self.min_set_speed_clu = self.kph_to_clu(V_CRUISE_MIN)
     self.max_set_speed_clu = self.kph_to_clu(V_CRUISE_MAX)
 
   def reset(self):
@@ -123,7 +124,7 @@ class SpeedController:
   def cal_max_speed(self, CS, sm, clu_speed, v_cruise_kph):
 
     # kph
-    apply_limit_speed, road_limit_speed, left_dist, first_started, max_speed_log = \
+    apply_limit_speed, road_limit_speed, left_dist, first_started, cam_type, max_speed_log = \
       SpeedLimiter.instance().get_max_speed(clu_speed, self.is_metric)
 
     curv_limit = 0
@@ -231,13 +232,13 @@ class SpeedController:
     if not self.long_control:
       if CS.gasPressed and self.sync_set_speed_while_gas_pressed and not cruise_btn_pressed:
         if clu_speed + SYNC_MARGIN > self.kph_to_clu(v_cruise_kph):
-          set_speed = clip(clu_speed + SYNC_MARGIN, self.min_set_speed_clu, self.max_set_speed_clu)
+          set_speed = clip(clu_speed + SYNC_MARGIN, self.min_set_speed_stock, self.max_set_speed_clu)
           v_cruise_kph = int(round(set_speed * self.speed_conv_to_ms * CV.MS_TO_KPH))
           override_speed = v_cruise_kph
 
       self.target_speed = self.kph_to_clu(v_cruise_kph)
-      if self.max_speed_clu > self.min_set_speed_clu:
-        self.target_speed = clip(self.target_speed, self.min_set_speed_clu, self.max_speed_clu)
+      if self.max_speed_clu > self.min_set_speed_stock:
+        self.target_speed = clip(self.target_speed, self.min_set_speed_stock, self.max_speed_clu)
 
     elif CS.cruiseState.enabled:
       if CS.gasPressed and self.sync_set_speed_while_gas_pressed and not cruise_btn_pressed:
@@ -258,7 +259,7 @@ class SpeedController:
       self.max_speed_clu = self.max_speed_clu + error * kp
 
   def get_button(self, current_set_speed):
-    if self.target_speed < self.min_set_speed_clu:
+    if self.target_speed < self.min_set_speed_stock:
       return Buttons.NONE
     error = self.target_speed - current_set_speed
     if abs(error) < 0.9:
@@ -353,7 +354,7 @@ class SpeedController:
           self.wait_timer = self.get_wait_count()
           self.btn = Buttons.NONE
       else:
-        if self.long_control and self.target_speed >= self.min_set_speed_clu:
+        if self.long_control and self.target_speed >= self.min_set_speed_stock:
           self.target_speed = 0.
     else:
       if self.long_control:

@@ -404,7 +404,7 @@ class SpeedLimiter:
     self.recv()
 
     if self.naviData is None:
-      return 0, 0, 0, False, ""
+      return 0, 0, 0, False, 0, ""
 
     try:
 
@@ -444,12 +444,12 @@ class SpeedLimiter:
         diff_speed = cluster_speed - (cam_limit_speed * camSpeedFactor)
         #cam_limit_speed_ms = cam_limit_speed * (CV.KPH_TO_MS if is_metric else CV.MPH_TO_MS)
 
-        starting_dist = v_ego * 30.
-
         if cam_type == 22:
           safe_dist = v_ego * 3.
+          starting_dist = v_ego * 15.
         else:
           safe_dist = v_ego * 6.
+          starting_dist = v_ego * 30.
 
         if MIN_LIMIT <= cam_limit_speed <= MAX_LIMIT and (self.slowing_down or cam_limit_speed_left_dist < starting_dist):
           if not self.slowing_down:
@@ -468,10 +468,10 @@ class SpeedLimiter:
             pp = 0
 
           return cam_limit_speed * camSpeedFactor + int(pp * diff_speed), \
-                 cam_limit_speed, cam_limit_speed_left_dist, first_started, log
+                 cam_limit_speed, cam_limit_speed_left_dist, first_started, cam_type, log
 
         self.slowing_down = False
-        return 0, cam_limit_speed, cam_limit_speed_left_dist, False, log
+        return 0, cam_limit_speed, cam_limit_speed_left_dist, False, cam_type, log
 
       elif section_left_dist is not None and section_limit_speed is not None and section_left_dist > 0:
         if MIN_LIMIT <= section_limit_speed <= MAX_LIMIT:
@@ -487,17 +487,17 @@ class SpeedLimiter:
             speed_diff = (section_limit_speed - section_avg_speed) / 2.
             speed_diff *= interp(section_left_dist, [500, 1000], [0., 1.])
 
-          return section_limit_speed * camSpeedFactor + speed_diff, section_limit_speed, section_left_dist, first_started, log
+          return section_limit_speed * camSpeedFactor + speed_diff, section_limit_speed, section_left_dist, first_started, cam_type, log
 
         self.slowing_down = False
-        return 0, section_limit_speed, section_left_dist, False, log
+        return 0, section_limit_speed, section_left_dist, False, cam_type, log
 
     except Exception as e:
       log = "Ex: " + str(e)
       pass
 
     self.slowing_down = False
-    return 0, 0, 0, False, log
+    return 0, 0, 0, False, 0, log
 
 def signal_handler(sig, frame):
   print('Ctrl+C pressed, exiting.')
