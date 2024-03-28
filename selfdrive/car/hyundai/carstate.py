@@ -371,8 +371,6 @@ class CarState(CarStateBase):
 
     if CP.flags & (HyundaiFlags.HYBRID | HyundaiFlags.EV):
       messages.append(("E_EMS11", 50))
-    elif CP.carFingerprint in FCEV_CAR:
-      messages.append(("ACCELERATOR", 100))
     else:
       messages += [
         ("EMS12", 100),
