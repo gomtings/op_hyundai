@@ -158,6 +158,7 @@ class LongitudinalPlanner:
     longitudinalPlan.jerks = self.j_desired_trajectory.tolist()
 
     longitudinalPlan.hasLead = sm['radarState'].leadOne.status
+    longitudinalPlan.leadRelDist = sm['radarState'].leadOne.dRel if sm['radarState'].leadOne.status else 255.
     longitudinalPlan.longitudinalPlanSource = self.mpc.source
     longitudinalPlan.fcw = self.fcw
 

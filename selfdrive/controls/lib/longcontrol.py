@@ -10,7 +10,7 @@ LongCtrlState = car.CarControl.Actuators.LongControlState
 
 
 def long_control_state_trans(CP, active, long_control_state, v_ego, v_target,
-                             v_target_1sec, brake_pressed, cruise_standstill):
+                             v_target_1sec, brake_pressed, cruise_standstill, lead_rel_dist):
   accelerating = v_target_1sec > v_target
   planned_stop = (v_target < CP.vEgoStopping and
                   v_target_1sec < CP.vEgoStopping and
@@ -22,7 +22,7 @@ def long_control_state_trans(CP, active, long_control_state, v_ego, v_target,
   starting_condition = (v_target_1sec > CP.vEgoStarting and
                         accelerating and
                         not cruise_standstill and
-                        not brake_pressed)
+                        not brake_pressed) and lead_rel_dist > 2.0
   started_condition = v_ego > CP.vEgoStarting
 
   if not active:
@@ -94,7 +94,7 @@ class LongControl:
     output_accel = self.last_output_accel
     self.long_control_state = long_control_state_trans(self.CP, active, self.long_control_state, CS.vEgo,
                                                        v_target, v_target_1sec, CS.brakePressed,
-                                                       CS.cruiseState.standstill)
+                                                       CS.cruiseState.standstill, long_plan.leadRelDist)
 
     if self.long_control_state == LongCtrlState.off:
       self.reset(CS.vEgo)
