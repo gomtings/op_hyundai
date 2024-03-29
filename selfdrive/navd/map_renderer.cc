@@ -160,10 +160,16 @@ void MapRenderer::updatePosition(QMapLibre::Coordinate position, float bearing) 
   if(navi_gps_manager.check()) {
     float speed;
     navi_gps_manager.update(position, bearing, speed);
+    if(m_map && m_map->isFullyLoaded()) {
+      navi_gps_manager.setPosition(m_map.data(), position);
+      navi_gps_manager.setBearing(m_map.data(), bearing);
+    }
+  }
+  else {
+    m_map->setCoordinate(position);
+    m_map->setBearing(bearing);
   }
 
-  m_map->setCoordinate(position);
-  m_map->setBearing(bearing);
   m_map->setZoom(zoom);
   update();
 }
