@@ -108,7 +108,7 @@ MapRenderer::MapRenderer(const QMapLibre::Settings &settings, bool online) : m_s
 void MapRenderer::msgUpdate() {
   sm->update(1000);
 
-  if (sm->updated("liveLocationKalman")) {
+  if (sm->updated("liveLocationKalman") || navi_gps_manager.check()) {
     auto location = (*sm)["liveLocationKalman"].getLiveLocationKalman();
     auto pos = location.getPositionGeodetic();
     auto orientation = location.getCalibratedOrientationNED();
@@ -160,16 +160,10 @@ void MapRenderer::updatePosition(QMapLibre::Coordinate position, float bearing) 
   if(navi_gps_manager.check()) {
     float speed;
     navi_gps_manager.update(position, bearing, speed);
-    if(m_map && m_map->isFullyLoaded()) {
-      navi_gps_manager.setPosition(m_map.data(), position);
-      navi_gps_manager.setBearing(m_map.data(), bearing);
-    }
-  }
-  else {
-    m_map->setCoordinate(position);
-    m_map->setBearing(bearing);
   }
 
+  m_map->setCoordinate(position);
+  m_map->setBearing(bearing);
   m_map->setZoom(zoom);
   update();
 }
@@ -205,6 +199,7 @@ void MapRenderer::publish(const double render_time, const bool loaded) {
 
   auto location = (*sm)["liveLocationKalman"].getLiveLocationKalman();
   bool valid = loaded && (location.getStatus() == cereal::LiveLocationKalman::Status::VALID) && location.getPositionGeodetic().getValid();
+  valid = valid || navi_gps_manager.isValid();
   ever_loaded = ever_loaded || loaded;
   uint64_t ts = nanos_since_boot();
   VisionBuf* buf = vipc_server->get_buffer(VisionStreamType::VISION_STREAM_MAP);
