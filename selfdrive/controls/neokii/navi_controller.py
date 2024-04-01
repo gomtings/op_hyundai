@@ -11,9 +11,10 @@ import time
 import socket
 import fcntl
 import struct
+from collections import deque
 from threading import Thread
 from cereal import messaging
-from openpilot.common.numpy_fast import clip, interp
+from openpilot.common.numpy_fast import clip, interp, mean
 from openpilot.common.realtime import Ratekeeper
 from openpilot.common.params import Params
 from openpilot.common.conversions import Conversions as CV
@@ -282,10 +283,13 @@ def navi_gps_thread():
         pass
 
 def publish_thread(server):
-  sm = messaging.SubMaster(['carState'], poll='carState')
+  sm = messaging.SubMaster(['carState'])
   naviData = messaging.pub_sock('naviData')
 
-  rk = Ratekeeper(5.0, print_delay_threshold=None)
+  rk = Ratekeeper(3.0, print_delay_threshold=None)
+
+  v_ego_q = deque(maxlen=3)
+  a_ego_q = deque(maxlen=3)
 
   while True:
     sm.update(0)
@@ -306,12 +310,17 @@ def publish_thread(server):
     dat.naviData.currentRoadName = server.get_limit_val("current_road_name", "")
     dat.naviData.isNda2 = server.get_limit_val("is_nda2", False)
 
-    v_ego = sm['carState'].vEgo
-    a_ego = sm['carState'].aEgo
+    v_ego_q.append(sm['carState'].vEgo)
+    a_ego_q.append(sm['carState'].aEgo)
+    v_ego = mean(v_ego_q)
+    a_ego = mean(a_ego_q)
     t = (time.monotonic() - server.last_updated)
-    s = t * v_ego + (0.5 * a_ego * (t ** 2))
-    dat.naviData.camLimitSpeedLeftDist = int(max(dat.naviData.camLimitSpeedLeftDist - s, 0))
-    dat.naviData.sectionLeftDist = int(max(dat.naviData.sectionLeftDist - s, 0))
+    s = t * v_ego #+ (0.5 * a_ego * (t ** 2))
+
+    if dat.naviData.camLimitSpeedLeftDist > 0:
+      dat.naviData.camLimitSpeedLeftDist = int(max(dat.naviData.camLimitSpeedLeftDist - s, 0))
+    if dat.naviData.sectionLeftDist > 0:
+      dat.naviData.sectionLeftDist = int(max(dat.naviData.sectionLeftDist - s, 0))
 
     ts = {'isGreenLightOn': server.get_ts_val("isGreenLightOn", False),
           'isLeftLightOn': server.get_ts_val("isLeftLightOn", False),

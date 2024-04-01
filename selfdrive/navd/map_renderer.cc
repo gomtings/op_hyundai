@@ -108,7 +108,7 @@ MapRenderer::MapRenderer(const QMapLibre::Settings &settings, bool online) : m_s
 void MapRenderer::msgUpdate() {
   sm->update(1000);
 
-  if (sm->updated("liveLocationKalman") || navi_gps_manager.check()) {
+  if (sm->updated("liveLocationKalman") || navi_gps_manager.isValid()) {
     auto location = (*sm)["liveLocationKalman"].getLiveLocationKalman();
     auto pos = location.getPositionGeodetic();
     auto orientation = location.getCalibratedOrientationNED();
