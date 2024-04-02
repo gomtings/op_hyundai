@@ -39,14 +39,13 @@ J_EGO_COST = 5.0
 A_CHANGE_COST = 50
 DANGER_ZONE_COST = 100.
 CRASH_DISTANCE = .25
-LEAD_DANGER_FACTOR = 0.75
+LEAD_DANGER_FACTOR = 0.85
 LIMIT_COST = 1e6
 ACADOS_SOLVER_TYPE = 'SQP_RTI'
 
 
 CRUISE_GAP_BP = [1., 2., 3., 4.]
 CRUISE_GAP_V = [1.0, 1.2, 1.5, 1.8]
-CRUISE_GAP_E2E_V = [1.1, 1.3, 1.6, 1.8]
 
 # Fewer timestamps don't hurt performance and lead to
 # much better convergence of the MPC with low iterations
@@ -319,7 +318,7 @@ class LongitudinalMpc:
     v_ego = self.x0[1]
     if lead is not None and lead.status:
       x_lead = lead.dRel
-      v_lead = lead.vLeadK
+      v_lead = lead.vLead
       a_lead = lead.aLeadK
       a_lead_tau = lead.aLeadTau
     else:
@@ -355,7 +354,7 @@ class LongitudinalMpc:
     # neokii
     leadDistanceBars = carstate.cruiseState.leadDistanceBars
     cruise_gap = int(clip(leadDistanceBars, 1., 4.)) if leadDistanceBars > 0 else 4
-    self.t_follow = interp(float(cruise_gap), CRUISE_GAP_BP, CRUISE_GAP_V if self.mode == 'acc' else CRUISE_GAP_E2E_V)
+    self.t_follow = interp(float(cruise_gap), CRUISE_GAP_BP, CRUISE_GAP_V)
     self.t_follow *= get_T_FOLLOW_Factor(personality)
 
     # To estimate a safe distance from a moving lead, we calculate how much stopping

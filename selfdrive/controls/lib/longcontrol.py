@@ -58,6 +58,7 @@ class LongControl:
                              k_f=CP.longitudinalTuning.kf, rate=1 / DT_CTRL)
     self.v_pid = 0.0
     self.last_output_accel = 0.0
+    self.last_stopping_accel = 0.0
 
   def reset(self, v_pid):
     """Reset PID controller and change setpoint"""
@@ -99,18 +100,21 @@ class LongControl:
     if self.long_control_state == LongCtrlState.off:
       self.reset(CS.vEgo)
       output_accel = 0.
+      self.last_stopping_accel = 0.
 
     elif self.long_control_state == LongCtrlState.stopping:
       if output_accel > self.CP.stopAccel:
         output_accel = min(output_accel, 0.0)
         output_accel -= interp(output_accel, [-1.0, -0.5], [self.CP.stoppingDecelRate, self.CP.stoppingDecelRate / 2.]) * DT_CTRL
+        self.last_stopping_accel = output_accel
       self.reset(CS.vEgo)
 
     elif self.long_control_state == LongCtrlState.starting:
-      output_accel = self.CP.startAccel if CS.vEgo < 0.01 else 0.
+      output_accel = self.CP.startAccel if CS.vEgo < 0.01 else self.last_stopping_accel
       self.reset(CS.vEgo)
 
     elif self.long_control_state == LongCtrlState.pid:
+      self.last_stopping_accel = 0.
       self.v_pid = v_target
       if v_target_1sec > v_target:
         long_starting_factor = ntune_scc_get('longStartingFactor')
