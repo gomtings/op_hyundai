@@ -36,10 +36,10 @@ X_EGO_COST = 0.
 V_EGO_COST = 0.
 A_EGO_COST = 0.
 J_EGO_COST = 5.0
-A_CHANGE_COST = 50
+A_CHANGE_COST = 80
 DANGER_ZONE_COST = 100.
 CRASH_DISTANCE = .25
-LEAD_DANGER_FACTOR = 0.85
+LEAD_DANGER_FACTOR = 0.8
 LIMIT_COST = 1e6
 ACADOS_SOLVER_TYPE = 'SQP_RTI'
 
@@ -287,11 +287,11 @@ class LongitudinalMpc:
     jerk_factor = get_jerk_factor(personality)
     if self.mode == 'acc':
       a_change_cost = A_CHANGE_COST if prev_accel_constraint else 0
-      x_ego_obstacle_cost = interp(v_ego, [0., 10.], [X_EGO_OBSTACLE_COST*2., X_EGO_OBSTACLE_COST])
+      x_ego_obstacle_cost = interp(v_ego, [0., 3.], [X_EGO_OBSTACLE_COST * 2., X_EGO_OBSTACLE_COST])
       cost_weights = [x_ego_obstacle_cost, X_EGO_COST, V_EGO_COST, A_EGO_COST, jerk_factor * a_change_cost, jerk_factor * J_EGO_COST]
       constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, DANGER_ZONE_COST]
     elif self.mode == 'blended':
-      a_change_cost = 40.0 if prev_accel_constraint else 0
+      a_change_cost = 50.0 if prev_accel_constraint else 0
       cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost, 1.0]
       constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, 100.0]
     else:
