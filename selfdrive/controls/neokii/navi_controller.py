@@ -375,6 +375,7 @@ class SpeedLimiter:
   def __init__(self):
     self.slowing_down = False
     self.started_dist = 0
+    self.last_limit_speed_left_dist = 0
 
     self.sock = messaging.sub_sock("naviData")
     self.naviData = None
@@ -473,11 +474,14 @@ class SpeedLimiter:
         #cam_limit_speed_ms = cam_limit_speed * (CV.KPH_TO_MS if is_metric else CV.MPH_TO_MS)
 
         if cam_type == 22:
-          safe_dist = v_ego * 3.
+          safe_dist = v_ego * 4.
           starting_dist = v_ego * 8.
         else:
           safe_dist = v_ego * 7.
           starting_dist = v_ego * 30.
+
+          if self.slowing_down and self.last_limit_speed_left_dist - cam_limit_speed_left_dist < -(v_ego * 5):
+            self.slowing_down = False
 
         if MIN_LIMIT <= cam_limit_speed <= MAX_LIMIT and (self.slowing_down or cam_limit_speed_left_dist < starting_dist):
           if not self.slowing_down:
@@ -494,6 +498,8 @@ class SpeedLimiter:
             pp = (d / td) ** 0.6
           else:
             pp = 0
+
+          self.last_limit_speed_left_dist = cam_limit_speed_left_dist
 
           return cam_limit_speed * camSpeedFactor + int(pp * diff_speed), \
                  cam_limit_speed, cam_limit_speed_left_dist, first_started, cam_type, log
