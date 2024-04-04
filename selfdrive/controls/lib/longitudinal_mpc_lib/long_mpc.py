@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+import random
 import time
 import numpy as np
 from cereal import log
@@ -343,7 +344,7 @@ class LongitudinalMpc:
     self.cruise_min_a = min_a
     self.max_a = max_a
 
-  def update(self, carstate, radarstate, v_cruise, x, v, a, j, personality=log.LongitudinalPersonality.standard):
+  def update(self, carstate, radarstate, sm, v_cruise, x, v, a, j, personality=log.LongitudinalPersonality.standard):
     #t_follow = get_T_FOLLOW(personality)
     v_ego = self.x0[1]
     self.status = radarstate.leadOne.status or radarstate.leadTwo.status
@@ -415,6 +416,11 @@ class LongitudinalMpc:
     for i in range(N):
       self.solver.set(i, "yref", self.yref[i])
     self.solver.set(N, "yref", self.yref[N][:COST_E_DIM])
+
+    navi_obstacles = sm['naviObstacles']
+    for obstacle in navi_obstacles.obstacles:
+      if obstacle.valid and len(obstacle.obstacle) == 13:
+        x_obstacles = np.column_stack([x_obstacles, obstacle.obstacle])
 
     self.params[:,2] = np.min(x_obstacles, axis=1)
     self.params[:,3] = np.copy(self.prev_a)

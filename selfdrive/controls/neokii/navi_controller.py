@@ -48,6 +48,7 @@ class NaviServer:
     broadcast.start()
 
     subprocess.Popen([os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ngpsd')])
+    subprocess.Popen([os.path.join(os.path.dirname(os.path.abspath(__file__)), 'nobsd')])
 
     speed = Thread(target=self.speed_thread, args=[])
     speed.daemon = True
@@ -282,6 +283,29 @@ def navi_gps_thread():
       except:
         pass
 
+def navi_obstacles_thread():
+  naviObstacles = messaging.pub_sock('naviObstacles')
+  with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+    sock.bind(('0.0.0.0', 2932))
+    while True:
+      try:
+        data, address = sock.recvfrom(13*4+1)
+        dat = messaging.new_message('naviObstacles', valid=True)
+        if data[0] == 1:
+          floats = struct.unpack('13f', data[1:])
+          obstacle = {'valid': True, 'type': 0, 'obstacle': list(floats)}
+          dat.naviObstacles.obstacles = [obstacle]
+        else:
+          dat.naviObstacles.obstacles = []
+        naviObstacles.send(dat.to_bytes())
+      except:
+        pass
+
+def send_obstacle(cam_type, distance, speed, v_ego, s):
+  with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+    data_in_bytes = struct.pack('!iffff', int(cam_type), float(distance), float(speed), float(v_ego), float(s))
+    sock.sendto(data_in_bytes, ('127.0.0.1', 2946))
+
 def publish_thread(server):
   sm = messaging.SubMaster(['carState'])
   naviData = messaging.pub_sock('naviData')
@@ -311,9 +335,9 @@ def publish_thread(server):
     dat.naviData.isNda2 = server.get_limit_val("is_nda2", False)
 
     v_ego_q.append(sm['carState'].vEgo)
-    a_ego_q.append(sm['carState'].aEgo)
+    #a_ego_q.append(sm['carState'].aEgo)
     v_ego = mean(v_ego_q)
-    a_ego = mean(a_ego_q)
+    #a_ego = mean(a_ego_q)
     t = (time.monotonic() - server.last_updated)
     s = t * v_ego #+ (0.5 * a_ego * (t ** 2))
 
@@ -332,6 +356,8 @@ def publish_thread(server):
     dat.naviData.ts = ts
 
     naviData.send(dat.to_bytes())
+
+    send_obstacle(dat.naviData.camType, dat.naviData.camLimitSpeedLeftDist, dat.naviData.camLimitSpeed/3.6, v_ego, s)
     server.check()
     rk.keep_time()
 
@@ -342,6 +368,10 @@ def main():
   navi_gps = Thread(target=navi_gps_thread, args=[])
   navi_gps.daemon = True
   navi_gps.start()
+
+  navi_obstacles = Thread(target=navi_obstacles_thread, args=[])
+  navi_obstacles.daemon = True
+  navi_obstacles.start()
 
   navi_data = Thread(target=publish_thread, args=[server])
   navi_data.daemon = True
@@ -464,9 +494,6 @@ class SpeedLimiter:
         MIN_LIMIT = 20
         MAX_LIMIT = 120
 
-      if cam_type == 22:  # speed bump
-        MIN_LIMIT = 10
-
       if cam_limit_speed_left_dist is not None and cam_limit_speed is not None and cam_limit_speed_left_dist > 0:
 
         v_ego = cluster_speed * (CV.KPH_TO_MS if is_metric else CV.MPH_TO_MS)
@@ -474,7 +501,7 @@ class SpeedLimiter:
         #cam_limit_speed_ms = cam_limit_speed * (CV.KPH_TO_MS if is_metric else CV.MPH_TO_MS)
 
         if cam_type == 22:
-          safe_dist = v_ego * 4.5
+          safe_dist = v_ego * 4.
           starting_dist = v_ego * 8.
         else:
           safe_dist = v_ego * 7.
