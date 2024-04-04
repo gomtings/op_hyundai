@@ -474,7 +474,7 @@ class SpeedLimiter:
         #cam_limit_speed_ms = cam_limit_speed * (CV.KPH_TO_MS if is_metric else CV.MPH_TO_MS)
 
         if cam_type == 22:
-          safe_dist = v_ego * 4.
+          safe_dist = v_ego * 4.5
           starting_dist = v_ego * 8.
         else:
           safe_dist = v_ego * 7.
