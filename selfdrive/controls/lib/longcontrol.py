@@ -22,7 +22,7 @@ def long_control_state_trans(CP, active, long_control_state, v_ego, v_target,
   starting_condition = (v_target_1sec > CP.vEgoStarting and
                         accelerating and
                         not cruise_standstill and
-                        not brake_pressed) and lead_rel_dist > 2.5
+                        not brake_pressed) and lead_rel_dist > 2.0
   started_condition = v_ego > CP.vEgoStarting
 
   if not active:
@@ -35,7 +35,7 @@ def long_control_state_trans(CP, active, long_control_state, v_ego, v_target,
         long_control_state = LongCtrlState.stopping
 
     elif long_control_state == LongCtrlState.stopping:
-      if starting_condition and CP.startingState:
+      if starting_condition and CP.startingState and v_ego < 0.01:
         long_control_state = LongCtrlState.starting
       elif starting_condition:
         long_control_state = LongCtrlState.pid
@@ -58,7 +58,6 @@ class LongControl:
                              k_f=CP.longitudinalTuning.kf, rate=1 / DT_CTRL)
     self.v_pid = 0.0
     self.last_output_accel = 0.0
-    self.start_accel = self.CP.startAccel
 
   def reset(self, v_pid):
     """Reset PID controller and change setpoint"""
@@ -100,7 +99,6 @@ class LongControl:
     if self.long_control_state == LongCtrlState.off:
       self.reset(CS.vEgo)
       output_accel = 0.
-      self.start_accel = self.CP.startAccel
 
     elif self.long_control_state == LongCtrlState.stopping:
       if output_accel > self.CP.stopAccel:
@@ -108,17 +106,14 @@ class LongControl:
         m_accel = -0.7
         output_accel -= interp(output_accel,
             [m_accel - 0.5, m_accel, m_accel + 0.5], [self.CP.stoppingDecelRate, 0.05, self.CP.stoppingDecelRate]) * DT_CTRL
-        self.start_accel = output_accel / 2.
-      else:
-        self.start_accel = self.CP.startAccel
+
       self.reset(CS.vEgo)
 
     elif self.long_control_state == LongCtrlState.starting:
-      output_accel = self.start_accel
+      output_accel = self.CP.startAccel
       self.reset(CS.vEgo)
 
     elif self.long_control_state == LongCtrlState.pid:
-      self.start_accel = self.CP.startAccel
       self.v_pid = v_target
       if v_target_1sec > v_target:
         long_starting_factor = ntune_scc_get('longStartingFactor')
