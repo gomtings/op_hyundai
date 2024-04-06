@@ -293,6 +293,7 @@ AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* par
   ic_turn_signal_l = QPixmap("../assets/images/turn_signal_l.png");
   ic_turn_signal_r = QPixmap("../assets/images/turn_signal_r.png");
   ic_satellite = QPixmap("../assets/images/satellite.png");
+  ic_safety_speed_bump = QPixmap("../assets/images/safety_speed_bump.png");
 
   const int size = 150;
   ic_ts_green[0] = QPixmap("../assets/images/ts/green_off.svg").scaled(size, size, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
@@ -855,27 +856,36 @@ void AnnotatedCameraWidget::drawMaxSpeed(QPainter &p) {
   //
   if(limit_speed > 0) {
     QRect board_rect = QRect(x_start, y_start+board_height-board_width, board_width, board_width);
-    int padding = 14;
-    board_rect.adjust(padding, padding, -padding, -padding);
-    p.setBrush(QBrush(Qt::white));
-    p.drawEllipse(board_rect);
 
-    padding = 18;
-    board_rect.adjust(padding, padding, -padding, -padding);
-    p.setBrush(Qt::NoBrush);
-    p.setPen(QPen(Qt::red, 25));
-    p.drawEllipse(board_rect);
+    if(navi_data.getCamType() == 22) {
+      int padding = 25;
+      board_rect.adjust(padding, padding, -padding, -padding);
+      p.drawPixmap(board_rect.x(), board_rect.y()-10, board_rect.width(), board_rect.height(), ic_safety_speed_bump);
+    }
+    else {
+      int padding = 14;
+      board_rect.adjust(padding, padding, -padding, -padding);
+      p.setBrush(QBrush(Qt::white));
+      p.drawEllipse(board_rect);
 
-    p.setPen(QPen(Qt::black, padding));
+      padding = 18;
+      board_rect.adjust(padding, padding, -padding, -padding);
 
-    str.sprintf("%d", limit_speed);
-    p.setFont(InterFont(70, QFont::Bold));
+      p.setBrush(Qt::NoBrush);
+      p.setPen(QPen(Qt::red, 25));
+      p.drawEllipse(board_rect);
 
-    QRect text_rect = getRect(p, Qt::AlignCenter, str);
-    QRect b_rect = board_rect;
-    text_rect.moveCenter({b_rect.center().x(), 0});
-    text_rect.moveTop(b_rect.top() + (b_rect.height() - text_rect.height()) / 2);
-    p.drawText(text_rect, Qt::AlignCenter, str);
+      p.setPen(QPen(Qt::black, padding));
+
+      str.sprintf("%d", limit_speed);
+      p.setFont(InterFont(70, QFont::Bold));
+
+      QRect text_rect = getRect(p, Qt::AlignCenter, str);
+      QRect b_rect = board_rect;
+      text_rect.moveCenter({b_rect.center().x(), 0});
+      text_rect.moveTop(b_rect.top() + (b_rect.height() - text_rect.height()) / 2);
+      p.drawText(text_rect, Qt::AlignCenter, str);
+    }
 
     if(left_dist > 0) {
       // left dist
@@ -894,7 +904,7 @@ void AnnotatedCameraWidget::drawMaxSpeed(QPainter &p) {
       QFontMetrics fm(font);
       int width = fm.width(strLeftDist);
 
-      padding = 10;
+      int padding = 10;
 
       int center_x = x_start + board_width / 2;
       rcLeftDist.setRect(center_x - width / 2, y_start+board_height+15, width, font.pixelSize()+10);

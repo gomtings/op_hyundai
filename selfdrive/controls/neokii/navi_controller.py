@@ -11,9 +11,10 @@ import time
 import socket
 import fcntl
 import struct
+from collections import deque
 from threading import Thread
 from cereal import messaging
-from openpilot.common.numpy_fast import clip, interp
+from openpilot.common.numpy_fast import clip, interp, mean
 from openpilot.common.realtime import Ratekeeper
 from openpilot.common.params import Params
 from openpilot.common.conversions import Conversions as CV
@@ -47,6 +48,7 @@ class NaviServer:
     broadcast.start()
 
     subprocess.Popen([os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ngpsd')])
+    subprocess.Popen([os.path.join(os.path.dirname(os.path.abspath(__file__)), 'nobsd')])
 
     speed = Thread(target=self.speed_thread, args=[])
     speed.daemon = True
@@ -138,7 +140,6 @@ class NaviServer:
 
           time.sleep(5.)
           frame += 1
-
       except:
         pass
 
@@ -282,50 +283,107 @@ def navi_gps_thread():
       except:
         pass
 
+def navi_obstacles_thread():
+  naviObstacles = messaging.pub_sock('naviObstacles')
+  with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+    sock.bind(('0.0.0.0', 2932))
+    while True:
+      try:
+        data, address = sock.recvfrom(13*4+1)
+        dat = messaging.new_message('naviObstacles', valid=True)
+        if data[0] == 1:
+          floats = struct.unpack('13f', data[1:])
+          obstacle = {'valid': True, 'type': 0, 'obstacle': list(floats)}
+          dat.naviObstacles.obstacles = [obstacle]
+        else:
+          dat.naviObstacles.obstacles = []
+        naviObstacles.send(dat.to_bytes())
+      except:
+        pass
+
+def send_obstacle(cam_type, distance, speed, v_ego, s):
+  with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+    data_in_bytes = struct.pack('!iffff', int(cam_type), float(distance), float(speed), float(v_ego), float(s))
+    sock.sendto(data_in_bytes, ('127.0.0.1', 2946))
+
+def publish_thread(server):
+  sm = messaging.SubMaster(['carState'])
+  naviData = messaging.pub_sock('naviData')
+
+  rk = Ratekeeper(3.0, print_delay_threshold=None)
+
+  v_ego_q = deque(maxlen=3)
+  a_ego_q = deque(maxlen=3)
+
+  while True:
+    sm.update(0)
+
+    dat = messaging.new_message('naviData', valid=True)
+    dat.naviData.active = server.active
+    dat.naviData.roadLimitSpeed = server.get_limit_val("road_limit_speed", 0)
+    dat.naviData.isHighway = server.get_limit_val("is_highway", False)
+    dat.naviData.camType = server.get_limit_val("cam_type", 0)
+    dat.naviData.camLimitSpeedLeftDist = server.get_limit_val("cam_limit_speed_left_dist", 0)
+    dat.naviData.camLimitSpeed = server.get_limit_val("cam_limit_speed", 0)
+    dat.naviData.sectionLimitSpeed = server.get_limit_val("section_limit_speed", 0)
+    dat.naviData.sectionLeftDist = server.get_limit_val("section_left_dist", 0)
+    dat.naviData.sectionAvgSpeed = server.get_limit_val("section_avg_speed", 0)
+    dat.naviData.sectionLeftTime = server.get_limit_val("section_left_time", 0)
+    dat.naviData.sectionAdjustSpeed = server.get_limit_val("section_adjust_speed", False)
+    dat.naviData.camSpeedFactor = server.get_limit_val("cam_speed_factor", CAMERA_SPEED_FACTOR)
+    dat.naviData.currentRoadName = server.get_limit_val("current_road_name", "")
+    dat.naviData.isNda2 = server.get_limit_val("is_nda2", False)
+
+    v_ego_q.append(sm['carState'].vEgo)
+    #a_ego_q.append(sm['carState'].aEgo)
+    v_ego = mean(v_ego_q)
+    #a_ego = mean(a_ego_q)
+    t = (time.monotonic() - server.last_updated)
+    s = t * v_ego #+ (0.5 * a_ego * (t ** 2))
+
+    if dat.naviData.camLimitSpeedLeftDist > 0:
+      dat.naviData.camLimitSpeedLeftDist = int(max(dat.naviData.camLimitSpeedLeftDist - s, 0))
+    if dat.naviData.sectionLeftDist > 0:
+      dat.naviData.sectionLeftDist = int(max(dat.naviData.sectionLeftDist - s, 0))
+
+    ts = {'isGreenLightOn': server.get_ts_val("isGreenLightOn", False),
+          'isLeftLightOn': server.get_ts_val("isLeftLightOn", False),
+          'isRedLightOn': server.get_ts_val("isRedLightOn", False),
+          'greenLightRemainTime': server.get_ts_val("greenLightRemainTime", 0),
+          'leftLightRemainTime': server.get_ts_val("leftLightRemainTime", 0),
+          'redLightRemainTime': server.get_ts_val("redLightRemainTime", 0),
+          'distance': server.get_ts_val("distance", 0)}
+    dat.naviData.ts = ts
+
+    naviData.send(dat.to_bytes())
+
+    send_obstacle(dat.naviData.camType, dat.naviData.camLimitSpeedLeftDist, dat.naviData.camLimitSpeed/3.6, v_ego, s)
+    server.check()
+    rk.keep_time()
+
+
 def main():
+  server = NaviServer()
+
   navi_gps = Thread(target=navi_gps_thread, args=[])
   navi_gps.daemon = True
   navi_gps.start()
 
-  server = NaviServer()
-  naviData = messaging.pub_sock('naviData')
+  navi_obstacles = Thread(target=navi_obstacles_thread, args=[])
+  navi_obstacles.daemon = True
+  navi_obstacles.start()
+
+  navi_data = Thread(target=publish_thread, args=[server])
+  navi_data.daemon = True
+  navi_data.start()
 
   with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
     try:
       sock.bind(('0.0.0.0', Port.RECEIVE_PORT))
-      sock.setblocking(False)
-
+      sock.setblocking(True)
       while True:
-        if server.udp_recv(sock):
-          dat = messaging.new_message('naviData', valid=True)
-          dat.naviData.active = server.active
-          dat.naviData.roadLimitSpeed = server.get_limit_val("road_limit_speed", 0)
-          dat.naviData.isHighway = server.get_limit_val("is_highway", False)
-          dat.naviData.camType = server.get_limit_val("cam_type", 0)
-          dat.naviData.camLimitSpeedLeftDist = server.get_limit_val("cam_limit_speed_left_dist", 0)
-          dat.naviData.camLimitSpeed = server.get_limit_val("cam_limit_speed", 0)
-          dat.naviData.sectionLimitSpeed = server.get_limit_val("section_limit_speed", 0)
-          dat.naviData.sectionLeftDist = server.get_limit_val("section_left_dist", 0)
-          dat.naviData.sectionAvgSpeed = server.get_limit_val("section_avg_speed", 0)
-          dat.naviData.sectionLeftTime = server.get_limit_val("section_left_time", 0)
-          dat.naviData.sectionAdjustSpeed = server.get_limit_val("section_adjust_speed", False)
-          dat.naviData.camSpeedFactor = server.get_limit_val("cam_speed_factor", CAMERA_SPEED_FACTOR)
-          dat.naviData.currentRoadName = server.get_limit_val("current_road_name", "")
-          dat.naviData.isNda2 = server.get_limit_val("is_nda2", False)
-
-          ts = {'isGreenLightOn': server.get_ts_val("isGreenLightOn", False),
-                'isLeftLightOn': server.get_ts_val("isLeftLightOn", False),
-                'isRedLightOn': server.get_ts_val("isRedLightOn", False),
-                'greenLightRemainTime': server.get_ts_val("greenLightRemainTime", 0),
-                'leftLightRemainTime': server.get_ts_val("leftLightRemainTime", 0),
-                'redLightRemainTime': server.get_ts_val("redLightRemainTime", 0),
-                'distance': server.get_ts_val("distance", 0)}
-          dat.naviData.ts = ts
-
-          naviData.send(dat.to_bytes())
-
+        server.udp_recv(sock)
         server.send_sdp(sock)
-        server.check()
 
     except Exception as e:
       server.last_exception = e
@@ -347,6 +405,7 @@ class SpeedLimiter:
   def __init__(self):
     self.slowing_down = False
     self.started_dist = 0
+    self.last_limit_speed_left_dist = 0
 
     self.sock = messaging.sub_sock("naviData")
     self.naviData = None
@@ -404,7 +463,7 @@ class SpeedLimiter:
     self.recv()
 
     if self.naviData is None:
-      return 0, 0, 0, False, ""
+      return 0, 0, 0, False, 0, ""
 
     try:
 
@@ -435,21 +494,21 @@ class SpeedLimiter:
         MIN_LIMIT = 20
         MAX_LIMIT = 120
 
-      if cam_type == 22:  # speed bump
-        MIN_LIMIT = 10
-
       if cam_limit_speed_left_dist is not None and cam_limit_speed is not None and cam_limit_speed_left_dist > 0:
 
         v_ego = cluster_speed * (CV.KPH_TO_MS if is_metric else CV.MPH_TO_MS)
         diff_speed = cluster_speed - (cam_limit_speed * camSpeedFactor)
         #cam_limit_speed_ms = cam_limit_speed * (CV.KPH_TO_MS if is_metric else CV.MPH_TO_MS)
 
-        starting_dist = v_ego * 30.
-
         if cam_type == 22:
-          safe_dist = v_ego * 3.
+          safe_dist = v_ego * 4.
+          starting_dist = v_ego * 8.
         else:
-          safe_dist = v_ego * 6.
+          safe_dist = v_ego * 7.
+          starting_dist = v_ego * 30.
+
+        if self.slowing_down and self.last_limit_speed_left_dist - cam_limit_speed_left_dist < -(v_ego * 5):
+          self.slowing_down = False
 
         if MIN_LIMIT <= cam_limit_speed <= MAX_LIMIT and (self.slowing_down or cam_limit_speed_left_dist < starting_dist):
           if not self.slowing_down:
@@ -467,11 +526,13 @@ class SpeedLimiter:
           else:
             pp = 0
 
+          self.last_limit_speed_left_dist = cam_limit_speed_left_dist
+
           return cam_limit_speed * camSpeedFactor + int(pp * diff_speed), \
-                 cam_limit_speed, cam_limit_speed_left_dist, first_started, log
+                 cam_limit_speed, cam_limit_speed_left_dist, first_started, cam_type, log
 
         self.slowing_down = False
-        return 0, cam_limit_speed, cam_limit_speed_left_dist, False, log
+        return 0, cam_limit_speed, cam_limit_speed_left_dist, False, cam_type, log
 
       elif section_left_dist is not None and section_limit_speed is not None and section_left_dist > 0:
         if MIN_LIMIT <= section_limit_speed <= MAX_LIMIT:
@@ -487,17 +548,17 @@ class SpeedLimiter:
             speed_diff = (section_limit_speed - section_avg_speed) / 2.
             speed_diff *= interp(section_left_dist, [500, 1000], [0., 1.])
 
-          return section_limit_speed * camSpeedFactor + speed_diff, section_limit_speed, section_left_dist, first_started, log
+          return section_limit_speed * camSpeedFactor + speed_diff, section_limit_speed, section_left_dist, first_started, cam_type, log
 
         self.slowing_down = False
-        return 0, section_limit_speed, section_left_dist, False, log
+        return 0, section_limit_speed, section_left_dist, False, cam_type, log
 
     except Exception as e:
       log = "Ex: " + str(e)
       pass
 
     self.slowing_down = False
-    return 0, 0, 0, False, log
+    return 0, 0, 0, False, 0, log
 
 def signal_handler(sig, frame):
   print('Ctrl+C pressed, exiting.')

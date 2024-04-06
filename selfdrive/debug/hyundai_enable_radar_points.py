@@ -27,6 +27,11 @@ class ConfigValues(NamedTuple):
 # this file to add your firmware version. Make sure to post a drive as proof!
 # NOTE: these firmware versions do not match what openpilot uses
 #       because this script uses a different diagnostic session type
+
+COMMON_CONFIG = ConfigValues(
+    default_config=b"\x00\x00\x00\x01\x00\x00",
+    tracks_enabled=b"\x00\x00\x00\x01\x00\x01")
+
 SUPPORTED_FW_VERSIONS = {
   # 2020 SONATA
   b"DN8_ SCC FHCUP      1.00 1.00 99110-L0000\x19\x08)\x15T    ": ConfigValues(
@@ -91,41 +96,46 @@ if __name__ == "__main__":
     print("\nyou didn't type 'OK! (aborted)")
     sys.exit(0)
 
-  panda = Panda()
-  panda.set_safety_mode(Panda.SAFETY_ELM327)
-  uds_client = UdsClient(panda, 0x7D0, bus=args.bus, debug=args.debug)
+  try:
+    panda = Panda()
+    panda.set_safety_mode(Panda.SAFETY_ELM327)
+    uds_client = UdsClient(panda, 0x7D0, bus=args.bus, debug=args.debug)
 
-  print("\n[START DIAGNOSTIC SESSION]")
-  session_type : SESSION_TYPE = 0x07 # type: ignore
-  uds_client.diagnostic_session_control(session_type)
+    print("\n[START DIAGNOSTIC SESSION]")
+    session_type : SESSION_TYPE = 0x07 # type: ignore
+    uds_client.diagnostic_session_control(session_type)
 
-  print("[HARDWARE/SOFTWARE VERSION]")
-  fw_version_data_id : DATA_IDENTIFIER_TYPE = 0xf100 # type: ignore
-  fw_version = uds_client.read_data_by_identifier(fw_version_data_id)
-  print(fw_version)
-  if fw_version not in SUPPORTED_FW_VERSIONS.keys():
-    print("radar not supported! (aborted)")
+    print("[HARDWARE/SOFTWARE VERSION]")
+    fw_version_data_id : DATA_IDENTIFIER_TYPE = 0xf100 # type: ignore
+    fw_version = uds_client.read_data_by_identifier(fw_version_data_id)
+    print(fw_version)
+    #if fw_version not in SUPPORTED_FW_VERSIONS.keys():
+    #  print("radar not supported! (aborted)")
+    #  sys.exit(1)
+
+    print("[GET CONFIGURATION]")
+    config_data_id : DATA_IDENTIFIER_TYPE = 0x0142 # type: ignore
+    current_config = uds_client.read_data_by_identifier(config_data_id)
+    config_values = COMMON_CONFIG #SUPPORTED_FW_VERSIONS[fw_version]
+    new_config = config_values.default_config if args.default else config_values.tracks_enabled
+    print(f"current config: 0x{current_config.hex()}")
+    if current_config != new_config:
+      print("[CHANGE CONFIGURATION]")
+      print(f"new config:     0x{new_config.hex()}")
+      uds_client.write_data_by_identifier(config_data_id, new_config)
+      if not args.default and current_config != COMMON_CONFIG: #SUPPORTED_FW_VERSIONS[fw_version].default_config:
+        print("\ncurrent config does not match expected default! (aborted)")
+        sys.exit(1)
+
+      print("[DONE]")
+      print("\nrestart your vehicle and ensure there are no faults")
+      if not args.default:
+        print("you can run this script again with --default to go back to the original (factory) settings")
+    else:
+      print("[DONE]")
+      print("\ncurrent config is already the desired configuration")
+      sys.exit(0)
+  except Exception as e:
+    print("[ERROR]")
+    print(e)
     sys.exit(1)
-
-  print("[GET CONFIGURATION]")
-  config_data_id : DATA_IDENTIFIER_TYPE = 0x0142 # type: ignore
-  current_config = uds_client.read_data_by_identifier(config_data_id)
-  config_values = SUPPORTED_FW_VERSIONS[fw_version]
-  new_config = config_values.default_config if args.default else config_values.tracks_enabled
-  print(f"current config: 0x{current_config.hex()}")
-  if current_config != new_config:
-    print("[CHANGE CONFIGURATION]")
-    print(f"new config:     0x{new_config.hex()}")
-    uds_client.write_data_by_identifier(config_data_id, new_config)
-    if not args.default and current_config != SUPPORTED_FW_VERSIONS[fw_version].default_config:
-      print("\ncurrent config does not match expected default! (aborted)")
-      sys.exit(1)
-
-    print("[DONE]")
-    print("\nrestart your vehicle and ensure there are no faults")
-    if not args.default:
-      print("you can run this script again with --default to go back to the original (factory) settings")
-  else:
-    print("[DONE]")
-    print("\ncurrent config is already the desired configuration")
-    sys.exit(0)

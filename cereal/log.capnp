@@ -1058,6 +1058,8 @@ struct LongitudinalPlan @0xe00b5b3eba12876c {
 
   solverExecutionTime @35 :Float32;
 
+  leadRelDist @37 :Float32;
+
   enum LongitudinalPlanSource {
     cruise @0;
     lead0 @1;
@@ -2350,6 +2352,7 @@ struct Event {
     # neokii
     naviData @128 :NaviData;
     naviGps @129 :NaviGps;
+    naviObstacles @130 :NaviObstacles;
 
     # *********** legacy + deprecated ***********
     model @9 :Legacy.ModelData; # TODO: rename modelV2 and mark this as deprecated
@@ -2426,4 +2429,14 @@ struct NaviGps {
   longitude @1 :Float32;
   heading @2 :Float32;
   speed @3 :Float32;
+}
+
+struct NaviObstacles {
+  obstacles @0 :List(Obstacle);
+
+  struct Obstacle {
+    valid @0: Bool;
+    type @1: Int16;
+    obstacle @2:List(Float32);
+  }
 }

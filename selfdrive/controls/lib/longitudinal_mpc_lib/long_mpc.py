@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+import random
 import time
 import numpy as np
 from cereal import log
@@ -36,17 +37,16 @@ X_EGO_COST = 0.
 V_EGO_COST = 0.
 A_EGO_COST = 0.
 J_EGO_COST = 5.0
-A_CHANGE_COST = 50
+A_CHANGE_COST = 80
 DANGER_ZONE_COST = 100.
 CRASH_DISTANCE = .25
-LEAD_DANGER_FACTOR = 0.75
+LEAD_DANGER_FACTOR = 0.8
 LIMIT_COST = 1e6
 ACADOS_SOLVER_TYPE = 'SQP_RTI'
 
 
 CRUISE_GAP_BP = [1., 2., 3., 4.]
 CRUISE_GAP_V = [1.0, 1.2, 1.5, 1.8]
-CRUISE_GAP_E2E_V = [1.1, 1.3, 1.6, 1.8]
 
 # Fewer timestamps don't hurt performance and lead to
 # much better convergence of the MPC with low iterations
@@ -288,11 +288,11 @@ class LongitudinalMpc:
     jerk_factor = get_jerk_factor(personality)
     if self.mode == 'acc':
       a_change_cost = A_CHANGE_COST if prev_accel_constraint else 0
-      x_ego_obstacle_cost = interp(v_ego, [0., 10.], [X_EGO_OBSTACLE_COST*2., X_EGO_OBSTACLE_COST])
+      x_ego_obstacle_cost = interp(v_ego, [0., 3.], [X_EGO_OBSTACLE_COST * 2., X_EGO_OBSTACLE_COST])
       cost_weights = [x_ego_obstacle_cost, X_EGO_COST, V_EGO_COST, A_EGO_COST, jerk_factor * a_change_cost, jerk_factor * J_EGO_COST]
       constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, DANGER_ZONE_COST]
     elif self.mode == 'blended':
-      a_change_cost = 40.0 if prev_accel_constraint else 0
+      a_change_cost = 50.0 if prev_accel_constraint else 0
       cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost, 1.0]
       constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, 100.0]
     else:
@@ -319,7 +319,7 @@ class LongitudinalMpc:
     v_ego = self.x0[1]
     if lead is not None and lead.status:
       x_lead = lead.dRel
-      v_lead = lead.vLeadK
+      v_lead = lead.vLead
       a_lead = lead.aLeadK
       a_lead_tau = lead.aLeadTau
     else:
@@ -344,7 +344,7 @@ class LongitudinalMpc:
     self.cruise_min_a = min_a
     self.max_a = max_a
 
-  def update(self, carstate, radarstate, v_cruise, x, v, a, j, personality=log.LongitudinalPersonality.standard):
+  def update(self, carstate, radarstate, sm, v_cruise, x, v, a, j, personality=log.LongitudinalPersonality.standard):
     #t_follow = get_T_FOLLOW(personality)
     v_ego = self.x0[1]
     self.status = radarstate.leadOne.status or radarstate.leadTwo.status
@@ -355,7 +355,7 @@ class LongitudinalMpc:
     # neokii
     leadDistanceBars = carstate.cruiseState.leadDistanceBars
     cruise_gap = int(clip(leadDistanceBars, 1., 4.)) if leadDistanceBars > 0 else 4
-    self.t_follow = interp(float(cruise_gap), CRUISE_GAP_BP, CRUISE_GAP_V if self.mode == 'acc' else CRUISE_GAP_E2E_V)
+    self.t_follow = interp(float(cruise_gap), CRUISE_GAP_BP, CRUISE_GAP_V)
     self.t_follow *= get_T_FOLLOW_Factor(personality)
 
     # To estimate a safe distance from a moving lead, we calculate how much stopping
@@ -416,6 +416,11 @@ class LongitudinalMpc:
     for i in range(N):
       self.solver.set(i, "yref", self.yref[i])
     self.solver.set(N, "yref", self.yref[N][:COST_E_DIM])
+
+    navi_obstacles = sm['naviObstacles']
+    for obstacle in navi_obstacles.obstacles:
+      if obstacle.valid and len(obstacle.obstacle) == 13:
+        x_obstacles = np.column_stack([x_obstacles, obstacle.obstacle])
 
     self.params[:,2] = np.min(x_obstacles, axis=1)
     self.params[:,3] = np.copy(self.prev_a)

@@ -126,7 +126,7 @@ protected:
   QPixmap ic_turn_signal_l;
   QPixmap ic_turn_signal_r;
   QPixmap ic_satellite;
-
+  QPixmap ic_safety_speed_bump;
   QPixmap ic_ts_green[2];
   QPixmap ic_ts_left[2];
   QPixmap ic_ts_red[2];

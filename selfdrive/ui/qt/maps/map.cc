@@ -206,7 +206,10 @@ void MapWindow::updateState(const UIState &s) {
 
     // Map bearing isn't updated when interacting, keep location marker up to date
     if (last_bearing) {
-      m_map->setLayoutProperty("carPosLayer", "icon-rotate", *last_bearing - m_map->bearing());
+      if(!navi_gps_manager.isValid())
+        m_map->setLayoutProperty("carPosLayer", "icon-rotate", *last_bearing - m_map->bearing());
+      else
+        m_map->setLayoutProperty("carPosLayer", "icon-rotate", 0);
     }
   }
 
