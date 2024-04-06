@@ -494,6 +494,9 @@ class SpeedLimiter:
         MIN_LIMIT = 20
         MAX_LIMIT = 120
 
+      if cam_type == 22:  # speed bump
+        MIN_LIMIT = 10
+
       if cam_limit_speed_left_dist is not None and cam_limit_speed is not None and cam_limit_speed_left_dist > 0:
 
         v_ego = cluster_speed * (CV.KPH_TO_MS if is_metric else CV.MPH_TO_MS)
