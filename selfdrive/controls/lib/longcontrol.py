@@ -10,8 +10,8 @@ LongCtrlState = car.CarControl.Actuators.LongControlState
 
 
 def long_control_state_trans(CP, active, long_control_state, v_ego, v_target,
-                             v_target_1sec, brake_pressed, cruise_standstill, lead_rel_dist):
-  accelerating = v_target_1sec > v_target
+                             v_target_1sec, brake_pressed, cruise_standstill, lead):
+  accelerating = v_target_1sec > v_target and (not lead.status or (lead.vLeadK > 0.3 and lead.dRel > 3.))
   planned_stop = (v_target < CP.vEgoStopping and
                   v_target_1sec < CP.vEgoStopping and
                   not accelerating)
@@ -22,7 +22,7 @@ def long_control_state_trans(CP, active, long_control_state, v_ego, v_target,
   starting_condition = (v_target_1sec > CP.vEgoStarting and
                         accelerating and
                         not cruise_standstill and
-                        not brake_pressed) and lead_rel_dist > 2.0
+                        not brake_pressed)
   started_condition = v_ego > CP.vEgoStarting
 
   if not active:
@@ -65,7 +65,7 @@ class LongControl:
     self.pid.reset()
     self.v_pid = v_pid
 
-  def update(self, active, CS, long_plan, accel_limits, t_since_plan, is_blend):
+  def update(self, active, CS, sm, long_plan, accel_limits, t_since_plan, is_blend):
     """Update longitudinal control. This updates the state machine and runs a PID loop"""
     # Interp control trajectory
     speeds = long_plan.speeds
@@ -95,7 +95,7 @@ class LongControl:
     output_accel = self.last_output_accel
     self.long_control_state = long_control_state_trans(self.CP, active, self.long_control_state, CS.vEgo,
                                                        v_target, v_target_1sec, CS.brakePressed,
-                                                       CS.cruiseState.standstill, long_plan.leadRelDist)
+                                                       CS.cruiseState.standstill, sm['radarState'].leadOne)
 
     if self.long_control_state == LongCtrlState.off:
       self.reset(CS.vEgo)
@@ -146,7 +146,7 @@ class LongControl:
                                      feedforward=a_target,
                                      freeze_integrator=freeze_integrator)
 
-      self.stopping_accel_weight = max(self.stopping_accel_weight - 3. * DT_CTRL, 0.)
+      self.stopping_accel_weight = max(self.stopping_accel_weight - 2. * DT_CTRL, 0.)
       output_accel = self.last_output_accel * self.stopping_accel_weight + output_accel * (1. - self.stopping_accel_weight)
 
     self.last_output_accel = clip(output_accel, accel_limits[0], accel_limits[1])
