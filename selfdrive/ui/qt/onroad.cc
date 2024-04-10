@@ -1020,6 +1020,9 @@ void AnnotatedCameraWidget::drawSteer(QPainter &p) {
   const SubMaster &sm = *(uiState()->sm);
   auto car_state = sm["carState"].getCarState();
   auto car_control = sm["carControl"].getCarControl();
+  auto radar_state = sm["radarState"].getRadarState();
+  auto lead_one = radar_state.getLeadOne();
+  auto lead_two = radar_state.getLeadTwo();
 
   float steer_angle = car_state.getSteeringAngleDeg();
   float desire_angle = car_control.getActuators().getSteeringAngleDeg();
@@ -1040,6 +1043,20 @@ void AnnotatedCameraWidget::drawSteer(QPainter &p) {
 
   p.setPen(QColor(155, 255, 155, 200));
   p.drawText(rect, Qt::AlignCenter, str);
+
+  if(lead_one.getStatus()) {
+    str.sprintf("%.1fm", lead_one.getDRel());
+    rect.setRect(x + 150, y, width, width);
+    p.setPen(QColor(255, 255, 255, 200));
+    p.drawText(rect, Qt::AlignCenter, str);
+  }
+
+  if(lead_two.getStatus()) {
+    str.sprintf("%.1fm", lead_two.getDRel());
+    rect.setRect(x + 150, y + 80, width, width);
+    p.setPen(QColor(255, 255, 255, 200));
+    p.drawText(rect, Qt::AlignCenter, str);
+  }
 
   p.restore();
 }
@@ -1077,10 +1094,8 @@ void AnnotatedCameraWidget::drawDeviceState(QPainter &p) {
   const auto freeSpacePercent = deviceState.getFreeSpacePercent();
 
   const auto cpuTempC = deviceState.getCpuTempC();
-  const auto gpuTempC = deviceState.getGpuTempC();
 
   float cpuTemp = 0.f;
-  float gpuTemp = 0.f;
 
   if(std::size(cpuTempC) > 0) {
     for(int i = 0; i < std::size(cpuTempC); i++) {
@@ -1089,17 +1104,9 @@ void AnnotatedCameraWidget::drawDeviceState(QPainter &p) {
     cpuTemp = cpuTemp / (float)std::size(cpuTempC);
   }
 
-  if(std::size(gpuTempC) > 0) {
-    for(int i = 0; i < std::size(gpuTempC); i++) {
-      gpuTemp += gpuTempC[i];
-    }
-    gpuTemp = gpuTemp / (float)std::size(gpuTempC);
-    cpuTemp = (cpuTemp + gpuTemp) / 2.f;
-  }
-
   int w = 192;
   int x = width() - (30 + w) + 8;
-  int y = 340;
+  int y = 340 + 80;
 
   QString str;
   QRect rect;
@@ -1133,21 +1140,6 @@ void AnnotatedCameraWidget::drawDeviceState(QPainter &p) {
   rect = QRect(x, y, w, w);
   p.setPen(QColor(255, 255, 255, 200));
   p.drawText(rect, Qt::AlignCenter, "CPU");
-
-  y += 80;
-  p.setFont(InterFont(50, QFont::Bold));
-  str.sprintf("%.0f°C", gpuTemp);
-  rect = QRect(x, y, w, w);
-  r = interp<float>(gpuTemp, {35.f, 60.f}, {200.f, 255.f}, false);
-  g = interp<float>(gpuTemp, {35.f, 60.f}, {255.f, 200.f}, false);
-  p.setPen(QColor(r, g, 200, 200));
-  p.drawText(rect, Qt::AlignCenter, str);
-
-  y += 55;
-  p.setFont(InterFont(25, QFont::Bold));
-  rect = QRect(x, y, w, w);
-  p.setPen(QColor(255, 255, 255, 200));
-  p.drawText(rect, Qt::AlignCenter, "GPU");
 
   p.restore();
 }
