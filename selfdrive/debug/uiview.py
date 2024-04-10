@@ -10,7 +10,7 @@ if __name__ == "__main__":
   Params().put("CarParams", CP.to_bytes())
 
   procs = ['camerad', 'ui', 'modeld', 'calibrationd', 'dmonitoringmodeld', 'dmonitoringd',
-           'navi_controller', 'navi_route', 'mapsd', 'navmodeld', 'locationd']
+           'navi_controller', 'navi_route', 'locationd']
 
   HARDWARE.set_power_save(False)
 
