@@ -213,6 +213,9 @@ class nTune():
     if self.checkValue("longLeadSensitivity", 0.4, 1.2, 0.65):
       updated = True
 
+    if self.checkValue("stopDistance", 4., 7., 4.5):
+      updated = True
+
     if self.checkValue("longDisableRadar", 0., 1., 0.):
       updated = True
 
