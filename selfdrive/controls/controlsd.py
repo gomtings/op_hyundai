@@ -34,6 +34,7 @@ from openpilot.system.hardware import HARDWARE
 
 from openpilot.selfdrive.controls.ntune import ntune_common_enabled, ntune_common_get
 from openpilot.selfdrive.controls.neokii.speed_controller import SpeedController
+from openpilot.selfdrive.controls.radard import RADAR_TO_CAMERA
 
 SOFT_DISABLE_TIME = 3  # seconds
 LDW_MIN_SPEED = 31 * CV.MPH_TO_MS
@@ -636,7 +637,7 @@ class Controls:
     # Send a "steering required alert" if saturation count has reached the limit
     if lac_log.active and not recent_steer_pressed and not self.CP.notCar:
       if self.CP.lateralTuning.which() == 'torque' and not self.joystick_mode:
-        undershooting = abs(lac_log.desiredLateralAccel) / abs(1e-3 + lac_log.actualLateralAccel) > 1.2
+        undershooting = abs(lac_log.desiredLateralAccel) / abs(1e-3 + lac_log.actualLateralAccel) > 2.5
         turning = abs(lac_log.desiredLateralAccel) > 1.0
         good_speed = CS.vEgo > 5
         max_torque = abs(self.last_actuators.steer) > 0.99
@@ -710,6 +711,17 @@ class Controls:
 
     hudControl.rightLaneVisible = True
     hudControl.leftLaneVisible = True
+
+    # add PolorBear - 선행차 의 거리 계산...
+    lead_model = self.sm['modelV2'].leadsV3 # 선행차 와의 거리 (비젼 측정값...)
+    lead_radar = self.sm['radarState'].leadOne # 선행차 와의 거리 (레이다 측정값...)
+    if len(lead_model) : #비전에서 측정 결과가 있을때...
+      vision_dist = lead_model[0].x[0] - RADAR_TO_CAMERA if lead_model[0].prob > .5 else 0 #(비젼 측정값...)
+      #radar_dist = lead_radar.dRel if lead_radar.status and lead_radar.radar else 0 #(레이다 측정값...)
+      hudControl.objDist = int(vision_dist)
+    else : # 비젼 결과가 없으면... 레이다...
+      radar_dist = lead_radar.dRel if lead_radar.status and lead_radar.radar else 0 #레이다
+      hudControl.objDist = int(radar_dist)
 
     recent_blinker = (self.sm.frame - self.last_blinker_frame) * DT_CTRL < 5.0  # 5s blinker cooldown
     ldw_allowed = self.is_ldw_enabled and CS.vEgo > LDW_MIN_SPEED and not recent_blinker \
