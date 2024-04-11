@@ -59,6 +59,7 @@ class LongControl:
     self.v_pid = 0.0
     self.last_output_accel = 0.0
     self.stopping_accel_weight = 0.0
+    self.prev_long_control_state = self.long_control_state
 
   def reset(self, v_pid):
     """Reset PID controller and change setpoint"""
@@ -93,6 +94,7 @@ class LongControl:
     self.pid.pos_limit = accel_limits[1]
 
     output_accel = self.last_output_accel
+    self.prev_long_control_state = self.long_control_state
     self.long_control_state = long_control_state_trans(self.CP, active, self.long_control_state, CS.vEgo,
                                                        v_target, v_target_1sec, CS.brakePressed,
                                                        CS.cruiseState.standstill, sm['radarState'].leadOne)
@@ -105,14 +107,16 @@ class LongControl:
     elif self.long_control_state == LongCtrlState.stopping:
       if output_accel > self.CP.stopAccel:
         output_accel = min(output_accel, 0.0)
-        m_accel = -0.7
-        d_accel = interp(output_accel,
-                               [m_accel - 0.5, m_accel, m_accel + 0.5],
-                               [self.CP.stoppingDecelRate, 0.05, self.CP.stoppingDecelRate])
-        d_accel *= interp(CS.vEgo, [self.CP.vEgoStopping, self.CP.vEgoStopping * 3.], [1., 1.5])
-        output_accel -= d_accel * DT_CTRL
-
         self.stopping_accel_weight = 1.0
+        if self.prev_long_control_state == LongCtrlState.starting:
+          output_accel -= self.CP.stoppingDecelRate * 1.5 * DT_CTRL
+        else:
+          m_accel = -0.7
+          d_accel = interp(output_accel,
+                           [m_accel - 0.5, m_accel, m_accel + 0.5],
+                           [self.CP.stoppingDecelRate, 0.05, self.CP.stoppingDecelRate])
+
+          output_accel -= d_accel * DT_CTRL
       else:
         self.stopping_accel_weight = 0.0
 

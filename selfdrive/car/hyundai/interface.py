@@ -94,12 +94,12 @@ class CarInterface(CarInterfaceBase):
     if candidate in CANFD_CAR:
       ret.longitudinalTuning.kpBP = [0., 10.]
       ret.longitudinalTuning.kpV = [0.5, 0.2]
-      ret.longitudinalTuning.kiV = [0.0]
+      ret.longitudinalTuning.kiV = [0.]
       ret.experimentalLongitudinalAvailable = candidate not in CANFD_UNSUPPORTED_LONGITUDINAL_CAR
     else:
       ret.longitudinalTuning.kpBP = [0., 10.]
-      ret.longitudinalTuning.kpV = [1.3, 0.7]
-      ret.longitudinalTuning.kiV = [0.0]
+      ret.longitudinalTuning.kpV = [1.2, 0.6]
+      ret.longitudinalTuning.kiV = [0.]
       ret.experimentalLongitudinalAvailable = True #candidate not in (LEGACY_SAFETY_MODE_CAR)
 
     ret.openpilotLongitudinalControl = experimental_long and ret.experimentalLongitudinalAvailable
