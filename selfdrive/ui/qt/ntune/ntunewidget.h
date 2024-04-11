@@ -23,13 +23,16 @@ public:
     float max;
     float step;
     int precision;
+    QString unit;
 
-    TuneItemInfo() : confPath(""), key(""), desc(""), defValue(0), min(0), max(0), step(0), precision(0) {}
+    TuneItemInfo() : confPath(""), key(""), desc(""), unit(""), defValue(0), min(0), max(0), step(0), precision(0) {}
     TuneItemInfo(QString confPath, QString key, QString desc, float defValue, float min, float max, float step, int precision)
-        : confPath(confPath), key(key), desc(desc), defValue(defValue), min(min), max(max), step(step), precision(precision) {}
+        : confPath(confPath), key(key), desc(desc), defValue(defValue), min(min), max(max), step(step), precision(precision), unit("") {}
+    TuneItemInfo(QString confPath, QString key, QString desc, float defValue, float min, float max, float step, int precision, QString unit)
+        : confPath(confPath), key(key), desc(desc), defValue(defValue), min(min), max(max), step(step), precision(precision), unit(unit) {}
 
     QString toString(float value) const {
-        return QString::asprintf("%.*f", precision, value);
+        return QString("%1%2").arg(value, 0, 'f', precision).arg(unit);
     }
 
     QString getMinMaxText() const {

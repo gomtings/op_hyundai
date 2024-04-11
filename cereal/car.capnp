@@ -256,6 +256,8 @@ struct CarState {
     standstill @4 :Bool;
     nonAdaptive @5 :Bool;
     leadDistanceBars @7 :Int8;
+    objDist @11: Int32;
+    objRelSpd @12: Float32;
   }
 
   enum GearShifter {
@@ -410,8 +412,6 @@ struct CarControl {
     rightLaneDepart @8: Bool;
     leftLaneDepart @9: Bool;
     leadDistanceBars @10: Int8;  # 1-3: 1 is closest, 3 is farthest. some ports may utilize 2-4 bars instead
-    objDist @11: Int32;
-    objRelSpd @12: Float32;
 
     enum VisualAlert {
       # these are the choices from the Honda
@@ -470,7 +470,6 @@ struct CarParams {
 
   notCar @66 :Bool;  # flag for non-car robotics platforms
 
-  enableGasInterceptor @2 :Bool;
   pcmCruise @3 :Bool;        # is openpilot's state tied to the PCM's cruise state?
   enableDsu @5 :Bool;        # driving support unit
   enableBsm @56 :Bool;       # blind spot monitoring
@@ -715,6 +714,7 @@ struct CarParams {
     gateway @1;    # Integration at vehicle's CAN gateway
   }
 
+  enableGasInterceptorDEPRECATED @2 :Bool;
   enableCameraDEPRECATED @4 :Bool;
   enableApgsDEPRECATED @6 :Bool;
   steerRateCostDEPRECATED @33 :Float32;

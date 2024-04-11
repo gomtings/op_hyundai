@@ -117,6 +117,7 @@ class CruiseStateManager:
     
     if self.enabled : # 롱컨 시작
       CS.cruiseState.enabled = self.enabled
+
   def update_buttons(self):
     if self.button_events is None:
       return ButtonType.unknown

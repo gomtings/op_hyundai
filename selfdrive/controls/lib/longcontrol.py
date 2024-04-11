@@ -10,10 +10,8 @@ LongCtrlState = car.CarControl.Actuators.LongControlState
 
 
 def long_control_state_trans(CP, active, long_control_state, v_ego, v_target,
-                             v_target_1sec, brake_pressed, cruise_standstill):
-  # Ignore cruise standstill if car has a gas interceptor
-  cruise_standstill = cruise_standstill and not CP.enableGasInterceptor
-  accelerating = v_target_1sec > v_target
+                             v_target_1sec, brake_pressed, cruise_standstill, lead):
+  accelerating = v_target_1sec > v_target and (not lead.status or (lead.vLeadK > 0.3 and lead.dRel > 3.))
   planned_stop = (v_target < CP.vEgoStopping and
                   v_target_1sec < CP.vEgoStopping and
                   not accelerating)
@@ -37,7 +35,7 @@ def long_control_state_trans(CP, active, long_control_state, v_ego, v_target,
         long_control_state = LongCtrlState.stopping
 
     elif long_control_state == LongCtrlState.stopping:
-      if starting_condition and CP.startingState:
+      if starting_condition and CP.startingState and v_ego < 0.01:
         long_control_state = LongCtrlState.starting
       elif starting_condition:
         long_control_state = LongCtrlState.pid
@@ -60,13 +58,14 @@ class LongControl:
                              k_f=CP.longitudinalTuning.kf, rate=1 / DT_CTRL)
     self.v_pid = 0.0
     self.last_output_accel = 0.0
+    self.stopping_accel_weight = 0.0
 
   def reset(self, v_pid):
     """Reset PID controller and change setpoint"""
     self.pid.reset()
     self.v_pid = v_pid
 
-  def update(self, active, CS, long_plan, accel_limits, t_since_plan, is_blend):
+  def update(self, active, CS, sm, long_plan, accel_limits, t_since_plan, is_blend):
     """Update longitudinal control. This updates the state machine and runs a PID loop"""
     # Interp control trajectory
     speeds = long_plan.speeds
@@ -96,20 +95,32 @@ class LongControl:
     output_accel = self.last_output_accel
     self.long_control_state = long_control_state_trans(self.CP, active, self.long_control_state, CS.vEgo,
                                                        v_target, v_target_1sec, CS.brakePressed,
-                                                       CS.cruiseState.standstill)
+                                                       CS.cruiseState.standstill, sm['radarState'].leadOne)
 
     if self.long_control_state == LongCtrlState.off:
       self.reset(CS.vEgo)
       output_accel = 0.
+      self.stopping_accel_weight = 0.0
 
     elif self.long_control_state == LongCtrlState.stopping:
       if output_accel > self.CP.stopAccel:
         output_accel = min(output_accel, 0.0)
-        output_accel -= interp(output_accel, [-1.0, -0.5], [self.CP.stoppingDecelRate, self.CP.stoppingDecelRate / 2.]) * DT_CTRL
+        m_accel = -0.7
+        d_accel = interp(output_accel,
+                               [m_accel - 0.5, m_accel, m_accel + 0.5],
+                               [self.CP.stoppingDecelRate, 0.05, self.CP.stoppingDecelRate])
+        d_accel *= interp(CS.vEgo, [self.CP.vEgoStopping, self.CP.vEgoStopping * 3.], [1., 1.5])
+        output_accel -= d_accel * DT_CTRL
+
+        self.stopping_accel_weight = 1.0
+      else:
+        self.stopping_accel_weight = 0.0
+
       self.reset(CS.vEgo)
 
     elif self.long_control_state == LongCtrlState.starting:
-      output_accel = self.CP.startAccel if CS.vEgo < 0.01 else 0.
+      output_accel = self.CP.startAccel
+      self.stopping_accel_weight = 0.0
       self.reset(CS.vEgo)
 
     elif self.long_control_state == LongCtrlState.pid:
@@ -135,6 +146,8 @@ class LongControl:
                                      feedforward=a_target,
                                      freeze_integrator=freeze_integrator)
 
-    self.last_output_accel = clip(output_accel, accel_limits[0], accel_limits[1])
+      self.stopping_accel_weight = max(self.stopping_accel_weight - 2. * DT_CTRL, 0.)
+      output_accel = self.last_output_accel * self.stopping_accel_weight + output_accel * (1. - self.stopping_accel_weight)
 
+    self.last_output_accel = clip(output_accel, accel_limits[0], accel_limits[1])
     return self.last_output_accel

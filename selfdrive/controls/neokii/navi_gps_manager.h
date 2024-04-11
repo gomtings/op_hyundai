@@ -6,7 +6,8 @@
 #include <cmath>
 #include "cereal/messaging/messaging.h"
 
-#define ANIM_DURATION 300
+#define ANIM_DURATION_POSITION 300
+#define ANIM_DURATION_BEARING 600
 
 class NaviGpsManager {
 private:
@@ -48,13 +49,13 @@ public:
     if(animationLongitude) animationLongitude->stop();
 
     animationLatitude.reset(new QPropertyAnimation(map, "latitude"));
-    animationLatitude->setDuration(ANIM_DURATION);
+    animationLatitude->setDuration(ANIM_DURATION_POSITION);
     animationLatitude->setStartValue(map->latitude());
     animationLatitude->setEndValue(position.first);
     animationLatitude->start();
 
     animationLongitude.reset(new QPropertyAnimation(map, "longitude"));
-    animationLongitude->setDuration(ANIM_DURATION);
+    animationLongitude->setDuration(ANIM_DURATION_POSITION);
     animationLongitude->setStartValue(map->longitude());
     animationLongitude->setEndValue(position.second);
     animationLongitude->start();
@@ -68,13 +69,13 @@ public:
     if (diff > 180) diff -= 360;
     else if (diff < -180) diff += 360;
 
-    if(std::abs(diff) < 4.0)
+    if(std::abs(diff) < 1.0)
       return;
 
     float newBearing = currentBearing + diff;
     if (animationBearing) animationBearing->stop();
     animationBearing.reset(new QPropertyAnimation(map, "bearing"));
-    animationBearing->setDuration(ANIM_DURATION);
+    animationBearing->setDuration(ANIM_DURATION_BEARING);
     animationBearing->setStartValue(currentBearing);
     animationBearing->setEndValue(newBearing);
     animationBearing->start();

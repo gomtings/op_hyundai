@@ -9,7 +9,7 @@ from openpilot.selfdrive.controls.ntune import ntune_common_get
 # WARNING: this value was determined based on the model's training distribution,
 #          model predictions above this speed can be unpredictable
 # V_CRUISE's are in kph
-V_CRUISE_MIN = 30  # kph
+V_CRUISE_MIN = 10  # kph
 V_CRUISE_ENABLE_MIN = 30
 V_CRUISE_MAX = 145
 V_CRUISE_UNSET = 255

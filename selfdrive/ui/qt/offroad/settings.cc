@@ -1,5 +1,3 @@
-#include "selfdrive/ui/qt/offroad/settings.h"
-
 #include <cassert>
 #include <cmath>
 #include <string>
@@ -10,14 +8,12 @@
 
 #include <QDebug>
 
-#include "selfdrive/ui/qt/network/networking.h"
-
-#include "common/params.h"
 #include "common/watchdog.h"
 #include "common/util.h"
-#include "system/hardware/hw.h"
-#include "selfdrive/ui/qt/widgets/controls.h"
-#include "selfdrive/ui/qt/widgets/input.h"
+#include "selfdrive/ui/qt/network/networking.h"
+#include "selfdrive/ui/qt/offroad/settings.h"
+#include "selfdrive/ui/qt/qt_window.h"
+#include "selfdrive/ui/qt/widgets/prime.h"
 #include "selfdrive/ui/qt/widgets/scrollview.h"
 #include "selfdrive/ui/qt/widgets/ssh_keys.h"
 #include "selfdrive/ui/qt/widgets/toggle.h"
@@ -160,21 +156,14 @@ void TogglesPanel::updateToggles() {
                                           "<h4>%2</h4><br>"
                                           "%3<br>"
                                           "<h4>%4</h4><br>"
-                                          "%5<br>"
-                                          "<h4>%6</h4><br>"
-                                          "%7")
+                                          "%5<br>")
                                   .arg(tr("openpilot defaults to driving in <b>chill mode</b>. Experimental mode enables <b>alpha-level features</b> that aren't ready for chill mode. Experimental features are listed below:"))
                                   .arg(tr("End-to-End Longitudinal Control"))
                                   .arg(tr("Let the driving model control the gas and brakes. openpilot will drive as it thinks a human would, including stopping for red lights and stop signs. "
                                           "Since the driving model decides the speed to drive, the set speed will only act as an upper bound. This is an alpha quality feature; "
                                           "mistakes should be expected."))
-                                  .arg(tr("Navigate on openpilot"))
-                                  .arg(tr("When navigation has a destination, openpilot will input the map information into the model. This provides useful context for the model and allows openpilot to keep left or right "
-                                          "appropriately at forks/exits. Lane change behavior is unchanged and still activated by the driver. This is an alpha quality feature; mistakes should be expected, particularly around "
-                                          "exits and forks. These mistakes can include unintended laneline crossings, late exit taking, driving towards dividing barriers in the gore areas, etc."))
                                   .arg(tr("New Driving Visualization"))
-                                  .arg(tr("The driving visualization will transition to the road-facing wide-angle camera at low speeds to better show some turns. The Experimental mode logo will also be shown in the top right corner. "
-                                          "When a navigation destination is set and the driving model is using it as input, the driving path on the map will turn green."));
+                                  .arg(tr("The driving visualization will transition to the road-facing wide-angle camera at low speeds to better show some turns. The Experimental mode logo will also be shown in the top right corner. "));
 
   const bool is_release = params.getBool("IsReleaseBranch");
   auto cp_bytes = params.get("CarParamsPersistent");
@@ -223,6 +212,14 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
   setSpacing(50);
   addItem(new LabelControl(tr("Dongle ID"), getDongleId().value_or(tr("N/A"))));
   addItem(new LabelControl(tr("Serial"), params.get("HardwareSerial").c_str()));
+
+  pair_device = new ButtonControl(tr("Pair Device"), tr("PAIR"),
+                                  tr("Pair your device with comma connect (connect.comma.ai) and claim your comma prime offer."));
+  connect(pair_device, &ButtonControl::clicked, [=]() {
+    PairingPopup popup(this);
+    popup.exec();
+  });
+  addItem(pair_device);
 
   QHBoxLayout *reset_layout = new QHBoxLayout();
   reset_layout->setSpacing(30);
@@ -302,9 +299,14 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
   });
   addItem(translateBtn);
 
+  QObject::connect(uiState(), &UIState::primeChanged, [this] (bool prime) {
+    pair_device->setVisible(!prime);
+  });
   /*QObject::connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
     for (auto btn : findChildren<ButtonControl *>()) {
-      btn->setEnabled(offroad);
+      if (btn != pair_device) {
+        btn->setEnabled(offroad);
+      }
     }
   });*/
 
@@ -408,6 +410,11 @@ void DevicePanel::poweroff() {
   } else {
     ConfirmationDialog::alert(tr("Disengage to Power Off"), this);
   }
+}
+
+void DevicePanel::showEvent(QShowEvent *event) {
+  pair_device->setVisible(!uiState()->primeType());
+  ListWidget::showEvent(event);
 }
 
 void SettingsWindow::showEvent(QShowEvent *event) {
@@ -552,7 +559,7 @@ static QStringList get_list(const char* path)
 
 CommunityPanel::CommunityPanel(SettingsWindow *parent) : ListWidget(parent) {
 
-  QString selected_car = QString::fromStdString(Params().get("SelectedCar"));
+  QString selected_car = QString::fromStdString(Params().get("SelectedCar_v2"));
 
   auto changeCar = new ButtonControl(selected_car.length() ? selected_car : tr("Select your car"),
                     selected_car.length() ? tr("CHANGE") : tr("SELECT"), "");
@@ -563,9 +570,9 @@ CommunityPanel::CommunityPanel(SettingsWindow *parent) : ListWidget(parent) {
     QString selection = MultiOptionDialog::getSelection(tr("Select your car"), items, selected_car, this);
     if (!selection.isEmpty()) {
       if(selection == "[Not Selected]")
-        Params().put("SelectedCar", "");
+        Params().put("SelectedCar_v2", "");
       else
-        Params().put("SelectedCar", selection.toStdString());
+        Params().put("SelectedCar_v2", selection.toStdString());
 
       qApp->exit(18);
       watchdog_kick(0);
@@ -677,7 +684,7 @@ SelectCar::SelectCar(QWidget* parent): QWidget(parent) {
   list->addItems(items);
   list->setCurrentRow(0);
 
-  QString selected = QString::fromStdString(Params().get("SelectedCar"));
+  QString selected = QString::fromStdString(Params().get("SelectedCar_v2"));
 
   int index = 0;
   for(QString item : items) {
@@ -692,9 +699,9 @@ SelectCar::SelectCar(QWidget* parent): QWidget(parent) {
     [=](QListWidgetItem* item){
 
     if(list->currentRow() == 0)
-        Params().remove("SelectedCar");
+        Params().remove("SelectedCar_v2");
     else
-        Params().put("SelectedCar", list->currentItem()->text().toStdString());
+        Params().put("SelectedCar_v2", list->currentItem()->text().toStdString());
 
     emit selectedCar();
     });

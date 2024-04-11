@@ -26,8 +26,8 @@ class CarInterface(CarInterfaceBase):
   @staticmethod
   def get_pid_accel_limits(CP, current_speed, cruise_speed):
     v_current_kph = current_speed * CV.MS_TO_KPH
-    gas_max_bp = [7., 15., 30., 70., 130., 150.]
-    gas_max_v = [2.0, 1.3, 0.8, 0.4, 0.15, 0.1]
+    gas_max_bp = [0., 3., 7., 15., 30., 70., 130., 150.]
+    gas_max_v = [2.0, 1.8, 1.5, 1.3, 0.8, 0.4, 0.15, 0.1]
     return ACCEL_MIN, interp(v_current_kph, gas_max_bp, gas_max_v)
 
   @staticmethod
@@ -78,8 +78,7 @@ class CarInterface(CarInterfaceBase):
         ret.flags |= HyundaiFlags.HYBRID.value
       elif candidate in EV_CAR:
         ret.flags |= HyundaiFlags.EV.value
-      elif candidate in FCEV_CAR:
-        ret.safetyConfigs[-1].safetyParam |= Panda.FLAG_HYUNDAI_FCEV_GAS
+
       # Send LFA message on cars with HDA
       if 0x485 in fingerprint[2]:
         ret.flags |= HyundaiFlags.SEND_LFA.value
@@ -100,7 +99,7 @@ class CarInterface(CarInterfaceBase):
       ret.experimentalLongitudinalAvailable = candidate not in CANFD_UNSUPPORTED_LONGITUDINAL_CAR
     else:
       ret.longitudinalTuning.kpBP = [0., 10.]
-      ret.longitudinalTuning.kpV = [1.2, 0.6]
+      ret.longitudinalTuning.kpV = [1.3, 0.7]
       ret.longitudinalTuning.kiV = [0.0]
       ret.experimentalLongitudinalAvailable = True #candidate not in (LEGACY_SAFETY_MODE_CAR)
 
@@ -115,9 +114,9 @@ class CarInterface(CarInterfaceBase):
 
     ret.vEgoStarting = 0.1
     ret.vEgoStopping = 0.1
-    ret.startAccel = 1.0
-    ret.longitudinalActuatorDelayLowerBound = 0.25
-    ret.longitudinalActuatorDelayUpperBound = 0.25
+    ret.startAccel = 0.8
+    ret.longitudinalActuatorDelayLowerBound = 0.5
+    ret.longitudinalActuatorDelayUpperBound = 0.5
     ret.radarTimeStep = 0.02  # 50hz
 
     # *** feature detection ***
@@ -181,7 +180,7 @@ class CarInterface(CarInterfaceBase):
     elif ret.flags & HyundaiFlags.EV:
       ret.safetyConfigs[-1].safetyParam |= Panda.FLAG_HYUNDAI_EV_GAS
 
-    if candidate in (CAR.KONA, CAR.KONA_EV, CAR.KONA_HEV, CAR.KONA_EV_2022):
+    if candidate in (CAR.HYUNDAI_KONA, CAR.HYUNDAI_KONA_EV, CAR.HYUNDAI_KONA_HEV, CAR.HYUNDAI_KONA_EV_2022):
       ret.flags |= HyundaiFlags.ALT_LIMITS.value
       ret.safetyConfigs[-1].safetyParam |= Panda.FLAG_HYUNDAI_ALT_LIMITS
 
@@ -198,7 +197,6 @@ class CarInterface(CarInterfaceBase):
         addr, bus = 0x730, CanBus(CP).ECAN
       disable_ecu(logcan, sendcan, bus=bus, addr=addr, com_cont_req=b'\x28\x83\x01')
       enable_radar_tracks(CP, logcan, sendcan) # Thank you to ajouatom 
-
     # for blinkers
     if CP.flags & HyundaiFlags.ENABLE_BLINKERS:
       disable_ecu(logcan, sendcan, bus=CanBus(CP).ECAN, addr=0x7B1, com_cont_req=b'\x28\x83\x01')
@@ -228,9 +226,6 @@ class CarInterface(CarInterfaceBase):
     ret.events = events.to_msg()
 
     return ret
-
-  def apply(self, c, now_nanos):
-    return self.CC.update(c, self.CS, now_nanos)
 
   @staticmethod
   def get_params_adjust_set_speed():

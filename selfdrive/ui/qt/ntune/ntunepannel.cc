@@ -25,6 +25,8 @@ nTuneMainWidget::nTuneMainWidget(QWidget *parent)
                      1.3f, 0.7f, 1.7f, 0.05f, 2),
         TuneItemInfo("scc_v2.json", "longLeadSensitivity", tr("Sensitivity lead, the higher it is, the more sensitive the response to the lead."),
                      0.7f, 0.4f, 1.2f, 0.05f, 2),
+        TuneItemInfo("scc_v2.json", "stopDistance", tr("The distance from the lead when the car stops. There is no guarantee that it will stop at that exact distance."),
+                     4.5f, 4.0f, 7.0f, 0.1f, 1, "m"),
         TuneItemInfo("scc_v2.json", "longDisableRadar", "(0: Use radar, 1: Do not use radar)",
                      0.0f, 0.0f, 1.0f, 1.0f, 0),
     },

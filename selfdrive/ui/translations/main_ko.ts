@@ -416,6 +416,18 @@
         <source>Miles</source>
         <translation type="vanished">Miles</translation>
     </message>
+    <message>
+        <source>Pair your device with comma connect (connect.comma.ai) and claim your comma prime offer.</source>
+        <translation>장치를 comma connect (connect.comma.ai)에서 페어링하고 comma prime 무료 이용권을 사용하세요.</translation>
+    </message>
+    <message>
+        <source>Pair Device</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Pair</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>DriverViewWindow</name>
@@ -812,6 +824,10 @@ location set</source>
     <message>
         <source>Sensitivity lead, the higher it is, the more sensitive the response to the lead.</source>
         <translation type="vanished">이 값이 높을수록 선행차에 대한 반응이 더 민감해집니다.</translation>
+    </message>
+    <message>
+        <source>now</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>

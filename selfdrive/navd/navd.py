@@ -114,8 +114,12 @@ class RouteEngine:
     if lang is not None:
       lang = lang.replace('main_', '')
 
+    token = self.mapbox_token
+    #if token is None:
+    #  token = self.api.get_token()
+
     params = {
-      'access_token': self.mapbox_token,
+      'access_token': token,
       'annotations': 'maxspeed',
       'geometries': 'geojson',
       'overview': 'full',
