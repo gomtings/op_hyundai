@@ -290,7 +290,7 @@ class LongitudinalMpc:
     jerk_factor = get_jerk_factor(personality)
 
     if radarstate is not None and radarstate.leadOne.status:
-      danger_zone_cost = interp(radarstate.leadOne.dRel, [STOP_DISTANCE, 10.], [DANGER_ZONE_COST * 1.5, DANGER_ZONE_COST])
+      danger_zone_cost = interp(radarstate.leadOne.dRel, [STOP_DISTANCE, 10.], [DANGER_ZONE_COST * 2, DANGER_ZONE_COST])
     else:
       danger_zone_cost = DANGER_ZONE_COST
 
