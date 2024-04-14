@@ -826,6 +826,14 @@ location set</source>
         <translation type="vanished">이 값이 높을수록 선행차에 대한 반응이 더 민감해집니다.</translation>
     </message>
     <message>
+        <source>If this value is high, it reduces the distance maintained with the car in front, resulting in more aggressive driving.</source>
+        <translation type="vanished">이 값이 높을수록 앞차와의 거리가 줄어들어 보다 공격적인 주행을 합니다.</translation>
+    </message>
+    <message>
+        <source>The distance from the lead when the car stops. There is no guarantee that it will stop at that exact distance.</source>
+        <translation type="vanished">차가 정지했을 때 선행차와의 거리. 정확한 거리에 멈춘다는 보장은 없습니다.</translation>
+    </message>
+    <message>
         <source>now</source>
         <translation type="unfinished"></translation>
     </message>

@@ -210,10 +210,13 @@ class nTune():
     if self.checkValue("longStartingFactor", 0.7, 1.7, 1.3):
       updated = True
 
-    if self.checkValue("longLeadSensitivity", 0.4, 1.2, 0.7):
+    if self.checkValue("longLeadSensitivity", 0.4, 1.2, 0.65):
       updated = True
 
-    if self.checkValue("stopDistance", 4., 7., 4.5):
+    if self.checkValue("comportBrake", 2.3, 3.2, 2.7):
+      updated = True
+
+    if self.checkValue("stopDistance", 4., 7., 5.0):
       updated = True
 
     if self.checkValue("longDisableRadar", 0., 1., 0.):

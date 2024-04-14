@@ -95,12 +95,12 @@ class CarInterface(CarInterfaceBase):
     if candidate in CANFD_CAR:
       ret.longitudinalTuning.kpBP = [0., 10.]
       ret.longitudinalTuning.kpV = [0.5, 0.2]
-      ret.longitudinalTuning.kiV = [0.0]
+      ret.longitudinalTuning.kiV = [0.]
       ret.experimentalLongitudinalAvailable = candidate not in CANFD_UNSUPPORTED_LONGITUDINAL_CAR
     else:
       ret.longitudinalTuning.kpBP = [0., 10.]
-      ret.longitudinalTuning.kpV = [1.3, 0.7]
-      ret.longitudinalTuning.kiV = [0.0]
+      ret.longitudinalTuning.kpV = [1.2, 0.6]
+      ret.longitudinalTuning.kiV = [0.]
       ret.experimentalLongitudinalAvailable = True #candidate not in (LEGACY_SAFETY_MODE_CAR)
 
     ret.openpilotLongitudinalControl = experimental_long and ret.experimentalLongitudinalAvailable
@@ -197,6 +197,7 @@ class CarInterface(CarInterfaceBase):
         addr, bus = 0x730, CanBus(CP).ECAN
       disable_ecu(logcan, sendcan, bus=bus, addr=addr, com_cont_req=b'\x28\x83\x01')
       enable_radar_tracks(CP, logcan, sendcan) # Thank you to ajouatom 
+
     # for blinkers
     if CP.flags & HyundaiFlags.ENABLE_BLINKERS:
       disable_ecu(logcan, sendcan, bus=CanBus(CP).ECAN, addr=0x7B1, com_cont_req=b'\x28\x83\x01')

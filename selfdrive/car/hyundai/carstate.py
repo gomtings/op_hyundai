@@ -164,7 +164,7 @@ class CarState(CarStateBase):
     elif self.CP.carFingerprint in CAN_GEARS["use_tcu_gears"]:
       gear = cp.vl["TCU12"]["CUR_GR"]
     elif self.CP.carFingerprint in FCEV_CAR:
-      gear = cp.vl["EMS20"]["HYDROGEN_GEAR_SHIFTER"]
+      gear = cp.vl["EMS20"]["HYDROGEN_GEAR_SHIFTER"]      
     else:
       gear = cp.vl["LVR12"]["CF_Lvr_Gear"]
 

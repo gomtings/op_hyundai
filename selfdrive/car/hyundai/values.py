@@ -62,6 +62,7 @@ class HyundaiFlags(IntFlag):
   HYBRID = 2 ** 10
   EV = 2 ** 11
   FCEV = 2 ** 24
+
   # Static flags
 
   # If 0x500 is present on bus 1 it probably has a Mando radar outputting radar points.
@@ -803,6 +804,7 @@ CAMERA_SCC_CAR = CAR.with_flags(HyundaiFlags.CAMERA_SCC)
 HYBRID_CAR = CAR.with_flags(HyundaiFlags.HYBRID)
 
 EV_CAR = CAR.with_flags(HyundaiFlags.EV)
+
 FCEV_CAR = CAR.with_flags(HyundaiFlags.FCEV)
 
 LEGACY_SAFETY_MODE_CAR = CAR.with_flags(HyundaiFlags.LEGACY)
