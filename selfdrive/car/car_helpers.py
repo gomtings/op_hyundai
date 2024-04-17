@@ -191,7 +191,7 @@ def get_car(logcan, sendcan, experimental_long_allowed, num_pandas=1):
 
   if candidate is None:
     cloudlog.event("car doesn't match any fingerprints", fingerprints=repr(fingerprints), error=True)
-    candidate = "MOCK"
+    candidate = "HYUNDAI NEXO"#mock
 
   selected_car = Params().get("SelectedCar_v2")
   if selected_car:
@@ -204,7 +204,8 @@ def get_car(logcan, sendcan, experimental_long_allowed, num_pandas=1):
       return None
     found_platform = find_platform_from_hyundai(selected_car.decode("utf-8"))
     if found_platform is not None:
-      candidate = found_platform
+      #candidate = found_platform
+      candidate = "HYUNDAI NEXO"#mock
 
   print('candidate !!!!!!!!!', candidate)
 
