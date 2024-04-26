@@ -249,12 +249,7 @@ class CarInterface(CarInterfaceBase):
     return self.CC.packer.make_can_msg("CLU11", self.CP.sccBus, values)
 
   def create_buttons_can_fd(self, button):
-    values = {
-      "COUNTER": self.CS.buttons_counter+1,
-      "SET_ME_1": 1,
-      "CRUISE_BUTTONS": button,
-    }
-    return self.CC.packer.make_can_msg("CRUISE_BUTTONS", 5, values)
+    return None
 
   def create_buttons_can_fd_alt(self, button):
     return None
