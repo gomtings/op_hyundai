@@ -87,15 +87,15 @@ class SpeedController:
     return count
 
   def read_param(self):
-    self.slow_on_curves = CruiseStateManager.instance().is_set_speed_spam_allowed(self.CP)
-    self.sync_set_speed_while_gas_pressed = CruiseStateManager.instance().is_set_speed_spam_allowed(self.CP)
+    self.slow_on_curves = True
+    self.sync_set_speed_while_gas_pressed = True
     self.is_metric = self.params.get_bool('IsMetric')
     self.show_debug_message = self.params.get_bool('ShowDebugMessage')
 
     self.speed_conv_to_ms = CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS
     self.speed_conv_to_clu = CV.MS_TO_KPH if self.is_metric else CV.MS_TO_MPH
     self.min_set_speed_stock = 30
-    self.min_set_speed_clu = self.kph_to_clu(V_CRUISE_MIN)
+    self.min_set_speed_clu = self.kph_to_clu(V_CRUISE_MIN) if CruiseStateManager.instance().is_cruise_enabled else self.kph_to_clu(self.min_set_speed_stock)
     self.max_set_speed_clu = self.kph_to_clu(V_CRUISE_MAX)
 
   def reset(self):
@@ -160,7 +160,6 @@ class SpeedController:
       self.slowing_down = False
 
     lead_speed = self.get_long_lead_speed(clu_speed, sm)
-
     if lead_speed >= self.min_set_speed_clu:
       if lead_speed < max_speed_clu:
         max_speed_clu = lead_speed
@@ -183,19 +182,19 @@ class SpeedController:
     return None
 
   def get_long_lead_speed(self, clu11_speed, sm):
+    if self.long_control:
+      lead = self.get_lead(sm)
+      if lead is not None:
+        d = lead.dRel - 5.
+        if 0. < d < -lead.vRel * 11. * 2. and lead.vRel < -1.:
+          t = d / lead.vRel
+          accel = -(lead.vRel / t) * self.speed_conv_to_clu
+          accel *= 1.2
 
-    lead = self.get_lead(sm)
-    if lead is not None:
-      d = lead.dRel - 5.
-      if 0. < d < -lead.vRel * 11. * 2. and lead.vRel < -1.:
-        t = d / lead.vRel
-        accel = -(lead.vRel / t) * self.speed_conv_to_clu
-        accel *= 1.2
-
-        if accel < 0.:
-          target_speed = clu11_speed + accel
-          target_speed = max(target_speed, self.min_set_speed_clu)
-          return target_speed
+          if accel < 0.:
+            target_speed = clu11_speed + accel
+            target_speed = max(target_speed, self.min_set_speed_clu)
+            return target_speed
 
     return 0
 
@@ -322,7 +321,7 @@ class SpeedController:
     btn_pressed = self.CI.CS.cruise_buttons[-1] != Buttons.NONE
 
     if not self.long_control:
-      if not ascc_enabled or CS.cruiseState.standstill or btn_pressed:
+      if not ascc_enabled or btn_pressed or not CruiseStateManager.instance().is_set_speed_spam_allowed(self.CP): # or CS.cruiseState.standstill:
         self.reset()
         self.wait_timer = max(self.alive_count_list) + max(self.wait_count_list)
         return new_v_cruise_kph
@@ -336,16 +335,17 @@ class SpeedController:
 
     if self.wait_timer > 0:
       self.wait_timer -= 1
-    elif ascc_enabled and CS.vEgo > 0.1 and CruiseStateManager.instance().is_set_speed_spam_allowed(self.CP):
+    elif ascc_enabled and CS.vEgo > 0.1:
       if self.alive_timer == 0:
         current_set_speed_clu = int(round(CS.cruiseState.speed * self.speed_conv_to_clu))
         self.btn = self.get_button(current_set_speed_clu)
-        self.alive_count = self.get_alive_count()
+        self.alive_count = 1
 
       if self.btn != Buttons.NONE:
         can = self.CI.create_buttons(self.btn)
         if can is not None:
-          can_sends.append(can)
+          for _ in range(self.get_alive_count()):
+            can_sends.append(can)
 
         self.alive_timer += 1
 

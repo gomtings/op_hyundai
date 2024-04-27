@@ -1,3 +1,5 @@
+import copy
+
 from cereal import car
 from common.numpy_fast import interp
 from panda import Panda
@@ -22,6 +24,10 @@ BUTTONS_DICT = {Buttons.RES_ACCEL: ButtonType.accelCruise, Buttons.SET_DECEL: Bu
 
 
 class CarInterface(CarInterfaceBase):
+  def __init__(self, CP, CarController, CarState):
+    super().__init__(CP, CarController, CarState)
+    self.CAN = CanBus(CP)
+
   @staticmethod
   def get_pid_accel_limits(CP, current_speed, cruise_speed):
     v_current_kph = current_speed * CV.MS_TO_KPH
@@ -228,7 +234,7 @@ class CarInterface(CarInterfaceBase):
 
   @staticmethod
   def get_params_adjust_set_speed():
-    return [8, 10], [12, 14, 16, 18]
+    return [25, 30], [12, 14, 16, 18]
 
   def create_buttons(self, button):
 
@@ -243,13 +249,19 @@ class CarInterface(CarInterfaceBase):
     return BUTTONS_DICT
 
   def create_buttons_can(self, button):
-    values = self.CS.clu11
+    values = copy.copy(self.CS.clu11)
     values["CF_Clu_CruiseSwState"] = button
     values["CF_Clu_AliveCnt1"] = (values["CF_Clu_AliveCnt1"] + 1) % 0x10
     return self.CC.packer.make_can_msg("CLU11", self.CP.sccBus, values)
 
   def create_buttons_can_fd(self, button):
-    return None
+    values = {
+      "COUNTER": (self.CS.buttons_counter + 1) % 15,
+      "SET_ME_1": 1,
+      "CRUISE_BUTTONS": button,
+    }
+    bus = self.CAN.ECAN if self.CP.flags & HyundaiFlags.CANFD_HDA2 else self.CAN.CAM
+    return self.CC.packer.make_can_msg("CRUISE_BUTTONS", bus, values)
 
   def create_buttons_can_fd_alt(self, button):
     return None

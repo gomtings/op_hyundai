@@ -5,7 +5,7 @@ from cereal import car
 from openpilot.common.numpy_fast import clip
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.params import Params
-from openpilot.selfdrive.car.hyundai.values import CANFD_CAR
+from openpilot.selfdrive.car.hyundai.values import CANFD_CAR, HyundaiFlags
 from openpilot.selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX, V_CRUISE_ENABLE_MIN
 
 V_CRUISE_MIN_CRUISE_STATE = 10
@@ -76,7 +76,9 @@ class CruiseStateManager:
     return not self.cruise_state_control
 
   def is_set_speed_spam_allowed(self, CP):
-    return self.is_resume_spam_allowed(CP) and not CP.carFingerprint in CANFD_CAR
+    if CP.carFingerprint in CANFD_CAR and CP.flags & HyundaiFlags.CANFD_ALT_BUTTONS:
+      return False
+    return self.is_resume_spam_allowed(CP)
 
   # CS - CarState cereal message
   def update(self, CS, main_buttons, cruise_buttons, buttons_dict, available=-1, cruise_state_control=True):
