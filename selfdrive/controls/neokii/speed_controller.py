@@ -87,8 +87,8 @@ class SpeedController:
     return count
 
   def read_param(self):
-    self.slow_on_curves = True #self.params.get_bool('SlowOnCurves')
-    self.sync_set_speed_while_gas_pressed = True #self.params.get_bool('SyncGasPressed')
+    self.slow_on_curves = CruiseStateManager.instance().is_set_speed_spam_allowed(self.CP)
+    self.sync_set_speed_while_gas_pressed = CruiseStateManager.instance().is_set_speed_spam_allowed(self.CP)
     self.is_metric = self.params.get_bool('IsMetric')
     self.show_debug_message = self.params.get_bool('ShowDebugMessage')
 
