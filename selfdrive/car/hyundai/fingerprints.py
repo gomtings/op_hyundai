@@ -171,6 +171,7 @@ FW_VERSIONS = {
       b'\xf1\x00AEhe SCC H-CUP      1.01 1.01 96400-G2100         ',
     ],
     (Ecu.eps, 0x7d4, None): [
+      b'\xf1\x00AE  MDPS C 1.00 1.05 56310/G2501 4AEHC105',
       b'\xf1\x00AE  MDPS C 1.00 1.07 56310/G2301 4AEHC107',
       b'\xf1\x00AE  MDPS C 1.00 1.07 56310/G2501 4AEHC107',
     ],
@@ -278,6 +279,7 @@ FW_VERSIONS = {
       b'\xf1\x00DN ESC \x06 104\x19\x08\x01 58910-L0100',
       b'\xf1\x00DN ESC \x06 106 \x07\x01 58910-L0100',
       b'\xf1\x00DN ESC \x06 107 \x07\x03 58910-L1300',
+      b'\xf1\x00DN ESC \x06 107"\x08\x07 58910-L0100',
       b'\xf1\x00DN ESC \x07 104\x19\x08\x01 58910-L0100',
       b'\xf1\x00DN ESC \x07 106 \x07\x01 58910-L0100',
       b'\xf1\x00DN ESC \x07 107"\x08\x07 58910-L0100',
@@ -366,10 +368,12 @@ FW_VERSIONS = {
   CAR.HYUNDAI_SANTA_FE_2022: {
     (Ecu.fwdRadar, 0x7d0, None): [
       b'\xf1\x00TM__ SCC F-CUP      1.00 1.00 99110-S1500         ',
+      b'\xf1\x00TM__ SCC F-CUP      1.00 1.01 99110-S1500         ',
       b'\xf1\x00TM__ SCC FHCUP      1.00 1.00 99110-S1500         ',
     ],
     (Ecu.abs, 0x7d1, None): [
       b'\xf1\x00TM ESC \x01 102!\x04\x03 58910-S2DA0',
+      b'\xf1\x00TM ESC \x01 104"\x10\x07 58910-S2DA0',
       b'\xf1\x00TM ESC \x02 101 \x08\x04 58910-S2GA0',
       b'\xf1\x00TM ESC \x02 103"\x07\x08 58910-S2GA0',
       b'\xf1\x00TM ESC \x03 101 \x08\x02 58910-S2DA0',
@@ -427,6 +431,7 @@ FW_VERSIONS = {
     ],
     (Ecu.fwdCamera, 0x7c4, None): [
       b'\xf1\x00TMP MFC  AT USA LHD 1.00 1.03 99211-S1500 210224',
+      b'\xf1\x00TMP MFC  AT USA LHD 1.00 1.05 99211-S1500 220126',
       b'\xf1\x00TMP MFC  AT USA LHD 1.00 1.06 99211-S1500 220727',
     ],
   },
@@ -503,6 +508,7 @@ FW_VERSIONS = {
     (Ecu.abs, 0x7d1, None): [
       b'\xf1\x00LX ESC \x01 103\x19\t\x10 58910-S8360',
       b'\xf1\x00LX ESC \x01 1031\t\x10 58910-S8360',
+      b'\xf1\x00LX ESC \x01 104 \x10\x15 58910-S8350',
       b'\xf1\x00LX ESC \x01 104 \x10\x16 58910-S8360',
       b'\xf1\x00LX ESC \x0b 101\x19\x03\x17 58910-S8330',
       b'\xf1\x00LX ESC \x0b 101\x19\x03  58910-S8360',
@@ -522,6 +528,7 @@ FW_VERSIONS = {
       b'\xf1\x00LX2 MDPS C 1.00 1.03 56310-S8020 4LXDC103',
       b'\xf1\x00LX2 MDPS C 1.00 1.03 56310-XX000 4LXDC103',
       b'\xf1\x00LX2 MDPS C 1.00 1.04 56310-S8020 4LXDC104',
+      b'\xf1\x00LX2 MDPS C 1.00 1.04 56310-S8420 4LXDC104',
       b'\xf1\x00LX2 MDPS R 1.00 1.02 56370-S8300 9318',
       b'\xf1\x00ON  MDPS C 1.00 1.00 56340-S9000 8B13',
       b'\xf1\x00ON  MDPS C 1.00 1.01 56340-S9000 9201',
@@ -565,6 +572,7 @@ FW_VERSIONS = {
   },
   CAR.GENESIS_G70_2020: {
     (Ecu.eps, 0x7d4, None): [
+      b'\xf1\x00IK  MDPS R 1.00 1.06 57700-G9220 4I2VL106',
       b'\xf1\x00IK  MDPS R 1.00 1.07 57700-G9220 4I2VL107',
       b'\xf1\x00IK  MDPS R 1.00 1.07 57700-G9420 4I4VL107',
       b'\xf1\x00IK  MDPS R 1.00 1.08 57700-G9200 4I2CL108',
@@ -572,6 +580,7 @@ FW_VERSIONS = {
       b'\xf1\x00IK  MDPS R 1.00 5.09 57700-G9520 4I4VL509',
     ],
     (Ecu.fwdRadar, 0x7d0, None): [
+      b'\xf1\x00IK__ SCC F-CUP      1.00 1.01 96400-G9100         ',
       b'\xf1\x00IK__ SCC F-CUP      1.00 1.02 96400-G9100         ',
       b'\xf1\x00IK__ SCC F-CUP      1.00 1.02 96400-G9100         \xf1\xa01.02',
       b'\xf1\x00IK__ SCC FHCUP      1.00 1.00 99110-G9300         ',
@@ -970,6 +979,7 @@ FW_VERSIONS = {
     (Ecu.eps, 0x7d4, None): [
       b'\xf1\x00CN7 MDPS C 1.00 1.02 56310/BY050 4CNHC102',
       b'\xf1\x00CN7 MDPS C 1.00 1.03 56310/BY050 4CNHC103',
+      b'\xf1\x00CN7 MDPS C 1.00 1.03 56310BY050\x00 4CNHC103',
       b'\xf1\x00CN7 MDPS C 1.00 1.03 56310BY0500 4CNHC103',
       b'\xf1\x00CN7 MDPS C 1.00 1.04 56310BY050\x00 4CNHC104',
     ],
@@ -1046,6 +1056,7 @@ FW_VERSIONS = {
       b'\xf1\x00NE1_ RDR -----      1.00 1.00 99110-GI000         ',
     ],
     (Ecu.fwdCamera, 0x7c4, None): [
+      b'\xf1\x00NE1 MFC  AT CAN LHD 1.00 1.05 99211-GI010 220614',
       b'\xf1\x00NE1 MFC  AT EUR LHD 1.00 1.01 99211-GI010 211007',
       b'\xf1\x00NE1 MFC  AT EUR LHD 1.00 1.06 99211-GI000 210813',
       b'\xf1\x00NE1 MFC  AT EUR LHD 1.00 1.06 99211-GI010 230110',
