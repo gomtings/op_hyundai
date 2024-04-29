@@ -135,10 +135,10 @@ def fingerprint(logcan, sendcan, num_pandas):
       # VIN query only reliably works through OBDII
       vin_rx_addr, vin_rx_bus, vin = get_vin(logcan, sendcan, (0, 1))
       ecu_rx_addrs = get_present_ecus(logcan, sendcan, num_pandas=num_pandas)
-      car_fw = get_fw_versions_ordered(logcan, sendcan, ecu_rx_addrs, num_pandas=num_pandas)
+      car_fw = get_fw_versions_ordered(logcan, sendcan, vin, ecu_rx_addrs, num_pandas=num_pandas)
       cached = False
 
-    exact_fw_match, fw_candidates = match_fw_to_car(car_fw)
+    exact_fw_match, fw_candidates = match_fw_to_car(car_fw, vin)
   else:
     vin_rx_addr, vin_rx_bus, vin = -1, -1, VIN_UNKNOWN
     exact_fw_match, fw_candidates, car_fw = True, set(), []
@@ -191,7 +191,7 @@ def get_car(logcan, sendcan, experimental_long_allowed, num_pandas=1):
 
   if candidate is None:
     cloudlog.event("car doesn't match any fingerprints", fingerprints=repr(fingerprints), error=True)
-    candidate = "HYUNDAI NEXO"#mock
+    candidate = "MOCK"
 
   selected_car = Params().get("SelectedCar_v2")
   if selected_car:
@@ -204,8 +204,7 @@ def get_car(logcan, sendcan, experimental_long_allowed, num_pandas=1):
       return None
     found_platform = find_platform_from_hyundai(selected_car.decode("utf-8"))
     if found_platform is not None:
-      #candidate = found_platform
-      candidate = "HYUNDAI NEXO"#mock
+      candidate = found_platform
 
   print('candidate !!!!!!!!!', candidate)
 

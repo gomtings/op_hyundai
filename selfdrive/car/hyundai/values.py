@@ -61,7 +61,6 @@ class HyundaiFlags(IntFlag):
   # these cars use a different gas signal
   HYBRID = 2 ** 10
   EV = 2 ** 11
-  FCEV = 2 ** 24
 
   # Static flags
 
@@ -128,12 +127,6 @@ class HyundaiCanFDPlatformConfig(PlatformConfig):
 
 class CAR(Platforms):
   # Hyundai
-  NEXO = HyundaiCanFDPlatformConfig(
-    "HYUNDAI NEXO",
-    [HyundaiCarDocs("Hyundai HYUNDAI NEXO 2020", "Highway Driving Assist", car_parts=CarParts.common([CarHarness.hyundai_h]))],
-    CarSpecs(mass=1885, wheelbase=2.79, steerRatio=14.19, tireStiffnessFactor=0.385),
-    flags=HyundaiFlags.FCEV | HyundaiFlags.EV,
-  )
   HYUNDAI_AZERA_6TH_GEN = HyundaiPlatformConfig(
     [HyundaiCarDocs("Hyundai Azera 2022", "All", car_parts=CarParts.common([CarHarness.hyundai_k]))],
     CarSpecs(mass=1600, wheelbase=2.885, steerRatio=14.5),
@@ -321,7 +314,7 @@ class CAR(Platforms):
   HYUNDAI_TUCSON_4TH_GEN = HyundaiCanFDPlatformConfig(
     [
       HyundaiCarDocs("Hyundai Tucson 2022", car_parts=CarParts.common([CarHarness.hyundai_n])),
-      HyundaiCarDocs("Hyundai Tucson 2023", "All", car_parts=CarParts.common([CarHarness.hyundai_n])),
+      HyundaiCarDocs("Hyundai Tucson 2023-24", "All", car_parts=CarParts.common([CarHarness.hyundai_n])),
       HyundaiCarDocs("Hyundai Tucson Hybrid 2022-24", "All", car_parts=CarParts.common([CarHarness.hyundai_n])),
     ],
     CarSpecs(mass=1630, wheelbase=2.756, steerRatio=13.7, tireStiffnessFactor=0.385),
@@ -336,7 +329,12 @@ class CAR(Platforms):
     CarSpecs(mass=1690, wheelbase=3.055, steerRatio=17),  # mass: from https://www.hyundai-motor.com.tw/clicktobuy/custin#spec_0, steerRatio: from learner
     flags=HyundaiFlags.CHECKSUM_CRC8,
   )
-
+  NEXO = HyundaiCanFDPlatformConfig(
+    "HYUNDAI NEXO",
+    [HyundaiCarDocs("Hyundai HYUNDAI NEXO 2020", "Highway Driving Assist", car_parts=CarParts.common([CarHarness.hyundai_h]))],
+    CarSpecs(mass=1885, wheelbase=2.79, steerRatio=14.19, tireStiffnessFactor=0.385),
+    flags=HyundaiFlags.MANDO_RADAR | HyundaiFlags.EV,
+  )
   # Kia
   KIA_FORTE = HyundaiPlatformConfig(
     [
@@ -503,14 +501,14 @@ class CAR(Platforms):
     flags=HyundaiFlags.EV,
   )
   GENESIS_G70 = HyundaiPlatformConfig(
-    [HyundaiCarDocs("Genesis G70 2018-19", "All", car_parts=CarParts.common([CarHarness.hyundai_f]))],
+    [HyundaiCarDocs("Genesis G70 2018", "All", car_parts=CarParts.common([CarHarness.hyundai_f]))],
     CarSpecs(mass=1640, wheelbase=2.84, steerRatio=13.56),
     flags=HyundaiFlags.LEGACY,
   )
   GENESIS_G70_2020 = HyundaiPlatformConfig(
     [
       # TODO: 2021 MY harness is unknown
-      HyundaiCarDocs("Genesis G70 2020-21", "All", car_parts=CarParts.common([CarHarness.hyundai_f])),
+      HyundaiCarDocs("Genesis G70 2019-21", "All", car_parts=CarParts.common([CarHarness.hyundai_f])),
       # TODO: From 3.3T Sport Advanced 2022 & Prestige 2023 Trim, 2.0T is unknown
       HyundaiCarDocs("Genesis G70 2022-23", "All", car_parts=CarParts.common([CarHarness.hyundai_l])),
     ],
@@ -603,6 +601,7 @@ class CAR(Platforms):
     flags=HyundaiFlags.LEGACY,
   )
 
+
 class Buttons:
   NONE = 0
   RES_ACCEL = 1
@@ -630,7 +629,7 @@ def get_platform_codes(fw_versions: list[bytes]) -> set[tuple[bytes, bytes | Non
   return codes
 
 
-def match_fw_to_car_fuzzy(live_fw_versions, offline_fw_versions) -> set[str]:
+def match_fw_to_car_fuzzy(live_fw_versions, vin, offline_fw_versions) -> set[str]:
   # Non-electric CAN FD platforms often do not have platform code specifiers needed
   # to distinguish between hybrid and ICE. All EVs so far are either exclusively
   # electric or specify electric in the platform code.
@@ -803,8 +802,6 @@ CAMERA_SCC_CAR = CAR.with_flags(HyundaiFlags.CAMERA_SCC)
 HYBRID_CAR = CAR.with_flags(HyundaiFlags.HYBRID)
 
 EV_CAR = CAR.with_flags(HyundaiFlags.EV)
-
-FCEV_CAR = CAR.with_flags(HyundaiFlags.FCEV)
 
 LEGACY_SAFETY_MODE_CAR = CAR.with_flags(HyundaiFlags.LEGACY)
 

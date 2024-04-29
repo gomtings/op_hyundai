@@ -375,7 +375,7 @@ class Controls:
     stock_long_is_braking = self.enabled and not self.CP.openpilotLongitudinalControl and CS.aEgo < -1.25
     model_fcw = self.sm['modelV2'].meta.hardBrakePredicted and not CS.brakePressed and not stock_long_is_braking
     planner_fcw = self.sm['longitudinalPlan'].fcw and self.enabled
-    #if planner_fcw or model_fcw:
+    #if (planner_fcw or model_fcw) and not (self.CP.notCar and self.joystick_mode):
     #  self.events.add(EventName.fcw)
 
     for m in messaging.drain_sock(self.log_sock, wait_for_one=False):
@@ -711,7 +711,7 @@ class Controls:
 
     hudControl.rightLaneVisible = True
     hudControl.leftLaneVisible = True
-
+    
     # add PolorBear - 선행차 의 거리 계산...
     lead_model = self.sm['modelV2'].leadsV3 # 선행차 와의 거리 (비젼 측정값...)
     lead_radar = self.sm['radarState'].leadOne # 선행차 와의 거리 (레이다 측정값...)
@@ -722,7 +722,7 @@ class Controls:
     else : # 비젼 결과가 없으면... 레이다...
       radar_dist = lead_radar.dRel if lead_radar.status and lead_radar.radar else 0 #레이다
       hudControl.objDist = int(radar_dist)
-      
+
     recent_blinker = (self.sm.frame - self.last_blinker_frame) * DT_CTRL < 5.0  # 5s blinker cooldown
     ldw_allowed = self.is_ldw_enabled and CS.vEgo > LDW_MIN_SPEED and not recent_blinker \
                   and not CC.latActive and self.sm['liveCalibration'].calStatus == log.LiveCalibrationData.Status.calibrated

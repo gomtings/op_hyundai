@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 import time
+
 from cereal import car, log, messaging
 from openpilot.common.params import Params
 from openpilot.system.hardware import HARDWARE
 from openpilot.selfdrive.manager.process_config import managed_processes
+from openpilot.system.hardware import HARDWARE
 
 if __name__ == "__main__":
-  CP = car.CarParams(notCar=True)
+  CP = car.CarParams(notCar=True, wheelbase=1, steerRatio=10)
   Params().put("CarParams", CP.to_bytes())
 
-  procs = ['camerad', 'ui', 'modeld', 'calibrationd', 'dmonitoringmodeld', 'dmonitoringd',
+  procs = ['camerad', 'ui', 'modeld', 'calibrationd', 'plannerd', 'dmonitoringmodeld', 'dmonitoringd',
            'navi_controller', 'navi_route', 'locationd']
 
   HARDWARE.set_power_save(False)
@@ -21,6 +23,7 @@ if __name__ == "__main__":
 
   msgs = {s: messaging.new_message(s) for s in ['controlsState', 'deviceState', 'carParams', 'carControl']}
   msgs['deviceState'].deviceState.started = True
+  msgs['deviceState'].deviceState.deviceType = HARDWARE.get_device_type()
   msgs['carParams'].carParams.openpilotLongitudinalControl = True
 
   msgs['pandaStates'] = messaging.new_message('pandaStates', 1)

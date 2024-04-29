@@ -5,7 +5,7 @@ from cereal import car
 from openpilot.common.numpy_fast import clip
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.params import Params
-from openpilot.selfdrive.car.hyundai.values import CANFD_CAR
+from openpilot.selfdrive.car.hyundai.values import CANFD_CAR, HyundaiFlags
 from openpilot.selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX, V_CRUISE_ENABLE_MIN
 
 V_CRUISE_MIN_CRUISE_STATE = 10
@@ -14,8 +14,10 @@ V_CRUISE_DELTA_MI = 5 * CV.MPH_TO_KPH
 V_CRUISE_DELTA_KM = 10
 ButtonType = car.CarState.ButtonEvent.Type
 
+
 def is_radar_disabler(CP):
   return CP.openpilotLongitudinalControl and CP.sccBus == 0
+
 
 def create_button_event(cur_but: int, prev_but: int, buttons_dict: Dict[int, capnp.lib.capnp._EnumModule],
                         unpressed: int = 0) -> capnp.lib.capnp._DynamicStructBuilder:
@@ -74,6 +76,8 @@ class CruiseStateManager:
     return not self.cruise_state_control
 
   def is_set_speed_spam_allowed(self, CP):
+    if CP.carFingerprint in CANFD_CAR and CP.flags & HyundaiFlags.CANFD_ALT_BUTTONS:
+      return False
     return self.is_resume_spam_allowed(CP)
 
   # CS - CarState cereal message
@@ -117,7 +121,6 @@ class CruiseStateManager:
     
     if self.enabled : # 롱컨 시작
       CS.cruiseState.enabled = self.enabled
-
   def update_buttons(self):
     if self.button_events is None:
       return ButtonType.unknown
