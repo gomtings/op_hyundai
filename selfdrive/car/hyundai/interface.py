@@ -234,7 +234,7 @@ class CarInterface(CarInterfaceBase):
 
   @staticmethod
   def get_params_adjust_set_speed():
-    return [25, 30], [12, 14, 16, 18]
+    return [16, 20], [12, 14, 16, 18]
 
   def create_buttons(self, button):
 
