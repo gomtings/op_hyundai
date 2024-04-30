@@ -22,7 +22,7 @@ nTuneMainWidget::nTuneMainWidget(QWidget *parent)
     },
     {
         TuneItemInfo("scc_v2.json", "longStartingFactor", tr("Acceleration at start, increasing this value will make the acceleration faster."),
-                     1.3f, 0.7f, 1.7f, 0.05f, 2),
+                     1.1f, 0.7f, 1.5f, 0.05f, 2),
         TuneItemInfo("scc_v2.json", "longLeadSensitivity", tr("Sensitivity lead, the higher it is, the more sensitive the response to the lead."),
                      0.65f, 0.4f, 1.2f, 0.05f, 2),
         TuneItemInfo("scc_v2.json", "comportBrake", tr("If this value is high, it reduces the distance maintained with the car in front, resulting in more aggressive driving."),

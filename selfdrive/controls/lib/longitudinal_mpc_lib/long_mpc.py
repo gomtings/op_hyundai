@@ -288,22 +288,16 @@ class LongitudinalMpc:
     for i in range(N):
       self.solver.cost_set(i, 'Zl', Zl)
 
-  def set_weights(self, v_ego=0.0, radarstate=None, prev_accel_constraint=True, personality=log.LongitudinalPersonality.standard):
+  def set_weights(self, prev_accel_constraint=True, personality=log.LongitudinalPersonality.standard):
     jerk_factor = get_jerk_factor(personality)
-
-    if radarstate is not None and radarstate.leadOne.status:
-      danger_zone_cost = interp(radarstate.leadOne.dRel, [STOP_DISTANCE, 10.], [DANGER_ZONE_COST * 1.3, DANGER_ZONE_COST])
-    else:
-      danger_zone_cost = DANGER_ZONE_COST
-
     if self.mode == 'acc':
       a_change_cost = A_CHANGE_COST if prev_accel_constraint else 0
       cost_weights = [X_EGO_OBSTACLE_COST, X_EGO_COST, V_EGO_COST, A_EGO_COST, jerk_factor * a_change_cost, jerk_factor * J_EGO_COST]
-      constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, danger_zone_cost]
+      constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, DANGER_ZONE_COST]
     elif self.mode == 'blended':
       a_change_cost = 50.0 if prev_accel_constraint else 0
       cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost, 1.0]
-      constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, danger_zone_cost]
+      constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, DANGER_ZONE_COST]
     else:
       raise NotImplementedError(f'Planner mode {self.mode} not recognized in planner cost set')
     self.set_cost_weights(cost_weights, constraint_cost_weights)
@@ -384,7 +378,7 @@ class LongitudinalMpc:
     if self.mode == 'acc':
 
       if radarstate.leadOne.status:
-        lead_danger_factor = interp(radarstate.leadOne.dRel, [STOP_DISTANCE, 10.], [0.9, LEAD_DANGER_FACTOR])
+        lead_danger_factor = interp(radarstate.leadOne.dRel, [STOP_DISTANCE, 10.], [0.85, LEAD_DANGER_FACTOR])
       else:
         lead_danger_factor = LEAD_DANGER_FACTOR
 
