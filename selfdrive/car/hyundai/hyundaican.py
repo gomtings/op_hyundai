@@ -127,7 +127,7 @@ def create_acc_commands(packer, enabled, accel, upper_jerk, idx, hud_control, se
   commands = []
 
   cruise_enabled = enabled and CS.out.cruiseState.enabled
-
+  hud_control.objGap = 0 if hud_control.vision_dist == 0 else 2 if hud_control.vision_dist < 25 else 3 if hud_control.vision_dist < 40 else 4 if hud_control.vision_dist < 70 else 5
   scc11_values = {
     "MainMode_ACC": CS.out.cruiseState.available,
     "TauGapSet": CS.out.cruiseState.leadDistanceBars,
@@ -137,7 +137,7 @@ def create_acc_commands(packer, enabled, accel, upper_jerk, idx, hud_control, se
     "ACC_ObjStatus": 1, # close lead makes controls tighter
     "ACC_ObjLatPos": 0,
     "ACC_ObjRelSpd": 0,
-    "ACC_ObjDist": 1, # close lead makes controls tighter
+    "ACC_ObjDist": hud_control.objGap, # close lead makes controls tighter
     }
 
   if not stock_cam:
@@ -184,7 +184,7 @@ def create_acc_commands(packer, enabled, accel, upper_jerk, idx, hud_control, se
       "CR_FCA_Alive": idx % 0xF,
       "PAINT1_Status": 1,
       "FCA_DrvSetStatus": 1,
-      "FCA_Status": 1,  # AEB disabled
+      "FCA_Status": 0,  # AEB disabled
     }
     fca11_dat = packer.make_can_msg("FCA11", 0, fca11_values)[2]
     fca11_values["CR_FCA_ChkSum"] = hyundai_checksum(fca11_dat[:7])
@@ -205,7 +205,7 @@ def create_acc_opt(packer, use_fca):
   if use_fca:
     fca12_values = {
       "FCA_DrvSetState": 2,
-      "FCA_USM": 1, # AEB disabled
+      "FCA_USM": 0, # AEB disabled
     }
     commands.append(packer.make_can_msg("FCA12", 0, fca12_values))
 
