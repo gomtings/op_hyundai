@@ -329,9 +329,10 @@ class CAR(Platforms):
     CarSpecs(mass=1690, wheelbase=3.055, steerRatio=17),  # mass: from https://www.hyundai-motor.com.tw/clicktobuy/custin#spec_0, steerRatio: from learner
     flags=HyundaiFlags.CHECKSUM_CRC8,
   )
-  NEXO = HyundaiCanFDPlatformConfig(
-    "HYUNDAI NEXO",
-    [HyundaiCarDocs("Hyundai HYUNDAI NEXO 2020", "Highway Driving Assist", car_parts=CarParts.common([CarHarness.hyundai_h]))],
+  NEXO = HyundaiPlatformConfig(
+    [
+      HyundaiCarDocs("Hyundai HYUNDAI NEXO 2020-23", "All", car_parts=CarParts.common([CarHarness.hyundai_h])),
+    ],
     CarSpecs(mass=1885, wheelbase=2.79, steerRatio=14.19, tireStiffnessFactor=0.385),
     flags=HyundaiFlags.MANDO_RADAR | HyundaiFlags.EV,
   )
