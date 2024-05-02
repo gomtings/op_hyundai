@@ -81,7 +81,7 @@ class CruiseStateManager:
     return self.is_resume_spam_allowed(CP)
 
   # CS - CarState cereal message
-  def update(self, CS, main_buttons, cruise_buttons, buttons_dict, available=-1, cruise_state_control=True):
+  def update(self, CS, main_buttons, cruise_buttons, buttons_dict, available=0, cruise_state_control=True):
 
     if available >= 0:
       self.available = available

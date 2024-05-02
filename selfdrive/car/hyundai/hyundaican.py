@@ -127,7 +127,8 @@ def create_acc_commands(packer, enabled, accel, upper_jerk, idx, hud_control, se
   commands = []
 
   cruise_enabled = enabled and CS.out.cruiseState.enabled
-  hud_control.objGap = 0 if hud_control.vision_dist == 0 else 2 if hud_control.vision_dist < 25 else 3 if hud_control.vision_dist < 40 else 4 if hud_control.vision_dist < 70 else 5
+  objGap = 0 if hud_control.objDist == 0 else 2 if hud_control.objDist < 25 else 3 if hud_control.objDist < 40 else 4 if hud_control.objDist < 70 else 5
+  
   scc11_values = {
     "MainMode_ACC": CS.out.cruiseState.available,
     "TauGapSet": CS.out.cruiseState.leadDistanceBars,
@@ -137,7 +138,7 @@ def create_acc_commands(packer, enabled, accel, upper_jerk, idx, hud_control, se
     "ACC_ObjStatus": 1, # close lead makes controls tighter
     "ACC_ObjLatPos": 0,
     "ACC_ObjRelSpd": 0,
-    "ACC_ObjDist": hud_control.objGap, # close lead makes controls tighter
+    "ACC_ObjDist": objGap, # close lead makes controls tighter
     }
 
   if not stock_cam:
