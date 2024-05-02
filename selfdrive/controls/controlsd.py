@@ -711,6 +711,7 @@ class Controls:
 
     hudControl.rightLaneVisible = True
     hudControl.leftLaneVisible = True
+    hudControl.objRelSpd = CS.vEgo
     
     # add PolorBear - 선행차 의 거리 계산...
     lead_model = self.sm['modelV2'].leadsV3 # 선행차 와의 거리 (비젼 측정값...)
