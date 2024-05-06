@@ -7,6 +7,8 @@
 It is open source and inherits MIT license.  By installing this software you accept all responsibility for anything that might occur while you use it.  All contributors to this repository are not liable.  <b>Use at your own risk.</b>
 
 
+Special Thanks: xx979xx, multikyd, sunnyhaibin, ajouatom, xps-genesis, sshane
+
 Licensing
 ------
 
