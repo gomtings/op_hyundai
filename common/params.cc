@@ -220,7 +220,6 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"HapticFeedbackWhenSpeedCamera", PERSISTENT},
     {"UseExternalNaviRoutes", PERSISTENT},
     {"ShowDebugMessage", PERSISTENT},
-    {"EnableLogging", PERSISTENT},
     {"DriverCameraOnReverse", PERSISTENT},
     {"CanFdHda2", PERSISTENT},
 };
