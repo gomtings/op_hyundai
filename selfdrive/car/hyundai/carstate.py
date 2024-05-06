@@ -327,8 +327,18 @@ class CarState(CarStateBase):
 
     ret.cruiseState.available = self.lfa_enabled
 
-    # TODO BrakeLights, TPMS, AutoHold
-    ret.brakeLights = ret.brakePressed
+    # from kisapilot
+    tpms_unit = cp.vl["TPMS"]["UNIT"] * 0.725 if int(cp.vl["TPMS"]["UNIT"]) > 0 else 1.
+    ret.tpms.enabled = True
+    ret.tpms.fl = tpms_unit * cp.vl["TPMS"]["PRESSURE_FL"]
+    ret.tpms.fr = tpms_unit * cp.vl["TPMS"]["PRESSURE_FR"]
+    ret.tpms.rl = tpms_unit * cp.vl["TPMS"]["PRESSURE_RL"]
+    ret.tpms.rr = tpms_unit * cp.vl["TPMS"]["PRESSURE_RR"]
+
+    # from kisapilot
+    ret.brakeLights = bool(cp.vl["BRAKE"]["BRAKE_LIGHT"])
+    ret.autoHold = cp.vl["ESP_STATUS"]["AUTO_HOLD"]
+    ret.brakeHoldActive = ret.autoHold == 1 or (ret.cruiseState.enabled and ret.cruiseState.standstill)
 
     # TODO
     #CruiseStateManager.instance().update(ret, self.main_buttons, self.cruise_buttons, BUTTONS_DICT,
@@ -430,6 +440,9 @@ class CarState(CarStateBase):
       ("CRUISE_BUTTONS_ALT", 50),
       ("BLINKERS", 4),
       ("DOORS_SEATBELTS", 4),
+      ("BRAKE", 0),
+      ("TPMS", 0),
+      ("ESP_STATUS", 0)
     ]
 
     if CP.flags & HyundaiFlags.EV:

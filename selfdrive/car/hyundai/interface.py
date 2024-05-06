@@ -152,6 +152,8 @@ class CarInterface(CarInterfaceBase):
         ret.openpilotLongitudinalControl = True
         ret.radarUnavailable = False
 
+      ret.hasAutoHold = 0x60 in fingerprint[CAN.ECAN]
+
     else:
       if candidate in LEGACY_SAFETY_MODE_CAR:
         # these cars require a special panda safety mode due to missing counters and checksums in the messages
