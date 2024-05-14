@@ -327,6 +327,8 @@ class CarState(CarStateBase):
 
     ret.cruiseState.available = self.lfa_enabled
 
+    ret.brakeLights = ret.brakePressed or bool(cp.vl["TCS"]["BRAKE_LIGHT"]) or bool(cp.vl["BRAKE"]["BRAKE_LIGHT"])
+
     # from kisapilot
     tpms_unit = cp.vl["TPMS"]["UNIT"] * 0.725 if int(cp.vl["TPMS"]["UNIT"]) > 0 else 1.
     ret.tpms.enabled = True
@@ -335,8 +337,6 @@ class CarState(CarStateBase):
     ret.tpms.rl = tpms_unit * cp.vl["TPMS"]["PRESSURE_RL"]
     ret.tpms.rr = tpms_unit * cp.vl["TPMS"]["PRESSURE_RR"]
 
-    # from kisapilot
-    ret.brakeLights = bool(cp.vl["BRAKE"]["BRAKE_LIGHT"])
     ret.autoHold = cp.vl["ESP_STATUS"]["AUTO_HOLD"]
     ret.brakeHoldActive = ret.autoHold == 1 or (ret.cruiseState.enabled and ret.cruiseState.standstill)
 
