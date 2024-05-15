@@ -14,6 +14,7 @@ from openpilot.selfdrive.car.interfaces import CarInterfaceBase, ACCEL_MIN, ACCE
 from openpilot.selfdrive.car.disable_ecu import disable_ecu
 from openpilot.selfdrive.controls.neokii.cruise_state_manager import is_radar_disabler
 from openpilot.common.params import Params
+from selfdrive.car.hyundai.values import HyundaiExFlags
 
 Ecu = car.CarParams.Ecu
 ButtonType = car.CarState.ButtonEvent.Type
@@ -152,7 +153,10 @@ class CarInterface(CarInterfaceBase):
         ret.openpilotLongitudinalControl = True
         ret.radarUnavailable = False
 
-      ret.hasAutoHold = 0x60 in fingerprint[CAN.ECAN]
+      if 0x60 in fingerprint[CAN.ECAN]:
+        ret.exFlags |= HyundaiExFlags.AUTOHOLD.value
+      if 0x3a0 in fingerprint[CAN.ECAN]:
+        ret.exFlags |= HyundaiExFlags.TPMS.value
 
     else:
       if candidate in LEGACY_SAFETY_MODE_CAR:
@@ -161,16 +165,19 @@ class CarInterface(CarInterfaceBase):
       else:
         ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.hyundai, 0)]
 
-      ret.hasAutoHold = 1151 in fingerprint[0]
-      ret.hasLfaHda = 1157 in fingerprint[0]
-      ret.hasNav = 1348 in fingerprint[0]
+      if 1151 in fingerprint[0]:
+        ret.exFlags |= HyundaiExFlags.AUTOHOLD.value
+      if 1427 in fingerprint[0]:
+        ret.exFlags |= HyundaiExFlags.TPMS.value
+      if 1348 in fingerprint[0]:
+        ret.exFlags |= HyundaiExFlags.NAVI.value
 
       if not ret.openpilotLongitudinalControl:
         ret.radarUnavailable = ret.sccBus == -1
 
       if ret.sccBus == 2:
-        ret.hasScc13 = 1290 in fingerprint[0] or 1290 in fingerprint[2]
-        ret.hasScc14 = 905 in fingerprint[0] or 905 in fingerprint[2]
+        if 905 in fingerprint[0] or 905 in fingerprint[2]:
+          ret.exFlags |= HyundaiExFlags.SCC14.value
         ret.openpilotLongitudinalControl = True
         ret.radarUnavailable = False
         ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.hyundaiLegacy)]

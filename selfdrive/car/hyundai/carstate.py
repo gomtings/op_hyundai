@@ -15,6 +15,7 @@ from openpilot.selfdrive.car.interfaces import CarStateBase
 
 from openpilot.selfdrive.car.hyundai.interface import BUTTONS_DICT
 from openpilot.selfdrive.controls.neokii.cruise_state_manager import CruiseStateManager
+from selfdrive.car.hyundai.values import HyundaiExFlags
 
 PREV_BUTTON_SAMPLES = 8
 CLUSTER_SAMPLE_RATE = 20  # frames
@@ -197,8 +198,8 @@ class CarState(CarStateBase):
     self.mdps12 = copy.copy(cp.vl["MDPS12"])
     self.scc11 = copy.copy(cp_cruise.vl["SCC11"]) if "SCC11" in cp_cruise.vl else None
     self.scc12 = copy.copy(cp_cruise.vl["SCC12"]) if "SCC12" in cp_cruise.vl else None
-    self.scc13 = copy.copy(cp_cruise.vl["SCC13"]) if self.CP.hasScc13 else None
-    self.scc14 = copy.copy(cp_cruise.vl["SCC14"]) if self.CP.hasScc14 else None
+    self.scc13 = copy.copy(cp_cruise.vl["SCC13"])
+    self.scc14 = copy.copy(cp_cruise.vl["SCC14"]) if self.CP.exFlags & HyundaiExFlags.SCC14 else None
 
     if not ret.standstill and cp.vl["MDPS12"]["CF_Mdps_ToiUnavail"] != 0:
       self.mdps_error_cnt += 1
@@ -217,17 +218,18 @@ class CarState(CarStateBase):
     if self.scc12 is not None and "aReqValue" in self.scc12:
       ret.aReqValue = self.scc12["aReqValue"]
 
-    tpms_unit = cp.vl["TPMS11"]["UNIT"] * 0.725 if int(cp.vl["TPMS11"]["UNIT"]) > 0 else 1.
-    ret.tpms.enabled = True
-    ret.tpms.fl = tpms_unit * cp.vl["TPMS11"]["PRESSURE_FL"]
-    ret.tpms.fr = tpms_unit * cp.vl["TPMS11"]["PRESSURE_FR"]
-    ret.tpms.rl = tpms_unit * cp.vl["TPMS11"]["PRESSURE_RL"]
-    ret.tpms.rr = tpms_unit * cp.vl["TPMS11"]["PRESSURE_RR"]
+    if self.CP.exFlags & HyundaiExFlags.TPMS:
+      ret.tpms.enabled = True
+      tpms_unit = cp.vl["TPMS11"]["UNIT"] * 0.725 if int(cp.vl["TPMS11"]["UNIT"]) > 0 else 1.
+      ret.tpms.fl = tpms_unit * cp.vl["TPMS11"]["PRESSURE_FL"]
+      ret.tpms.fr = tpms_unit * cp.vl["TPMS11"]["PRESSURE_FR"]
+      ret.tpms.rl = tpms_unit * cp.vl["TPMS11"]["PRESSURE_RL"]
+      ret.tpms.rr = tpms_unit * cp.vl["TPMS11"]["PRESSURE_RR"]
 
-    if self.CP.hasAutoHold:
+    if self.CP.exFlags & HyundaiExFlags.AUTOHOLD:
       ret.autoHold = cp.vl["ESP11"]["AVH_STAT"]
 
-    if self.CP.hasNav:
+    if self.CP.exFlags & HyundaiExFlags.AUTOHOLD:
       ret.navSpeedLimit = cp.vl["Navi_HU"]["SpeedLim_Nav_Clu"]
 
     if self.CP.openpilotLongitudinalControl and CruiseStateManager.instance().cruise_state_control:
@@ -327,17 +329,20 @@ class CarState(CarStateBase):
 
     ret.cruiseState.available = self.lfa_enabled
 
-    ret.brakeLights = ret.brakePressed or bool(cp.vl["TCS"]["BRAKE_LIGHT"]) or bool(cp.vl["BRAKE"]["BRAKE_LIGHT"])
+    # neokii, kisapilot - it's not certain yet
+    ret.brakeLights = (ret.brakePressed or bool(cp.vl["TCS"]["BRAKE_LIGHT"]) or bool(cp.vl["BRAKE"]["BRAKE_LIGHT"])
+                       or cp.vl["ESP_STATUS"]["AUTO_HOLD"])
 
-    # from kisapilot
-    tpms_unit = cp.vl["TPMS"]["UNIT"] * 0.725 if int(cp.vl["TPMS"]["UNIT"]) > 0 else 1.
-    ret.tpms.enabled = True
-    ret.tpms.fl = tpms_unit * cp.vl["TPMS"]["PRESSURE_FL"]
-    ret.tpms.fr = tpms_unit * cp.vl["TPMS"]["PRESSURE_FR"]
-    ret.tpms.rl = tpms_unit * cp.vl["TPMS"]["PRESSURE_RL"]
-    ret.tpms.rr = tpms_unit * cp.vl["TPMS"]["PRESSURE_RR"]
+    # from kisapilot - NO TPMS messages on HDA2
+    if self.CP.exFlags & HyundaiExFlags.TPMS:
+      ret.tpms.enabled = True
+      tpms_unit = cp.vl["TPMS"]["UNIT"] * 0.725 if int(cp.vl["TPMS"]["UNIT"]) > 0 else 1.
+      ret.tpms.fl = tpms_unit * cp.vl["TPMS"]["PRESSURE_FL"]
+      ret.tpms.fr = tpms_unit * cp.vl["TPMS"]["PRESSURE_FR"]
+      ret.tpms.rl = tpms_unit * cp.vl["TPMS"]["PRESSURE_RL"]
+      ret.tpms.rr = tpms_unit * cp.vl["TPMS"]["PRESSURE_RR"]
 
-    ret.autoHold = cp.vl["ESP_STATUS"]["AUTO_HOLD"]
+    ret.autoHold = cp.vl["ESP_STATUS"]["AUTO_HOLD"] and not ret.cruiseState.enabled
     ret.brakeHoldActive = ret.autoHold == 1 or (ret.cruiseState.enabled and ret.cruiseState.standstill)
 
     # TODO
@@ -395,10 +400,10 @@ class CarState(CarStateBase):
     else:
       messages.append(("LVR12", 100))
 
-    if CP.hasAutoHold:
+    if CP.exFlags & HyundaiExFlags.AUTOHOLD:
       messages += [("ESP11", 50)]
 
-    if CP.hasNav:
+    if CP.exFlags & HyundaiExFlags.NAVI:
       messages += [("Navi_HU", 5)]
 
     return CANParser(DBC[CP.carFingerprint]["pt"], messages, 0)
@@ -416,12 +421,10 @@ class CarState(CarStateBase):
       messages += [
         ("SCC11", 50),
         ("SCC12", 50),
+        ("SCC13", 50),
       ]
 
-      if CP.hasScc13:
-        messages += [("SCC13", 50), ]
-
-      if CP.hasScc14:
+      if CP.exFlags & HyundaiExFlags.SCC14:
         messages += [("SCC14", 50), ]
 
       if CP.flags & HyundaiFlags.USE_FCA.value:

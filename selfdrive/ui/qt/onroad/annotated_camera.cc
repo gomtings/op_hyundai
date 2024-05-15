@@ -1126,7 +1126,7 @@ void AnnotatedCameraWidget::drawBottomIcons(QPainter &p) {
   n++;
 
   // auto hold
-  if(car_params.getHasAutoHold()) {
+  if(car_params.getExFlags() & 1) {
     int autohold = car_state.getAutoHold();
     if(autohold >= 0) {
       x = radius / 2 + (UI_BORDER_SIZE * 2) + (radius + 50) * n;

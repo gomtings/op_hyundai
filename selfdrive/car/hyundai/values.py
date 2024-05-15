@@ -89,6 +89,13 @@ class HyundaiFlags(IntFlag):
   MIN_STEER_32_MPH = 2 ** 23
 
 
+class HyundaiExFlags(IntFlag):
+  AUTOHOLD = 1
+  SCC14 = 2
+  NAVI = 2 ** 2
+  TPMS = 2 ** 3
+
+
 class Footnote(Enum):
   CANFD = CarFootnote(
     "Requires a <a href=\"https://comma.ai/shop/can-fd-panda-kit\" target=\"_blank\">CAN FD panda kit</a> if not using " +

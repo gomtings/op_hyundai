@@ -735,10 +735,5 @@ struct CarParams {
 
 
   sccBus @74: Int8;
-  hasAutoHold @75 :Bool;
-  hasScc13 @76 :Bool;
-  hasScc14 @77 :Bool;
-  hasEms @78 :Bool;
-  hasLfaHda @79 :Bool;
-  hasNav @80 :Bool;
+  exFlags @75 :UInt32;
 }

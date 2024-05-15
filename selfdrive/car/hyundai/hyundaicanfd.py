@@ -144,7 +144,6 @@ def create_acc_control(packer, CAN, enabled, accel_last, accel, stopping, gas_ov
     "ObjValid": 0,
     "OBJ_STATUS": 2,
     "SET_ME_2": 0x4,
-    "SET_ME_3": 0x3,
     "SET_ME_TMP_64": 0x64,
     "DISTANCE_SETTING": hud_control.leadDistanceBars,
   }
