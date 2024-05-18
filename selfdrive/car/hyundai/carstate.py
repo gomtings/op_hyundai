@@ -341,7 +341,7 @@ class CarState(CarStateBase):
       ret.tpms.rl = tpms_unit * cp.vl["TPMS"]["PRESSURE_RL"]
       ret.tpms.rr = tpms_unit * cp.vl["TPMS"]["PRESSURE_RR"]
 
-    ret.autoHold = cp.vl["ESP_STATUS"]["AUTO_HOLD"] and not ret.cruiseState.enabled
+    ret.autoHold = 1 if bool(cp.vl["ESP_STATUS"]["AUTO_HOLD"]) and not ret.cruiseState.enabled else 0
     ret.brakeHoldActive = ret.autoHold == 1 or (ret.cruiseState.enabled and ret.cruiseState.standstill)
 
     # TODO
