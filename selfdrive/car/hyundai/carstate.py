@@ -330,8 +330,7 @@ class CarState(CarStateBase):
     ret.cruiseState.available = self.lfa_enabled
 
     # neokii, kisapilot - it's not certain yet
-    ret.brakeLights = (ret.brakePressed or bool(cp.vl["TCS"]["BRAKE_LIGHT"]) or bool(cp.vl["BRAKE"]["BRAKE_LIGHT"])
-                       or cp.vl["ESP_STATUS"]["AUTO_HOLD"])
+    ret.brakeLights = ret.brakePressed or bool(cp.vl["TCS"]["BRAKE_LIGHT"]) or bool(cp.vl["BRAKE"]["BRAKE_LIGHT"]) or bool(cp.vl["ESP_STATUS"]["AUTO_HOLD"])
 
     # from kisapilot - NO TPMS messages on HDA2
     if self.CP.exFlags & HyundaiExFlags.TPMS:
