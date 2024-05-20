@@ -198,7 +198,7 @@ class CarState(CarStateBase):
     self.mdps12 = copy.copy(cp.vl["MDPS12"])
     self.scc11 = copy.copy(cp_cruise.vl["SCC11"]) if "SCC11" in cp_cruise.vl else None
     self.scc12 = copy.copy(cp_cruise.vl["SCC12"]) if "SCC12" in cp_cruise.vl else None
-    self.scc13 = copy.copy(cp_cruise.vl["SCC13"])
+    self.scc13 = copy.copy(cp_cruise.vl["SCC13"]) if self.CP.exFlags & HyundaiExFlags.SCC13 else None
     self.scc14 = copy.copy(cp_cruise.vl["SCC14"]) if self.CP.exFlags & HyundaiExFlags.SCC14 else None
 
     if not ret.standstill and cp.vl["MDPS12"]["CF_Mdps_ToiUnavail"] != 0:
@@ -420,8 +420,10 @@ class CarState(CarStateBase):
       messages += [
         ("SCC11", 50),
         ("SCC12", 50),
-        ("SCC13", 50),
       ]
+
+      if CP.exFlags & HyundaiExFlags.SCC13:
+        messages += [("SCC13", 50), ]
 
       if CP.exFlags & HyundaiExFlags.SCC14:
         messages += [("SCC14", 50), ]

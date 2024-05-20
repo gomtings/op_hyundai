@@ -176,6 +176,8 @@ class CarInterface(CarInterfaceBase):
         ret.radarUnavailable = ret.sccBus == -1
 
       if ret.sccBus == 2:
+        if 1290 in fingerprint[0] or 1290 in fingerprint[2]:
+          ret.exFlags |= HyundaiExFlags.SCC13.value
         if 905 in fingerprint[0] or 905 in fingerprint[2]:
           ret.exFlags |= HyundaiExFlags.SCC14.value
         ret.openpilotLongitudinalControl = True

@@ -91,9 +91,10 @@ class HyundaiFlags(IntFlag):
 
 class HyundaiExFlags(IntFlag):
   AUTOHOLD = 1
-  SCC14 = 2
-  NAVI = 2 ** 2
-  TPMS = 2 ** 3
+  SCC13 = 2
+  SCC14 = 2 ** 2
+  NAVI = 2 ** 3
+  TPMS = 2 ** 4
 
 
 class Footnote(Enum):
