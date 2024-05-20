@@ -229,7 +229,7 @@ class CarState(CarStateBase):
     if self.CP.exFlags & HyundaiExFlags.AUTOHOLD:
       ret.autoHold = cp.vl["ESP11"]["AVH_STAT"]
 
-    if self.CP.exFlags & HyundaiExFlags.AUTOHOLD:
+    if self.CP.exFlags & HyundaiExFlags.NAVI:
       ret.navSpeedLimit = cp.vl["Navi_HU"]["SpeedLim_Nav_Clu"]
 
     if self.CP.openpilotLongitudinalControl and CruiseStateManager.instance().cruise_state_control:
