@@ -319,3 +319,11 @@ def ntune_scc_get(key):
 
 def ntune_torque_get(key):
   return ntune_get(GroupType.TORQUE, key)
+
+def ntune_init():
+  group_values = [value for key, value in GroupType.__dict__.items() if not key.startswith('__') and not callable(value)]
+  for group in group_values:
+    nTune(group=group)
+
+if __name__ == "__main__":
+  ntune_init()
