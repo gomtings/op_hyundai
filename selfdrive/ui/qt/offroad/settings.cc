@@ -70,12 +70,12 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       tr("Enable driver monitoring even when openpilot is not engaged."),
       "../assets/offroad/icon_monitoring.png",
     },
-    /*{
+    {
       "RecordFront",
       tr("Record and Upload Driver Camera"),
       tr("Upload data from the driver facing camera and help improve the driver monitoring algorithm."),
       "../assets/offroad/icon_monitoring.png",
-    },*/
+    },
     {
       "IsMetric",
       tr("Use Metric System"),
