@@ -627,12 +627,6 @@ CommunityPanel::CommunityPanel(SettingsWindow *parent) : ListWidget(parent) {
       "../assets/offroad/icon_openpilot.png",
     },
     {
-      "ShowDebugMessage",
-      tr("Show Debug Message"),
-      "",
-      "../assets/offroad/icon_shell.png",
-    },
-    {
       "DriverCameraOnReverse",
       tr("Driver Camera On Reverse"),
       tr("Displays the driver camera when in reverse."),

@@ -90,7 +90,7 @@ class SpeedController:
     self.slow_on_curves = True
     self.sync_set_speed_while_gas_pressed = True
     self.is_metric = self.params.get_bool('IsMetric')
-    self.show_debug_message = self.params.get_bool('ShowDebugMessage')
+    self.enable_debug_message = self.params.get_bool('EnabledDebugMessage')
 
     self.speed_conv_to_ms = CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS
     self.speed_conv_to_clu = CV.MS_TO_KPH if self.is_metric else CV.MS_TO_MPH
@@ -399,7 +399,7 @@ class SpeedController:
     CC.steerActuatorDelay = ntune_common_get('steerActuatorDelay')
 
     try:
-      if self.show_debug_message:
+      if self.enable_debug_message:
         actuators = c.card.last_actuators
         loc = c.LoC
 
