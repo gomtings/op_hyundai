@@ -398,32 +398,35 @@ class SpeedController:
     CC.steerRatio = c.VM.sR
     CC.steerActuatorDelay = ntune_common_get('steerActuatorDelay')
 
-    if self.show_debug_message:
-      actuators = c.last_actuators
-      loc = c.LoC
+    try:
+      if self.show_debug_message:
+        actuators = c.card.last_actuators
+        loc = c.LoC
 
-      debug_text  = "Standstill: {}\n".format(CS.cruiseState.standstill)
-      debug_text += "Long State: {}\n".format(actuators.longControlState)
-      debug_text += "vEgo: {:.2f}/{:.2f}\n".format(CS.vEgo, CS.vEgo*3.6)
+        debug_text = "Standstill: {}\n".format(CS.cruiseState.standstill)
+        debug_text += "Long State: {}\n".format(actuators.longControlState)
+        debug_text += "vEgo: {:.2f}/{:.2f}\n".format(CS.vEgo, CS.vEgo * 3.6)
 
-      debug_text += "vPid: {:.2f}/{:.2f}\n".format(loc.v_pid, loc.v_pid*3.6)
-      debug_text += "PID: {:.2f}/{:.2f}/{:.2f}\n".format(loc.pid.p, loc.pid.i, loc.pid.f)
+        debug_text += "vPid: {:.2f}/{:.2f}\n".format(loc.v_pid, loc.v_pid * 3.6)
+        debug_text += "PID: {:.2f}/{:.2f}/{:.2f}\n".format(loc.pid.p, loc.pid.i, loc.pid.f)
 
-      debug_text += "Actuator Accel: {:.2f}\n".format(actuators.accel)
-      debug_text += "Apply Accel: {:.2f}\n".format(CC.applyAccel)
-      debug_text += "Stock Accel: {:.2f}\n".format(CS.aReqValue)
+        debug_text += "Actuator Accel: {:.2f}\n".format(actuators.accel)
+        debug_text += "Apply Accel: {:.2f}\n".format(CC.applyAccel)
+        debug_text += "Stock Accel: {:.2f}\n".format(CS.aReqValue)
 
-      lead_radar = c.sm['radarState'].leadOne
-      lead_model = c.sm['modelV2'].leadsV3[0]
+        lead_radar = c.sm['radarState'].leadOne
+        lead_model = c.sm['modelV2'].leadsV3[0]
 
-      radar_dist = lead_radar.dRel if lead_radar.status and lead_radar.radar else 0
-      vision_dist = lead_model.x[0] - RADAR_TO_CAMERA if lead_model.prob > .5 else 0
+        radar_dist = lead_radar.dRel if lead_radar.status and lead_radar.radar else 0
+        vision_dist = lead_model.x[0] - RADAR_TO_CAMERA if lead_model.prob > .5 else 0
 
-      debug_text += "Lead: {:.1f}/{:.1f}/{:.1f}\n".format(radar_dist, vision_dist, (radar_dist - vision_dist))
+        debug_text += "Lead: {:.1f}/{:.1f}/{:.1f}\n".format(radar_dist, vision_dist, (radar_dist - vision_dist))
 
-      md = c.sm['modelV2']
-      debug_text += "Lane: {:.2f}/{:.2f}, {:.2f}/{:.2f}".format(md.laneLineProbs[1], md.laneLineProbs[2],
-                                                                md.laneLineStds[1], md.laneLineStds[2])
+        md = c.sm['modelV2']
+        debug_text += "Lane: {:.2f}/{:.2f}, {:.2f}/{:.2f}".format(md.laneLineProbs[1], md.laneLineProbs[2],
+                                                                  md.laneLineStds[1], md.laneLineStds[2])
 
-      CC.debugText = debug_text
+        CC.debugText = debug_text
+    except:
+      pass
 
