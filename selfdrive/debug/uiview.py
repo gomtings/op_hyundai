@@ -4,7 +4,7 @@ import time
 from cereal import car, log, messaging
 from openpilot.common.params import Params
 from openpilot.system.hardware import HARDWARE
-from openpilot.selfdrive.manager.process_config import managed_processes
+from openpilot.system.manager.process_config import managed_processes
 from openpilot.system.hardware import HARDWARE
 
 if __name__ == "__main__":
@@ -38,7 +38,7 @@ if __name__ == "__main__":
       msgs['carState'] = messaging.new_message('carState')
       msgs['carState'].carState.vEgoCluster = speed
       msgs['carState'].carState.vEgo = speed
-      msgs['carControl'].carControl.debugText = "Speed: {}\nTest\nTEST...TEST".format(speed)
+      #msgs['carControl'].carControl.debugText = "Speed: {}\nTest\nTEST...TEST".format(speed)
 
       for s in msgs:
         pm.send(s, msgs[s])

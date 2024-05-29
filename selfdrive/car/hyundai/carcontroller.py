@@ -64,13 +64,8 @@ class CarController(CarControllerBase):
     self.car_fingerprint = CP.carFingerprint
     self.last_button_frame = 0
 
-    self.resume_cnt = 0
-    self.last_lead_distance = 0
-    self.resume_wait_timer = 0
-
     self.param = Params()
     self.ldws_opt = self.param.get_bool('IsLdwsCar')
-    self.e2e_long = self.param.get_bool('ExperimentalMode')
 
     self.stock_accel_weight = 0.0
 
@@ -180,9 +175,6 @@ class CarController(CarControllerBase):
         if CC.cruiseControl.cancel:
           can_sends.append(hyundaican.create_clu11(self.packer, CS.clu11, Buttons.CANCEL, self.CP.sccBus))
         elif CC.cruiseControl.resume:
-          #if self.CP.carFingerprint in LEGACY_SAFETY_MODE_CAR:
-          #  self.update_auto_resume(CC, CS, can_sends)
-          #else:
           # send resume at a max freq of 10Hz
           if (self.frame - self.last_button_frame) * DT_CTRL > 0.1:
             # send 25 messages at a time to increases the likelihood of resume being accepted
@@ -231,41 +223,13 @@ class CarController(CarControllerBase):
       if self.frame % 50 == 0 and self.CP.openpilotLongitudinalControl and self.CP.sccBus == 0:
         can_sends.append(hyundaican.create_frt_radar_opt(self.packer))
 
-    CC.applyAccel = accel
-
-    new_actuators = actuators.copy()
+    new_actuators = actuators.as_builder()
     new_actuators.steer = apply_steer / self.params.STEER_MAX
     new_actuators.steerOutputCan = apply_steer
     new_actuators.accel = accel
 
     self.frame += 1
     return new_actuators, can_sends
-
-  def update_auto_resume(self, CC, CS, can_sends):
-    # neokii
-    if CS.lead_distance <= 0:
-      return
-
-    if CC.cruiseControl.resume and not CS.out.gasPressed:
-      if self.last_lead_distance == 0:
-        self.last_lead_distance = CS.lead_distance
-        self.resume_cnt = 0
-        self.resume_wait_timer = 0
-
-      elif self.resume_wait_timer > 0:
-        self.resume_wait_timer -= 1
-
-      elif abs(CS.lead_distance - self.last_lead_distance) > 0.1:
-        can_sends.append(hyundaican.create_clu11(self.packer, CS.clu11, Buttons.RES_ACCEL, self.CP.sccBus))
-        self.resume_cnt += 1
-
-        if self.resume_cnt >= int(randint(4, 5) * 2):
-          self.resume_cnt = 0
-          self.resume_wait_timer = int(randint(20, 25) * 2)
-
-    elif self.last_lead_distance != 0:
-      self.last_lead_distance = 0
-
 
   def get_stock_cam_accel(self, apply_accel, stock_accel, scc11):
     stock_cam = scc11["Navi_SCC_Camera_Act"] == 2 and scc11["Navi_SCC_Camera_Status"] == 2

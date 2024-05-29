@@ -98,7 +98,7 @@ class CarState(CarStateBase):
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
     ret.standstill = ret.wheelSpeeds.fl <= STANDSTILL_THRESHOLD and ret.wheelSpeeds.rr <= STANDSTILL_THRESHOLD
 
-    ret.vCluRatio = (ret.vEgo / ret.vEgoCluster) if (ret.vEgoCluster > 3. and ret.vEgo > 3.) else 1.0
+    ret.exState.vCluRatio = (ret.vEgo / ret.vEgoCluster) if (ret.vEgoCluster > 3. and ret.vEgo > 3.) else 1.0
     #####
 
     self.cluster_speed_counter += 1
@@ -216,21 +216,22 @@ class CarState(CarStateBase):
       self.lead_distance = -1
 
     if self.scc12 is not None and "aReqValue" in self.scc12:
-      ret.aReqValue = self.scc12["aReqValue"]
+      ret.exState.aReqValue = self.scc12["aReqValue"]
 
     if self.CP.exFlags & HyundaiExFlags.TPMS:
-      ret.tpms.enabled = True
+      tpms = ret.exState.tpms
+      tpms.enabled = True
       tpms_unit = cp.vl["TPMS11"]["UNIT"] * 0.725 if int(cp.vl["TPMS11"]["UNIT"]) > 0 else 1.
-      ret.tpms.fl = tpms_unit * cp.vl["TPMS11"]["PRESSURE_FL"]
-      ret.tpms.fr = tpms_unit * cp.vl["TPMS11"]["PRESSURE_FR"]
-      ret.tpms.rl = tpms_unit * cp.vl["TPMS11"]["PRESSURE_RL"]
-      ret.tpms.rr = tpms_unit * cp.vl["TPMS11"]["PRESSURE_RR"]
+      tpms.fl = tpms_unit * cp.vl["TPMS11"]["PRESSURE_FL"]
+      tpms.fr = tpms_unit * cp.vl["TPMS11"]["PRESSURE_FR"]
+      tpms.rl = tpms_unit * cp.vl["TPMS11"]["PRESSURE_RL"]
+      tpms.rr = tpms_unit * cp.vl["TPMS11"]["PRESSURE_RR"]
 
     if self.CP.exFlags & HyundaiExFlags.AUTOHOLD:
-      ret.autoHold = cp.vl["ESP11"]["AVH_STAT"]
+      ret.exState.autoHold = cp.vl["ESP11"]["AVH_STAT"]
 
     if self.CP.exFlags & HyundaiExFlags.NAVI:
-      ret.navSpeedLimit = cp.vl["Navi_HU"]["SpeedLim_Nav_Clu"]
+      ret.exState.navSpeedLimit = cp.vl["Navi_HU"]["SpeedLim_Nav_Clu"]
 
     if self.CP.openpilotLongitudinalControl and CruiseStateManager.instance().cruise_state_control:
       available = ret.cruiseState.available if self.CP.sccBus == 2 else -1
@@ -323,7 +324,7 @@ class CarState(CarStateBase):
     # custom messages
 
     prev_lfa_btn = self.lfa_btn
-    self.lfa_btn = cp.vl[self.cruise_btns_msg_canfd]["LKAS_BTN"]
+    self.lfa_btn = cp.vl[self.cruise_btns_msg_canfd]["LFA_BTN"]
     if prev_lfa_btn != 1 and self.lfa_btn == 1:
       self.lfa_enabled = not self.lfa_enabled
 
@@ -334,15 +335,16 @@ class CarState(CarStateBase):
 
     # from kisapilot - NO TPMS messages on HDA2
     if self.CP.exFlags & HyundaiExFlags.TPMS:
-      ret.tpms.enabled = True
+      tpms = ret.exState.tpms
+      tpms.enabled = True
       tpms_unit = cp.vl["TPMS"]["UNIT"] * 0.725 if int(cp.vl["TPMS"]["UNIT"]) > 0 else 1.
-      ret.tpms.fl = tpms_unit * cp.vl["TPMS"]["PRESSURE_FL"]
-      ret.tpms.fr = tpms_unit * cp.vl["TPMS"]["PRESSURE_FR"]
-      ret.tpms.rl = tpms_unit * cp.vl["TPMS"]["PRESSURE_RL"]
-      ret.tpms.rr = tpms_unit * cp.vl["TPMS"]["PRESSURE_RR"]
+      tpms.fl = tpms_unit * cp.vl["TPMS"]["PRESSURE_FL"]
+      tpms.fr = tpms_unit * cp.vl["TPMS"]["PRESSURE_FR"]
+      tpms.rl = tpms_unit * cp.vl["TPMS"]["PRESSURE_RL"]
+      tpms.rr = tpms_unit * cp.vl["TPMS"]["PRESSURE_RR"]
 
-    ret.autoHold = cp.vl["ESP_STATUS"]["AUTO_HOLD"] if not ret.cruiseState.enabled else 0
-    ret.brakeHoldActive = ret.autoHold == 1 or (ret.cruiseState.enabled and ret.cruiseState.standstill)
+    ret.exState.autoHold = cp.vl["ESP_STATUS"]["AUTO_HOLD"] if not ret.cruiseState.enabled else 0
+    ret.brakeHoldActive = ret.exState.autoHold == 1 or (ret.cruiseState.enabled and ret.cruiseState.standstill)
 
     # TODO
     #CruiseStateManager.instance().update(ret, self.main_buttons, self.cruise_buttons, BUTTONS_DICT,

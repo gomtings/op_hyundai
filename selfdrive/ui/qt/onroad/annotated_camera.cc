@@ -374,11 +374,13 @@ void AnnotatedCameraWidget::drawHud(QPainter &p, const cereal::ModelDataV2::Read
   drawDebugText(p);
 
   const auto controls_state = sm["controlsState"].getControlsState();
-  //const auto car_params = sm["carParams"].getCarParams();
+  const auto car_params = sm["carParams"].getCarParams();
   const auto live_params = sm["liveParameters"].getLiveParameters();
   const auto car_control = sm["carControl"].getCarControl();
   const auto live_torque_params = sm["liveTorqueParameters"].getLiveTorqueParameters();
   const auto torque_state = controls_state.getLateralControlState().getTorqueState();
+  const auto car_state = sm["carState"].getCarState();
+  const auto ex_state = car_state.getExState();
 
   QString infoText;
   infoText.sprintf("TP(%.2f/%.2f) LTP(%.2f/%.2f/%.0f) AO(%.2f/%.2f) SR(%.2f) SAD(%.2f) SCC(%d)",
@@ -394,9 +396,9 @@ void AnnotatedCameraWidget::drawHud(QPainter &p, const cereal::ModelDataV2::Read
                       live_params.getAngleOffsetAverageDeg(),
 
                       car_control.getSteerRatio(),
-                      car_control.getSteerActuatorDelay(),
+                      ex_state.getSteerActuatorDelay(),
 
-                      car_control.getSccBus()
+                      car_params.getSccBus()
                       );
 
   // info
@@ -455,8 +457,9 @@ void AnnotatedCameraWidget::drawMaxSpeed(QPainter &p) {
 
   UIState *s = uiState();
   const SubMaster &sm = *(s->sm);
-  const auto car_control = sm["carControl"].getCarControl();
+  //const auto car_control = sm["carControl"].getCarControl();
   const auto car_state = sm["carState"].getCarState();
+  const auto ex_state = car_state.getExState();
   //const auto car_params = sm["carParams"].getCarParams();
   const auto navi_data = sm["naviData"].getNaviData();
 
@@ -466,8 +469,8 @@ void AnnotatedCameraWidget::drawMaxSpeed(QPainter &p) {
   //int scc_bus = car_params.getSccBus();
 
   // kph
-  float applyMaxSpeed = car_control.getApplyMaxSpeed();
-  float cruiseMaxSpeed = car_control.getCruiseMaxSpeed();
+  float applyMaxSpeed = ex_state.getApplyMaxSpeed();
+  float cruiseMaxSpeed = ex_state.getCruiseMaxSpeed();
 
   bool is_cruise_set = cruiseState.getEnabled();
 
@@ -509,7 +512,7 @@ void AnnotatedCameraWidget::drawMaxSpeed(QPainter &p) {
       }
   }
   else {
-    limit_speed = car_state.getNavSpeedLimit();
+    limit_speed = ex_state.getNavSpeedLimit();
   }
 
 
@@ -723,6 +726,7 @@ void AnnotatedCameraWidget::drawSteer(QPainter &p) {
 
   const SubMaster &sm = *(uiState()->sm);
   auto car_state = sm["carState"].getCarState();
+  //const auto ex_state = car_state.getExState();
   auto car_control = sm["carControl"].getCarControl();
   auto radar_state = sm["radarState"].getRadarState();
   auto lead_one = radar_state.getLeadOne();
@@ -862,6 +866,7 @@ void AnnotatedCameraWidget::drawTurnSignals(QPainter &p) {
   else {
     const SubMaster &sm = *(uiState()->sm);
     auto car_state = sm["carState"].getCarState();
+    //const auto ex_state = car_state.getExState();
     bool left_on = car_state.getLeftBlinker();
     bool right_on = car_state.getRightBlinker();
 
@@ -961,7 +966,7 @@ void AnnotatedCameraWidget::drawGpsStatus(QPainter &p) {
 
 void AnnotatedCameraWidget::drawDebugText(QPainter &p) {
 
-  p.save();
+  /*p.save();
 
   const SubMaster &sm = *(uiState()->sm);
   QString str, temp;
@@ -978,7 +983,7 @@ void AnnotatedCameraWidget::drawDebugText(QPainter &p) {
 
   p.drawText(rect, Qt::AlignLeft, QString::fromStdString(car_control.getDebugText().cStr()));
 
-  p.restore();
+  p.restore();*/
 }
 
 void AnnotatedCameraWidget::drawDriverState(QPainter &painter, const UIState *s) {
@@ -1043,15 +1048,15 @@ void AnnotatedCameraWidget::drawBottomIcons(QPainter &p) {
   p.save();
   const SubMaster &sm = *(uiState()->sm);
   const auto car_state = sm["carState"].getCarState();
-  const auto car_control = sm["carControl"].getCarControl();
+  const auto ex_state = car_state.getExState();
+  //const auto car_control = sm["carControl"].getCarControl();
   const auto car_params = (*uiState()->sm)["carParams"].getCarParams();
-  const auto tpms = car_state.getTpms();
+  const auto tpms = ex_state.getTpms();
 
   int n = 1;
 
   // tpms
-  if(tpms.getEnabled())
-  {
+  if(tpms.getEnabled()) {
     const int w = 58;
     const int h = 126;
     const int x = radius / 2 + (UI_BORDER_SIZE * 2) + (radius + 50) * n - w/2;
@@ -1087,7 +1092,7 @@ void AnnotatedCameraWidget::drawBottomIcons(QPainter &p) {
 
   // cruise gap
   int gap = car_state.getCruiseState().getLeadDistanceBars();
-  int autoTrGap = car_control.getAutoTrGap();
+  int autoTrGap = ex_state.getAutoTrGap();
 
   p.setPen(Qt::NoPen);
   p.setBrush(QBrush(QColor(0, 0, 0, 255 * .1f)));
@@ -1127,7 +1132,7 @@ void AnnotatedCameraWidget::drawBottomIcons(QPainter &p) {
 
   // auto hold
   if(car_params.getExFlags() & 1) {
-    int autohold = car_state.getAutoHold();
+    int autohold = ex_state.getAutoHold();
     if(autohold >= 0) {
       x = radius / 2 + (UI_BORDER_SIZE * 2) + (radius + 50) * n;
       img_alpha = autohold > 0 ? 1.0f : 0.15f;

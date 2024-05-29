@@ -160,6 +160,8 @@ struct CarState {
   # CAN health
   canValid @26 :Bool;       # invalid counter/checksums
   canTimeout @40 :Bool;     # CAN bus dropped out
+  canErrorCounter @48 :UInt32;
+  canRcvTimeout @49 :Bool;
 
   # car speed
   vEgo @1 :Float32;          # best estimate of speed
@@ -225,12 +227,25 @@ struct CarState {
   fuelGauge @41 :Float32; # battery or fuel tank level from 0.0 to 1.0
   charging @43 :Bool;
 
+  # process meta
+  cumLagMs @50 :Float32;
+
   # neokii
-  vCluRatio @48 :Float32;
-  autoHold @49 :Int8;
-  tpms @50 :Tpms;
-  navSpeedLimit @51 :Int16;
-  aReqValue @52 :Float32;
+  exState @51 :ExState;
+
+  struct ExState {
+    vCruiseKph @0 :Float32;
+    vCluRatio @1 :Float32;
+    autoHold @2 :Int8;
+    tpms @3 :Tpms;
+    navSpeedLimit @4 :Int16;
+    aReqValue @5 :Float32;
+
+    applyMaxSpeed @6 :Float32;
+    cruiseMaxSpeed @7 :Float32;
+    autoTrGap @8 :UInt32;
+    steerActuatorDelay @9 :Float32;
+  }
 
   struct Tpms {
     enabled @0 :Bool;
@@ -357,15 +372,7 @@ struct CarControl {
   cruiseControl @4 :CruiseControl;
   hudControl @5 :HUDControl;
 
-  applyMaxSpeed @17 :Float32;
-  cruiseMaxSpeed @18 :Float32;
-  autoTrGap @19 :UInt32;
-  steerRatio @20 :Float32;
-  steerActuatorDelay @21 :Float32;
-  sccBus @22 :UInt8;
-
-  applyAccel @23 :Float32;
-  debugText @24 :Text;
+  steerRatio @17 :Float32;
 
   struct Actuators {
     # range from 0.0 - 1.0

@@ -20,17 +20,17 @@ markers = [
 ]
 testpaths = [
   "common",
-  "selfdrive/athena",
   "selfdrive/boardd",
   "selfdrive/car",
   "selfdrive/controls",
   "selfdrive/locationd",
   "selfdrive/monitoring",
   "selfdrive/navd/tests",
-  "selfdrive/thermald",
   "selfdrive/test/longitudinal_maneuvers",
   "selfdrive/test/process_replay/test_fuzzy.py",
-  "selfdrive/updated",
+  "system/updated",
+  "system/thermald",
+  "system/athena",
   "system/camerad",
   "system/hardware/tici",
   "system/loggerd",
@@ -108,7 +108,6 @@ pycryptodome = "*"
 PyJWT = "*"
 pyserial = "*"
 pyzmq = "*"
-rerun-sdk = "*"
 requests = "*"
 scons = "*"
 sentry-sdk = "*"
@@ -141,7 +140,8 @@ inputs = "*"
 Jinja2 = "*"
 lru-dict = "*"
 matplotlib = "*"
-metadrive-simulator = { version = "0.4.2.3", markers = "platform_machine != 'aarch64'" } # no linux/aarch64 wheels for certain dependencies
+# No release for this fix https://github.com/metadriverse/metadrive/issues/632. Pinned to this commit until next release
+metadrive-simulator = {git = "https://github.com/metadriverse/metadrive.git", rev ="233a3a1698be7038ec3dd050ca10b547b4b3324c", markers = "platform_machine != 'aarch64'" } # no linux/aarch64 wheels for certain dependencies
 mpld3 = "*"
 mypy = "*"
 myst-parser = "*"
@@ -165,6 +165,7 @@ pytest-timeout = "*"
 pytest-randomly = "*"
 pytest-asyncio = "*"
 pytest-mock = "*"
+rerun-sdk = "*"
 ruff = "*"
 sphinx = "*"
 sphinx-rtd-theme = "*"
@@ -184,8 +185,24 @@ build-backend = "poetry.core.masonry.api"
 # https://beta.ruff.rs/docs/configuration/#using-pyprojecttoml
 [tool.ruff]
 indent-width = 2
-lint.select = ["E", "F", "W", "PIE", "C4", "ISC", "RUF008", "RUF100", "A", "B", "TID251"]
-lint.ignore = ["E741", "E402", "C408", "ISC003", "B027", "B024"]
+lint.select = [
+  "E", "F", "W", "PIE", "C4", "ISC", "A", "B",
+  "NPY", # numpy
+  "UP",  # pyupgrade
+  "TRY302", "TRY400", "TRY401", # try/excepts
+  "RUF008", "RUF100",
+  "TID251"
+]
+lint.ignore = [
+  "E741",
+  "E402",
+  "C408",
+  "ISC003",
+  "B027",
+  "B024",
+  "NPY002",  # new numpy random syntax is worse
+  "UP038",   # (x, y) -> x|y for isinstance
+]
 line-length = 160
 target-version="py311"
 exclude = [

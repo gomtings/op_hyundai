@@ -47,7 +47,7 @@ def limit_accel_in_turns(v_ego, angle_steers, a_target, CP):
 class LongitudinalPlanner:
   def __init__(self, CP, init_v=0.0, init_a=0.0, dt=DT_MDL):
     self.CP = CP
-    self.mpc = LongitudinalMpc()
+    self.mpc = LongitudinalMpc(dt=dt)
     self.fcw = False
     self.dt = dt
 
@@ -84,7 +84,7 @@ class LongitudinalPlanner:
     v_cruise = v_cruise_kph * CV.KPH_TO_MS
 
     # neokii
-    vCluRatio = sm['carState'].vCluRatio
+    vCluRatio = sm['carState'].exState.vCluRatio
     if vCluRatio > 0.5:
       v_cruise *= vCluRatio
       v_cruise = int(v_cruise * CV.MS_TO_KPH + 0.25) * CV.KPH_TO_MS
