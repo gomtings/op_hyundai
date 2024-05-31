@@ -11,7 +11,7 @@ LongCtrlState = car.CarControl.Actuators.LongControlState
 
 def long_control_state_trans(CP, active, long_control_state, v_ego, v_target,
                              v_target_1sec, brake_pressed, cruise_standstill, lead):
-  accelerating = v_target_1sec > v_target and (not lead.status or (lead.vLeadK > 0.3 and lead.dRel > 3.5))
+  accelerating = v_target_1sec > v_target and (not lead.status or (lead.vLeadK > 0.3 and lead.dRel > 4.))
   planned_stop = (v_target < CP.vEgoStopping and
                   v_target_1sec < CP.vEgoStopping and
                   not accelerating)
