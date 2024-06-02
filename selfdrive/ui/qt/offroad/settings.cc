@@ -480,8 +480,11 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
     {tr("Toggles"), toggles},
     {tr("Software"), new SoftwarePanel(this)},
     {tr("Community"), new CommunityPanel(this)},
-    {"nTune", new nTuneMainWidget(this)},
   };
+
+  if(nTuneMainWidget::checkFilesExist()) {
+    panels.append({"nTune", new nTuneMainWidget(this)});
+  }
 
   nav_btns = new QButtonGroup(this);
   for (auto &[name, panel] : panels) {

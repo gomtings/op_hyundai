@@ -28,8 +28,11 @@ class nTuneMainWidget : public QWidget {
     Q_OBJECT
 public:
     explicit nTuneMainWidget(QWidget *parent = nullptr);
+    static bool checkFilesExist();
 
 private:
+    static QList<QString> mainTitles;
+    static QList<QList<TuneItemInfo>> mainItems;
     QListView* listView;
     QStackedWidget *stackedWidget;
 };

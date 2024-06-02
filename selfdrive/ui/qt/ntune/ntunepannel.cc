@@ -6,38 +6,38 @@
 #include <QFont>
 #include <QDebug>
 
-nTuneMainWidget::nTuneMainWidget(QWidget *parent)
-    : QWidget{parent} {
-
-    QList<QString> mainTitles = {
+QList<QString> nTuneMainWidget::mainTitles = {
     "General", "SCC", "Torque"
     };
 
-    QList<QList<TuneItemInfo>> mainItems = {
-    {
-        TuneItemInfo("common.json", "pathFactor", tr("If oversteer occurs in a corner, reduce it."),
-                     0.96f, 0.9f, 1.1f, 0.01f, 2),
-        TuneItemInfo("common.json", "steerActuatorDelay", "",
-                     0.2f, 0.0f, 0.8f, 0.05f, 2),
-    },
-    {
-        TuneItemInfo("scc_v2.json", "longStartingFactor", tr("Acceleration at start, increasing this value will make the acceleration faster."),
-                     1.0f, 0.7f, 1.5f, 0.05f, 2),
-        TuneItemInfo("scc_v2.json", "longLeadSensitivity", tr("Sensitivity lead, the higher it is, the more sensitive the response to the lead."),
-                     0.65f, 0.4f, 1.2f, 0.05f, 2),
-        TuneItemInfo("scc_v2.json", "comportBrake", tr("If this value is high, it reduces the distance maintained with the car in front, resulting in more aggressive driving."),
-                     2.7f, 2.3f, 3.2f, 0.1f, 1, "m/s²"),
-        TuneItemInfo("scc_v2.json", "stopDistance", tr("The distance from the lead when the car stops. There is no guarantee that it will stop at that exact distance."),
-                     5.0f, 4.0f, 7.0f, 0.1f, 1, "m"),
-        TuneItemInfo("scc_v2.json", "longDisableRadar", "(0: Use radar, 1: Do not use radar)",
-                     0.0f, 0.0f, 1.0f, 1.0f, 0),
-    },
-    {
-        TuneItemInfo("lat_torque_v4.json", "latAccelFactor", "", 2.5f, 0.5f, 4.5f, 0.1f, 2),
-        TuneItemInfo("lat_torque_v4.json", "friction", "", 0.1f, 0.0f, 0.2f, 0.01f, 3),
-        TuneItemInfo("lat_torque_v4.json", "angle_deadzone_v2", "", 0.0f, 0.0f, 2.0f, 0.01f, 3),
-    },
-    };
+QList<QList<TuneItemInfo>> nTuneMainWidget::mainItems = {
+{
+    TuneItemInfo("common.json", "pathFactor", tr("If oversteer occurs in a corner, reduce it."),
+                 0.96f, 0.9f, 1.1f, 0.01f, 2),
+    TuneItemInfo("common.json", "steerActuatorDelay", "",
+                 0.2f, 0.0f, 0.8f, 0.05f, 2),
+},
+{
+    TuneItemInfo("scc_v2.json", "longStartingFactor", tr("Acceleration at start, increasing this value will make the acceleration faster."),
+                 1.0f, 0.7f, 1.5f, 0.05f, 2),
+    TuneItemInfo("scc_v2.json", "longLeadSensitivity", tr("Sensitivity lead, the higher it is, the more sensitive the response to the lead."),
+                 0.65f, 0.4f, 1.2f, 0.05f, 2),
+    TuneItemInfo("scc_v2.json", "comportBrake", tr("If this value is high, it reduces the distance maintained with the car in front, resulting in more aggressive driving."),
+                 2.7f, 2.3f, 3.2f, 0.1f, 1, "m/s²"),
+    TuneItemInfo("scc_v2.json", "stopDistance", tr("The distance from the lead when the car stops. There is no guarantee that it will stop at that exact distance."),
+                 5.0f, 4.0f, 7.0f, 0.1f, 1, "m"),
+    TuneItemInfo("scc_v2.json", "longDisableRadar", "(0: Use radar, 1: Do not use radar)",
+                 0.0f, 0.0f, 1.0f, 1.0f, 0),
+},
+{
+    TuneItemInfo("lat_torque_v4.json", "latAccelFactor", "", 2.5f, 0.5f, 4.5f, 0.1f, 2),
+    TuneItemInfo("lat_torque_v4.json", "friction", "", 0.1f, 0.0f, 0.2f, 0.01f, 3),
+    TuneItemInfo("lat_torque_v4.json", "angle_deadzone_v2", "", 0.0f, 0.0f, 2.0f, 0.01f, 3),
+},
+};
+
+nTuneMainWidget::nTuneMainWidget(QWidget *parent)
+    : QWidget{parent} {
 
     setStyleSheet(R"(
         * {
@@ -108,6 +108,18 @@ nTuneMainWidget::nTuneMainWidget(QWidget *parent)
                      });
 }
 
+bool nTuneMainWidget::checkFilesExist() {
+    for (const auto& itemList : mainItems) {
+        for (const auto& item : itemList) {
+            QFile file(item.fullPath());
+            if (!file.exists()) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 nTunePannel::nTunePannel(QList<TuneItemInfo>& items, QWidget *parent)
     : QWidget{parent} {
 
@@ -133,3 +145,5 @@ nTunePannel::nTunePannel(QList<TuneItemInfo>& items, QWidget *parent)
 
     setMouseTracking(true);
 }
+
+

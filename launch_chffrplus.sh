@@ -82,7 +82,6 @@ function launch {
   tmux capture-pane -pq -S-1000 > /tmp/launch_log
 
   python ./openpilot/selfdrive/car/hyundai/values.py > /data/params/d/SupportedCars
-  python ./openpilot/selfdrive/controls/ntune.py
 
   # start manager
   cd system/manager

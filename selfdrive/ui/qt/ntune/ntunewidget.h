@@ -39,7 +39,7 @@ public:
         return QString("%1 ~ %2").arg(toString(min), toString(max));
     }
 
-    QString fullPath() {
+    QString fullPath() const {
         return QString("%1/%2").arg(CONF_PATH, confPath);
     }
 };
