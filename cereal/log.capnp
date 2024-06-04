@@ -29,6 +29,7 @@ struct InitData {
   osVersion @18 :Text;
 
   dongleId @2 :Text;
+  bootlogId @22 :Text;
 
   deviceType @3 :DeviceType;
   version @4 :Text;
@@ -1140,29 +1141,6 @@ struct LateralPlan @0xe1e9318e2ae8b51e {
   struct SolverState {
     x @0 :List(List(Float32));
     u @1 :List(Float32);
-  }
-
-  enum Desire {
-    none @0;
-    turnLeft @1;
-    turnRight @2;
-    laneChangeLeft @3;
-    laneChangeRight @4;
-    keepLeft @5;
-    keepRight @6;
-  }
-
-  enum LaneChangeState {
-    off @0;
-    preLaneChange @1;
-    laneChangeStarting @2;
-    laneChangeFinishing @3;
-  }
-
-  enum LaneChangeDirection {
-    none @0;
-    left @1;
-    right @2;
   }
 
   # deprecated

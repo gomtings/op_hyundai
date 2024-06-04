@@ -12,7 +12,7 @@ from openpilot.system.version import get_build_metadata, get_version
 
 class SentryProject(Enum):
   # python project
-  SELFDRIVE = "https://e470f9505d6e460ea37a0df9db38db01@o918558.ingest.us.sentry.io/5861877"
+  SELFDRIVE = "https://6f3c7076c1e14b2aa10f5dde6dda0cc4@o33823.ingest.sentry.io/77924"
   # native project
   SELFDRIVE_NATIVE = "https://3e4b586ed21a4479ad5d85083b639bc6@o33823.ingest.sentry.io/157615"
 
@@ -28,22 +28,13 @@ def report_tombstone(fn: str, message: str, contents: str) -> None:
 
 
 def capture_exception(*args, **kwargs) -> None:
-
-  import datetime
-  import traceback
+  cloudlog.error("crash", exc_info=kwargs.get('exc_info', 1))
 
   try:
     sentry_sdk.capture_exception(*args, **kwargs)
     sentry_sdk.flush()  # https://github.com/getsentry/sentry-python/issues/291
   except Exception:
-    pass
-
-  try:
-    with open('/data/log/last_exception', 'w') as f:
-      now = datetime.datetime.now()
-      f.write(now.strftime('[%Y-%m-%d %H:%M:%S]') + "\n\n" + str(traceback.format_exc()))
-  except Exception:
-    pass
+    cloudlog.exception("sentry exception")
 
 
 def set_tag(key: str, value: str) -> None:

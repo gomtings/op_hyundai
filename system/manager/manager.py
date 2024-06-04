@@ -40,10 +40,6 @@ def manager_init() -> None:
     ("LanguageSetting", "main_en"),
     ("OpenpilotEnabledToggle", "1"),
     ("LongitudinalPersonality", str(log.LongitudinalPersonality.standard)),
-    ("IsMetric", "1"),
-
-    # Community
-    ("UseExternalNaviRoutes", "1"),
   ]
   if not PC:
     default_params.append(("LastUpdateTime", datetime.datetime.utcnow().isoformat().encode('utf8')))
@@ -149,7 +145,7 @@ def manager_thread() -> None:
     elif not started and started_prev:
       params.clear_all(ParamKeyType.CLEAR_ON_OFFROAD_TRANSITION)
 
-    # update onroad params, which drives boardd's safety setter thread
+    # update onroad params, which drives pandad's safety setter thread
     if started != started_prev:
       write_onroad_params(started, params)
 
