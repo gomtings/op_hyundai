@@ -136,8 +136,7 @@ void AnnotatedCameraWidget::drawLaneLines(QPainter &painter, const UIState *s) {
   QLinearGradient bg(0, height(), 0, 0);
   if (sm["controlsState"].getControlsState().getExperimentalMode()) {
     // The first half of track_vertices are the points for the right side of the path
-    // and the indices match the positions of accel from uiPlan
-    const auto &acceleration = sm["uiPlan"].getUiPlan().getAccel();
+    const auto &acceleration = sm["modelV2"].getModelV2().getAcceleration().getX();
     const int max_len = std::min<int>(scene.track_vertices.length() / 2, acceleration.size());
 
     for (int i = 0; i < max_len; ++i) {
@@ -253,7 +252,7 @@ void AnnotatedCameraWidget::paintEvent(QPaintEvent *event) {
   p.endNativePainting();
 
   if (s->scene.world_objects_visible && !s->scene.show_driver_camera) {
-    update_model(s, model, sm["uiPlan"].getUiPlan());
+    update_model(s, model);
     // DMoji
     if (!hideBottomIcons && (sm.rcv_frame("driverStateV2") > s->scene.started_frame)) {
       update_dmonitoring(s, sm["driverStateV2"].getDriverStateV2(), dm_fade_state, false);
