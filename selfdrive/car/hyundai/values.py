@@ -553,6 +553,11 @@ class CAR(Platforms):
     CarSpecs(mass=1570, wheelbase=2.845, steerRatio=16., tireStiffnessFactor=0.7),
     flags=HyundaiFlags.HYBRID | HyundaiFlags.LEGACY,
   )
+  HYUNDAI_NEXO = HyundaiPlatformConfig(
+    [HyundaiCarDocs("Hyundai NEXO 2020-23", "All", car_parts=CarParts.common([CarHarness.hyundai_h]))],
+    CarSpecs(mass=1885, wheelbase=2.79, steerRatio=14.19, tireStiffnessFactor=0.385),
+    flags=HyundaiFlags.EV | HyundaiFlags.MANDO_RADAR,
+  )
   GENESIS_EQ900 = HyundaiPlatformConfig(
     [HyundaiCarDocs("Genesis EQ900 2017", "All", car_parts=CarParts.common([CarHarness.hyundai_c]))],
     CarSpecs(mass=2200, wheelbase=3.15, steerRatio=16., tireStiffnessFactor=0.7),
