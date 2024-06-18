@@ -63,7 +63,7 @@ def get_accel_from_plan(CP, long_plan):
       a_target = 0.0
     should_stop = (v_target < CP.vEgoStopping and
                     v_target_1sec < CP.vEgoStopping)
-    return a_target, should_stop
+    return v_target, a_target, should_stop
 
 
 class LongitudinalPlanner:
@@ -187,7 +187,8 @@ class LongitudinalPlanner:
     longitudinalPlan.longitudinalPlanSource = self.mpc.source
     longitudinalPlan.fcw = self.fcw
 
-    a_target, should_stop = get_accel_from_plan(self.CP, longitudinalPlan)
+    v_target, a_target, should_stop = get_accel_from_plan(self.CP, longitudinalPlan)
+    longitudinalPlan.vTarget = v_target
     longitudinalPlan.aTarget = a_target
     longitudinalPlan.shouldStop = should_stop
     longitudinalPlan.allowBrake = True

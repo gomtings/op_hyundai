@@ -15,7 +15,7 @@ def long_control_state_trans(CP, active, long_control_state, v_ego,
   stopping_condition = should_stop
   starting_condition = (not should_stop and
                         not cruise_standstill and
-                        not brake_pressed) and (lead.vLeadK > 0.3 and lead.dRel > 4.)
+                        not brake_pressed) and (lead.vLeadK > 0.2 and lead.dRel > 3.5)
   started_condition = v_ego > CP.vEgoStarting
 
   if not active:
@@ -54,14 +54,14 @@ class LongControl:
   def reset(self):
     self.pid.reset()
 
-  def update(self, active, CS, a_target, should_stop, accel_limits, sm):
+  def update(self, active, CS, long_plan, accel_limits, sm):
     """Update longitudinal control. This updates the state machine and runs a PID loop"""
     self.pid.neg_limit = accel_limits[0]
     self.pid.pos_limit = accel_limits[1]
 
     self.prev_long_control_state = self.long_control_state
     self.long_control_state = long_control_state_trans(self.CP, active, self.long_control_state, CS.vEgo,
-                                                       should_stop, CS.brakePressed,
+                                                       long_plan.shouldStop, CS.brakePressed,
                                                        CS.cruiseState.standstill, sm['radarState'].leadOne)
     if self.long_control_state == LongCtrlState.off:
       self.reset()
@@ -76,10 +76,10 @@ class LongControl:
         if self.prev_long_control_state == LongCtrlState.starting:
           output_accel -= self.CP.stoppingDecelRate * 1.5 * DT_CTRL
         else:
-          m_accel = -0.7
+          m_accel = -0.5
           d_accel = interp(output_accel,
                            [m_accel - 0.5, m_accel, m_accel + 0.5],
-                           [self.CP.stoppingDecelRate, 0.05, self.CP.stoppingDecelRate])
+                           [self.CP.stoppingDecelRate, 0.03, self.CP.stoppingDecelRate])
 
           output_accel -= d_accel * DT_CTRL
       else:
@@ -93,9 +93,10 @@ class LongControl:
       self.stopping_accel_weight = 0.0
 
     else:  # LongCtrlState.pid
-      error = a_target - CS.aEgo
+      #error = a_target - CS.aEgo
+      error = long_plan.vTarget - CS.vEgo
       output_accel = self.pid.update(error, speed=CS.vEgo,
-                                     feedforward=a_target)
+                                     feedforward=long_plan.aTarget)
 
       self.stopping_accel_weight = max(self.stopping_accel_weight - 2. * DT_CTRL, 0.)
       output_accel = self.last_output_accel * self.stopping_accel_weight + output_accel * (1. - self.stopping_accel_weight)

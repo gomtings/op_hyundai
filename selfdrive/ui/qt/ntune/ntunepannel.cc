@@ -23,7 +23,7 @@ QList<QList<TuneItemInfo>> nTuneMainWidget::mainItems = {
     TuneItemInfo("scc_v2.json", "longLeadSensitivity", tr("Sensitivity lead, the higher it is, the more sensitive the response to the lead."),
                  0.65f, 0.4f, 1.2f, 0.05f, 2),
     TuneItemInfo("scc_v2.json", "comportBrake", tr("If this value is high, it reduces the distance maintained with the car in front, resulting in more aggressive driving."),
-                 2.7f, 2.3f, 3.2f, 0.1f, 1, "m/s²"),
+                 2.5f, 2.3f, 3.0f, 0.1f, 1, "m/s²"),
     TuneItemInfo("scc_v2.json", "stopDistance", tr("The distance from the lead when the car stops. There is no guarantee that it will stop at that exact distance."),
                  5.0f, 4.0f, 7.0f, 0.1f, 1, "m"),
     TuneItemInfo("scc_v2.json", "longDisableRadar", "(0: Use radar, 1: Do not use radar)",
