@@ -1,3 +1,5 @@
+import copy
+
 from openpilot.common.numpy_fast import clip
 from openpilot.selfdrive.car import CanBusBase
 from openpilot.selfdrive.car.hyundai.values import HyundaiFlags
@@ -82,6 +84,18 @@ def create_buttons(packer, CP, CAN, cnt, btn):
 
   bus = CAN.ECAN if CP.flags & HyundaiFlags.CANFD_HDA2 else CAN.CAM
   return packer.make_can_msg("CRUISE_BUTTONS", bus, values)
+
+
+def create_buttons_can_fd_alt(packer, CP, CAN, button, canfd_buttons):
+  try:
+    values = copy.copy(canfd_buttons)
+    values["CRUISE_BUTTONS"] = button
+    values["COUNTER"] = (values["COUNTER"] + 1) % 256
+    bus = CAN.ECAN if CP.flags & HyundaiFlags.CANFD_HDA2 else CAN.CAM
+    return packer.make_can_msg("CRUISE_BUTTONS_ALT", bus, values)
+  except:
+    return None
+
 
 def create_acc_cancel(packer, CP, CAN, cruise_info_copy):
   # TODO: why do we copy different values here?

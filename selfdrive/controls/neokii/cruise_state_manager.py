@@ -76,8 +76,6 @@ class CruiseStateManager:
     return not self.cruise_state_control
 
   def is_set_speed_spam_allowed(self, CP):
-    if CP.carFingerprint in CANFD_CAR and CP.flags & HyundaiFlags.CANFD_ALT_BUTTONS:
-      return False
     return self.is_resume_spam_allowed(CP)
 
   # CS - CarState cereal message

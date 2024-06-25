@@ -63,6 +63,7 @@ class CarState(CarStateBase):
 
     self.lfa_btn = 0
     self.lfa_enabled = False
+    self.canfd_buttons = None
 
   def update(self, cp, cp_cam):
     if self.CP.carFingerprint in CANFD_CAR:
@@ -345,6 +346,8 @@ class CarState(CarStateBase):
 
     ret.exState.autoHold = cp.vl["ESP_STATUS"]["AUTO_HOLD"] if not ret.cruiseState.enabled else 0
     ret.brakeHoldActive = ret.exState.autoHold == 1 or (ret.cruiseState.enabled and ret.cruiseState.standstill)
+
+    self.canfd_buttons = cp.vl[self.cruise_btns_msg_canfd]
 
     # TODO
     #CruiseStateManager.instance().update(ret, self.main_buttons, self.cruise_buttons, BUTTONS_DICT,
