@@ -27,7 +27,6 @@ BUTTONS_DICT = {Buttons.RES_ACCEL: ButtonType.accelCruise, Buttons.SET_DECEL: Bu
 class CarInterface(CarInterfaceBase):
   def __init__(self, CP, CarController, CarState):
     super().__init__(CP, CarController, CarState)
-    self.CAN = CanBus(CP)
 
   @staticmethod
   def get_pid_accel_limits(CP, current_speed, cruise_speed):
@@ -245,20 +244,18 @@ class CarInterface(CarInterfaceBase):
     return ret
 
   @staticmethod
-  def get_params_adjust_set_speed():
+  def get_params_adjust_set_speed(CP):
+    if CP.carFingerprint in CANFD_CAR:
+      return [16], [20]
     return [16, 20], [12, 14, 16, 18]
 
   def create_buttons(self, button):
-    try:
-      if self.CP.carFingerprint in CANFD_CAR:
-        if self.CP.flags & HyundaiFlags.CANFD_ALT_BUTTONS:
-          return self.create_buttons_can_fd_alt(button)
-        return self.create_buttons_can_fd(button)
-      else:
-        return self.create_buttons_can(button)
-    except:
-      pass
-    return None
+    if self.CP.carFingerprint in CANFD_CAR:
+      if self.CP.flags & HyundaiFlags.CANFD_ALT_BUTTONS:
+        return self.create_buttons_can_fd_alt(button)
+      return self.create_buttons_can_fd(button)
+    else:
+      return self.create_buttons_can(button)
 
   def get_buttons_dict(self):
     return BUTTONS_DICT
@@ -271,17 +268,17 @@ class CarInterface(CarInterfaceBase):
 
   def create_buttons_can_fd(self, button):
     values = {
-      "COUNTER": (self.CS.buttons_counter + 1) % 15,
+      "COUNTER": self.CS.buttons_counter + 1,
       "SET_ME_1": 1,
       "CRUISE_BUTTONS": button,
     }
-    bus = self.CAN.ECAN if self.CP.flags & HyundaiFlags.CANFD_HDA2 else self.CAN.CAM
+    bus = self.CC.CAN.ECAN if self.CP.flags & HyundaiFlags.CANFD_HDA2 else self.CC.CAN.CAM
     return self.CC.packer.make_can_msg("CRUISE_BUTTONS", bus, values)
 
   def create_buttons_can_fd_alt(self, button):
     values = copy.copy(self.CS.canfd_buttons)
     values["CRUISE_BUTTONS"] = button
     values["COUNTER"] = (values["COUNTER"] + 1) % 256
-    bus = self.CAN.ECAN if self.CP.flags & HyundaiFlags.CANFD_HDA2 else self.CAN.CAM
+    bus = self.CC.CAN.ECAN if self.CP.flags & HyundaiFlags.CANFD_HDA2 else self.CC.CAN.CAM
     return self.CC.packer.make_can_msg("CRUISE_BUTTONS_ALT", bus, values)
 
