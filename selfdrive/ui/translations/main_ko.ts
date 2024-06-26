@@ -170,7 +170,15 @@
     </message>
     <message>
         <source>Openpilot controls Cruise State (Experimental)</source>
-        <translation>크루즈 상태 제어</translation>
+        <translation>크루즈 상태 제어(실험적 기능)</translation>
+    </message>
+    <message>
+        <source>Sync set speed while gas pressed</source>
+        <translation>가속페달시 설정속도 동기화</translation>
+    </message>
+    <message>
+        <source>The set speed is synchronized with the current speed while pressing the gas pedal.</source>
+        <translation>가속페달시 설정속도를 현재속도와 동기화합니다.</translation>
     </message>
     <message>
         <source>Use external navi routes</source>

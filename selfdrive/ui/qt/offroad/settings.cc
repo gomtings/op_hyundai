@@ -612,6 +612,12 @@ CommunityPanel::CommunityPanel(SettingsWindow *parent) : ListWidget(parent) {
       "../assets/offroad/icon_road.png",
     },
     {
+      "SyncSetSpeedWhileGas",
+      tr("Sync set speed while gas pressed"),
+      tr("The set speed is synchronized with the current speed while pressing the gas pedal."),
+      "../assets/offroad/icon_road.png",
+    },
+    {
       "IsLdwsCar",
       tr("LDWS only"),
       tr("If your car only supports LDWS, turn it on."),

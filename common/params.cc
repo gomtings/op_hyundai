@@ -218,9 +218,9 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"IsLdwsCar", PERSISTENT},
     {"HapticFeedbackWhenSpeedCamera", PERSISTENT},
     {"UseExternalNaviRoutes", PERSISTENT},
-    {"EnabledDebugMessage", PERSISTENT},
     {"DriverCameraOnReverse", PERSISTENT},
     {"CanFdHda2", PERSISTENT},
+    {"SyncSetSpeedWhileGas", PERSISTENT}
 };
 
 } // namespace

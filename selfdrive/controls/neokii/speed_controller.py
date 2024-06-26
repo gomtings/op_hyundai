@@ -93,10 +93,9 @@ class SpeedController:
 
   def read_param(self):
     self.slow_on_curves = True
-    self.sync_set_speed_while_gas_pressed = True
+    self.sync_set_speed_while_gas_pressed = self.params.get_bool('SyncSetSpeedWhileGas')
     self.is_metric = self.params.get_bool('IsMetric')
     self.experimental_mode = self.params.get_bool("ExperimentalMode") and self.CP.openpilotLongitudinalControl
-    self.enable_debug_message = self.params.get_bool('EnabledDebugMessage')
 
     self.speed_conv_to_ms = CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS
     self.speed_conv_to_clu = CV.MS_TO_KPH if self.is_metric else CV.MS_TO_MPH
@@ -352,7 +351,7 @@ class SpeedController:
         self.alive_count = self.get_alive_count()
 
       if self.btn != Buttons.NONE:
-        can = self.CI.create_buttons(self.btn, CS)
+        can = self.CI.create_buttons(self.btn)
         if can is not None:
           can_sends.append(can)
 
