@@ -53,7 +53,7 @@ def get_accel_from_plan(CP, long_plan):
 
       v_target = interp(CP.longitudinalActuatorDelay + DT_MDL, CONTROL_N_T_IDX, speeds)
       a_target = 2 * (v_target - v_target_now) / CP.longitudinalActuatorDelay - a_target_now
-      a_target *= ntune_scc_get('longLeadSensitivity')
+      a_target *= ntune_scc_get('leadSensitivity')
 
       v_target_1sec = interp(CP.longitudinalActuatorDelay + DT_MDL + 1.0, CONTROL_N_T_IDX, speeds)
     else:

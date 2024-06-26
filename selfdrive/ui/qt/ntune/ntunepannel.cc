@@ -20,8 +20,8 @@ QList<QList<TuneItemInfo>> nTuneMainWidget::mainItems = {
 {
     /*TuneItemInfo("scc_v2.json", "longStartingFactor", tr("Acceleration at start, increasing this value will make the acceleration faster."),
                  1.0f, 0.7f, 1.5f, 0.05f, 2),*/
-    TuneItemInfo("scc_v2.json", "longLeadSensitivity", tr("Sensitivity lead, the higher it is, the more sensitive the response to the lead."),
-                 0.65f, 0.4f, 1.2f, 0.05f, 2),
+    TuneItemInfo("scc_v2.json", "leadSensitivity", tr("Sensitivity lead, the higher it is, the more sensitive the response to the lead."),
+                 0.8f, 0.5f, 1.2f, 0.05f, 2),
     TuneItemInfo("scc_v2.json", "comportBrake", tr("If this value is high, it reduces the distance maintained with the car in front, resulting in more aggressive driving."),
                  2.5f, 2.3f, 3.0f, 0.1f, 1, "m/s²"),
     TuneItemInfo("scc_v2.json", "stopDistance", tr("The distance from the lead when the car stops. There is no guarantee that it will stop at that exact distance."),
