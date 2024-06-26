@@ -13,7 +13,7 @@ QList<QString> nTuneMainWidget::mainTitles = {
 QList<QList<TuneItemInfo>> nTuneMainWidget::mainItems = {
 {
     TuneItemInfo("common.json", "pathFactor", tr("If oversteer occurs in a corner, reduce it."),
-                 0.96f, 0.9f, 1.1f, 0.01f, 2),
+                 0.95f, 0.9f, 1.1f, 0.01f, 2),
     TuneItemInfo("common.json", "steerActuatorDelay", "",
                  0.2f, 0.0f, 0.8f, 0.05f, 2),
 },
@@ -21,9 +21,9 @@ QList<QList<TuneItemInfo>> nTuneMainWidget::mainItems = {
     /*TuneItemInfo("scc_v2.json", "longStartingFactor", tr("Acceleration at start, increasing this value will make the acceleration faster."),
                  1.0f, 0.7f, 1.5f, 0.05f, 2),*/
     TuneItemInfo("scc_v2.json", "leadSensitivity", tr("Sensitivity lead, the higher it is, the more sensitive the response to the lead."),
-                 0.8f, 0.5f, 1.2f, 0.05f, 2),
+                 0.75f, 0.5f, 1.2f, 0.05f, 2),
     TuneItemInfo("scc_v2.json", "comportBrake", tr("If this value is high, it reduces the distance maintained with the car in front, resulting in more aggressive driving."),
-                 2.5f, 2.3f, 3.0f, 0.1f, 1, "m/s²"),
+                 2.6f, 2.2f, 3.0f, 0.1f, 1, "m/s²"),
     TuneItemInfo("scc_v2.json", "stopDistance", tr("The distance from the lead when the car stops. There is no guarantee that it will stop at that exact distance."),
                  5.0f, 4.0f, 7.0f, 0.1f, 1, "m"),
     TuneItemInfo("scc_v2.json", "longDisableRadar", "(0: Use radar, 1: Do not use radar)",

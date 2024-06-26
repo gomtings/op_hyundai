@@ -168,10 +168,10 @@ class nTune():
     if self.checkValue("steerRatio", 10.0, 20.0, 16.5):
       updated = True
 
-    if self.checkValue("steerActuatorDelay", 0., 0.8, 0.1):
+    if self.checkValue("steerActuatorDelay", 0., 0.8, 0.2):
       updated = True
 
-    if self.checkValue("pathFactor", 0.9, 1.1, 0.96):
+    if self.checkValue("pathFactor", 0.9, 1.1, 0.95):
       updated = True
 
     return updated
@@ -210,10 +210,10 @@ class nTune():
     #if self.checkValue("longStartingFactor", 0.7, 1.5, 1.0):
     #  updated = True
 
-    if self.checkValue("leadSensitivity", 0.5, 1.2, 0.8):
+    if self.checkValue("leadSensitivity", 0.5, 1.2, 0.75):
       updated = True
 
-    if self.checkValue("comportBrake", 2.3, 3.0, 2.5):
+    if self.checkValue("comportBrake", 2.2, 3.0, 2.6):
       updated = True
 
     if self.checkValue("stopDistance", 4., 7., 5.0):
