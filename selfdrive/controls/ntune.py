@@ -15,7 +15,7 @@ class GroupType:
   INDI = "lat_indi"
   TORQUE = "lat_torque_v4"
   COMMON = "common"
-  SCC = "scc_v2"
+  SCC = "scc_v3"
 
 CONF_PATH = '/data/ntune/'
 CONF_LAT_INDI_FILE = '/data/ntune/'+GroupType.INDI+'.json'
@@ -207,10 +207,10 @@ class nTune():
   def checkValidSCC(self):
     updated = False
 
-    #if self.checkValue("longStartingFactor", 0.7, 1.5, 1.0):
-    #  updated = True
+    if self.checkValue("longActuatorDelay", 0.1, 1.0, 0.5):
+      updated = True
 
-    if self.checkValue("leadSensitivity", 0.5, 1.2, 0.75):
+    if self.checkValue("aTargetFactor", 0.7, 1.5, 1.0):
       updated = True
 
     if self.checkValue("comportBrake", 2.2, 3.0, 2.6):

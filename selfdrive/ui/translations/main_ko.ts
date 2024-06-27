@@ -822,26 +822,6 @@ location set</source>
         <translation></translation>
     </message>
     <message>
-        <source>If oversteer occurs in a corner, reduce it.</source>
-        <translation type="vanished">코너에서 오버스티어가 발생하면 줄이세요.</translation>
-    </message>
-    <message>
-        <source>Acceleration at start, increasing this value will make the acceleration faster.</source>
-        <translation type="vanished">출발 시 가속, 이 값을 높이면 가속이 더 빨라집니다.</translation>
-    </message>
-    <message>
-        <source>Sensitivity lead, the higher it is, the more sensitive the response to the lead.</source>
-        <translation type="vanished">이 값이 높을수록 선행차에 대한 반응이 더 민감해집니다.</translation>
-    </message>
-    <message>
-        <source>If this value is high, it reduces the distance maintained with the car in front, resulting in more aggressive driving.</source>
-        <translation type="vanished">이 값이 높을수록 앞차와의 거리가 줄어들어 보다 공격적인 주행을 합니다.</translation>
-    </message>
-    <message>
-        <source>The distance from the lead when the car stops. There is no guarantee that it will stop at that exact distance.</source>
-        <translation type="vanished">차가 정지했을 때 선행차와의 거리. 정확한 거리에 멈춘다는 보장은 없습니다.</translation>
-    </message>
-    <message>
         <source>now</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1556,15 +1536,23 @@ This may take up to a minute.</source>
     <name>nTuneMainWidget</name>
     <message>
         <source>If oversteer occurs in a corner, reduce it.</source>
-        <translation>코너에서 오버스티어가 발생하면 줄이세요.</translation>
+        <translation type="vanished">코너에서 오버스티어가 발생하면 줄이세요.</translation>
     </message>
     <message>
         <source>Acceleration at start, increasing this value will make the acceleration faster.</source>
-        <translation>출발 시 가속, 이 값을 높이면 가속이 더 빨라집니다.</translation>
+        <translation type="vanished">출발 시 가속, 이 값을 높이면 가속이 더 빨라집니다.</translation>
     </message>
     <message>
-        <source>Sensitivity lead, the higher it is, the more sensitive the response to the lead.</source>
-        <translation>이 값이 높을수록 선행차에 대한 반응이 더 민감해집니다.</translation>
+        <source>The higher it is, the more sensitive the response to the lead.</source>
+        <translation type="vanished">이 값이 높을수록 선행차에 대한 반응이 더 민감해집니다.</translation>
+    </message>
+    <message>
+        <source>If this value is high, it reduces the distance maintained with the car in front, resulting in more aggressive driving.</source>
+        <translation type="vanished">이 값이 높을수록 앞차와의 거리가 줄어들어 보다 공격적인 주행을 합니다.</translation>
+    </message>
+    <message>
+        <source>The distance from the lead when the car stops. There is no guarantee that it will stop at that exact distance.</source>
+        <translation type="vanished">차가 정지했을 때 선행차와의 거리. 정확한 거리에 멈춘다는 보장은 없습니다.</translation>
     </message>
 </context>
 <context>

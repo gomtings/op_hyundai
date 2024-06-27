@@ -3,6 +3,7 @@ from openpilot.common.numpy_fast import clip, interp
 from openpilot.common.realtime import DT_CTRL
 from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
 from openpilot.selfdrive.controls.lib.pid import PIDController
+from openpilot.selfdrive.controls.ntune import ntune_scc_get
 from openpilot.selfdrive.modeld.constants import ModelConstants
 
 CONTROL_N_T_IDX = ModelConstants.T_IDXS[:CONTROL_N]
@@ -15,7 +16,11 @@ def long_control_state_trans(CP, active, long_control_state, v_ego,
   stopping_condition = should_stop
   starting_condition = (not should_stop and
                         not cruise_standstill and
-                        not brake_pressed) and (lead.vLeadK > 0.2 and lead.dRel > 3.5)
+                        not brake_pressed)
+
+  if lead.status:
+    starting_condition = starting_condition and lead.vLeadK > 0.2 and lead.dRel > 4.
+
   started_condition = v_ego > CP.vEgoStarting
 
   if not active:
@@ -76,10 +81,10 @@ class LongControl:
         if self.prev_long_control_state == LongCtrlState.starting:
           output_accel -= self.CP.stoppingDecelRate * 1.5 * DT_CTRL
         else:
-          m_accel = -0.5
+          m_accel = -0.6
           d_accel = interp(output_accel,
                            [m_accel - 0.5, m_accel, m_accel + 0.5],
-                           [self.CP.stoppingDecelRate, 0.03, self.CP.stoppingDecelRate])
+                           [self.CP.stoppingDecelRate, 0.05, self.CP.stoppingDecelRate])
 
           output_accel -= d_accel * DT_CTRL
       else:
@@ -96,7 +101,7 @@ class LongControl:
       #error = a_target - CS.aEgo
       error = long_plan.vTarget - CS.vEgo
       output_accel = self.pid.update(error, speed=CS.vEgo,
-                                     feedforward=long_plan.aTarget)
+                                     feedforward=long_plan.aTarget * ntune_scc_get('aTargetFactor'))
 
       self.stopping_accel_weight = max(self.stopping_accel_weight - 2. * DT_CTRL, 0.)
       output_accel = self.last_output_accel * self.stopping_accel_weight + output_accel * (1. - self.stopping_accel_weight)
