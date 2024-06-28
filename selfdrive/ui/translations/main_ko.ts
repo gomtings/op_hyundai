@@ -126,7 +126,7 @@
     </message>
     <message>
         <source>Select a car</source>
-        <translation>차를 선택하세요</translation>
+        <translation type="vanished">차를 선택하세요</translation>
     </message>
     <message>
         <source>SCC on BUS 2</source>
@@ -162,7 +162,7 @@
     </message>
     <message>
         <source>Show Debug Message</source>
-        <translation>디버그 메세지 출력</translation>
+        <translation type="vanished">디버그 메세지 출력</translation>
     </message>
     <message>
         <source>Openpilot controls cruise on/off, gap and set speed.</source>
@@ -191,6 +191,10 @@
     <message>
         <source>Displays the driver camera when in reverse.</source>
         <translation>후진할 때 운전자 카메라를 표시합니다.</translation>
+    </message>
+    <message>
+        <source>CAN-FD HDA2</source>
+        <translation></translation>
     </message>
 </context>
 <context>
@@ -379,11 +383,11 @@
     </message>
     <message>
         <source>Rebuild</source>
-        <translation type="vanished">전체 재빌드</translation>
+        <translation>전체 재빌드</translation>
     </message>
     <message>
         <source>Are you sure you want to rebuild?</source>
-        <translation type="vanished">전체 재빌드를 하시겠습니까?</translation>
+        <translation>전체 재빌드를 하시겠습니까?</translation>
     </message>
     <message>
         <source>Reset</source>
@@ -396,6 +400,22 @@
     <message>
         <source>openpilot requires the device to be mounted within 4° left or right and within 5° up or 9° down. openpilot is continuously calibrating, resetting is rarely required.</source>
         <translation>openpilot은 좌우측은 4° 이내, 위쪽은 5° 아래쪽은 8° 이내로 장치를 설치해야 합니다. openpilot은 지속적으로 보정되므로 리셋은 거의 필요하지 않습니다. {4°?} {5°?} {9°?}</translation>
+    </message>
+    <message>
+        <source>Pair Device</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>PAIR</source>
+        <translation></translation>
+    </message>
+    <message>
+        <source>Pair your device with comma connect (connect.comma.ai) and claim your comma prime offer.</source>
+        <translation>장치를 comma connect(connect.comma.ai)와 연결하고 comma prime 혜택을 받으세요.</translation>
+    </message>
+    <message>
+        <source>Disengage to Rebuild</source>
+        <translation>재빌드를 하려면 디스인게이지 하세요.</translation>
     </message>
 </context>
 <context>
@@ -426,15 +446,7 @@
     </message>
     <message>
         <source>Pair your device with comma connect (connect.comma.ai) and claim your comma prime offer.</source>
-        <translation>장치를 comma connect (connect.comma.ai)에서 페어링하고 comma prime 무료 이용권을 사용하세요.</translation>
-    </message>
-    <message>
-        <source>Pair Device</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Pair</source>
-        <translation type="unfinished"></translation>
+        <translation type="vanished">장치를 comma connect (connect.comma.ai)에서 페어링하고 comma prime 무료 이용권을 사용하세요.</translation>
     </message>
 </context>
 <context>
@@ -647,7 +659,7 @@ location set</source>
     </message>
     <message>
         <source>Invalid date and time settings, system won&apos;t start. Connect to internet to set time.</source>
-        <translation>날짜 및 시간 설정이 잘못되었습니다. 시스템이 시작되지 않습니다. 시간을 설정하려면 인터넷에 연결하세요.</translation>
+        <translation type="vanished">날짜 및 시간 설정이 잘못되었습니다. 시스템이 시작되지 않습니다. 시간을 설정하려면 인터넷에 연결하세요.</translation>
     </message>
     <message>
         <source>Taking camera snapshots. System won&apos;t start until finished.</source>
@@ -695,6 +707,29 @@ location set</source>
     <message>
         <source> ALERT</source>
         <translation> 알림</translation>
+    </message>
+</context>
+<context>
+    <name>OnroadAlerts</name>
+    <message>
+        <source>openpilot Unavailable</source>
+        <translation>오픈 파일럿 사용불가</translation>
+    </message>
+    <message>
+        <source>Waiting for controls to start</source>
+        <translation>Controls가 시작될 때까지 잠시만 기다리세요.</translation>
+    </message>
+    <message>
+        <source>TAKE CONTROL IMMEDIATELY</source>
+        <translation>즉시 수동 운전을 하세요.</translation>
+    </message>
+    <message>
+        <source>Controls Unresponsive</source>
+        <translation>Controls가 응답하지 않습니다</translation>
+    </message>
+    <message>
+        <source>Reboot Device</source>
+        <translation>기기 재부팅</translation>
     </message>
 </context>
 <context>
@@ -823,7 +858,7 @@ location set</source>
     </message>
     <message>
         <source>now</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
 </context>
 <context>
@@ -971,7 +1006,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Choose Software to Install</source>
-        <translation type="vanished">설치할 소프트웨어를 선택하세요</translation>
+        <translation>설치할 소프트웨어를 선택하세요</translation>
     </message>
     <message>
         <source>Dashcam</source>
@@ -979,7 +1014,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Custom Software</source>
-        <translation type="vanished">Custom Software</translation>
+        <translation>Custom Software</translation>
     </message>
     <message>
         <source>Enter URL</source>
@@ -1020,6 +1055,10 @@ This may take up to a minute.</source>
     <message>
         <source>No custom software found at this URL.</source>
         <translation>이 URL에서 커스텀 소프트웨어를 찾을 수 없습니다.</translation>
+    </message>
+    <message>
+        <source>openpilot</source>
+        <translation>openpilot</translation>
     </message>
 </context>
 <context>
@@ -1264,11 +1303,11 @@ This may take up to a minute.</source>
     <name>TogglesPanel</name>
     <message>
         <source>Enable openpilot</source>
-        <translation>openpilot 사용</translation>
+        <translation type="vanished">openpilot 사용</translation>
     </message>
     <message>
         <source>Use the openpilot system for adaptive cruise control and lane keep driver assistance. Your attention is required at all times to use this feature. Changing this setting takes effect when the car is powered off.</source>
-        <translation>어댑티브 크루즈 컨트롤 및 차선 유지 운전자 보조를 위해 openpilot 시스템을 사용하십시오. 이 기능을 사용하려면 항상 주의를 기울여야 합니다. 설정변경은 장치 재부팅후 적용됩니다.</translation>
+        <translation type="vanished">어댑티브 크루즈 컨트롤 및 차선 유지 운전자 보조를 위해 openpilot 시스템을 사용하십시오. 이 기능을 사용하려면 항상 주의를 기울여야 합니다. 설정변경은 장치 재부팅후 적용됩니다.</translation>
     </message>
     <message>
         <source>Enable Lane Departure Warnings</source>
@@ -1308,11 +1347,11 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Disengage on Accelerator Pedal</source>
-        <translation>가속페달 조작시 해제</translation>
+        <translation type="vanished">가속페달 조작시 해제</translation>
     </message>
     <message>
         <source>When enabled, pressing the accelerator pedal will disengage openpilot.</source>
-        <translation>활성화된 경우 가속 페달을 누르면 openpilot이 해제됩니다.</translation>
+        <translation type="vanished">활성화된 경우 가속 페달을 누르면 openpilot이 해제됩니다.</translation>
     </message>
     <message>
         <source>Show ETA in 24h Format</source>
@@ -1368,7 +1407,7 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>The driving visualization will transition to the road-facing wide-angle camera at low speeds to better show some turns. The Experimental mode logo will also be shown in the top right corner.</source>
-        <translation type="vanished">운전 시각화는 저속으로 도로를 향한 광각 카메라로 전환되어 일부 회전을 더 잘 보여줍니다. 실험 모드 로고도 오른쪽 상단에 표시됩니다.</translation>
+        <translation>운전 시각화는 저속으로 도로를 향한 광각 카메라로 전환되어 일부 회전을 더 잘 보여줍니다. 실험 모드 로고도 오른쪽 상단에 표시됩니다.</translation>
     </message>
     <message>
         <source>Experimental mode is currently unavailable on this car, since the car&apos;s stock ACC is used for longitudinal control.</source>
@@ -1408,23 +1447,19 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Standard is recommended. In aggressive mode, openpilot will follow lead cars closer and be more aggressive with the gas and brake. In relaxed mode openpilot will stay further away from lead cars.</source>
-        <translation>표준 모드가 권장됩니다. 공격적 모드에서 openpilot은 선행 차량을 더 가까이 따르고 가속 및 제동에서 더 공격적일 것입니다. 편안한 모드에서 openpilot은 선행 차량으로부터 더 멀리 떨어져 있을 것입니다.</translation>
+        <translation type="vanished">표준 모드가 권장됩니다. 공격적 모드에서 openpilot은 선행 차량을 더 가까이 따르고 가속 및 제동에서 더 공격적일 것입니다. 편안한 모드에서 openpilot은 선행 차량으로부터 더 멀리 떨어져 있을 것입니다.</translation>
     </message>
     <message>
         <source>End-to-End Longitudinal Control</source>
         <translation>E2E 롱컨트롤</translation>
     </message>
     <message>
-        <source>Navigate on openpilot</source>
-        <translation></translation>
-    </message>
-    <message>
         <source>When navigation has a destination, openpilot will input the map information into the model. This provides useful context for the model and allows openpilot to keep left or right appropriately at forks/exits. Lane change behavior is unchanged and still activated by the driver. This is an alpha quality feature; mistakes should be expected, particularly around exits and forks. These mistakes can include unintended laneline crossings, late exit taking, driving towards dividing barriers in the gore areas, etc.</source>
-        <translation>목적지를 설정하면, openpilot은 모델에 지도 정보를 입력해 적절한 주행을 합니다. 이는 openpilot이 분기점이나 출구에서 적절하게 좌우를 유지하도록 합니다. 차선 변경은 하지 않고 여전히 운전자에 의해 활성화됩니다. 이 기능은 알파 품질이며, 특히 출구와 분기점 주변에서 실수를 할 수도 있습니다. 이러한 실수에는 의도하지 않은 차선 변경, 출구를 늦게 나가기, 분리 장벽 방향으로 운전하기 등이 포함될 수 있습니다.</translation>
+        <translation type="vanished">목적지를 설정하면, openpilot은 모델에 지도 정보를 입력해 적절한 주행을 합니다. 이는 openpilot이 분기점이나 출구에서 적절하게 좌우를 유지하도록 합니다. 차선 변경은 하지 않고 여전히 운전자에 의해 활성화됩니다. 이 기능은 알파 품질이며, 특히 출구와 분기점 주변에서 실수를 할 수도 있습니다. 이러한 실수에는 의도하지 않은 차선 변경, 출구를 늦게 나가기, 분리 장벽 방향으로 운전하기 등이 포함될 수 있습니다.</translation>
     </message>
     <message>
         <source>The driving visualization will transition to the road-facing wide-angle camera at low speeds to better show some turns. The Experimental mode logo will also be shown in the top right corner. When a navigation destination is set and the driving model is using it as input, the driving path on the map will turn green.</source>
-        <translation>주행 시각화는 저속에서 도로를 향한 광각 카메라로 전환되어 일부 회전 구간을 더 잘 보여줍니다. 실험 모드 로고도 오른쪽 상단에 표시됩니다. 내비게이션 목적지를 설정하고 운전 모델이 이를 입력으로 사용하면 지도의 주행 경로가 녹색으로 바뀝니다.</translation>
+        <translation type="vanished">주행 시각화는 저속에서 도로를 향한 광각 카메라로 전환되어 일부 회전 구간을 더 잘 보여줍니다. 실험 모드 로고도 오른쪽 상단에 표시됩니다. 내비게이션 목적지를 설정하고 운전 모델이 이를 입력으로 사용하면 지도의 주행 경로가 녹색으로 바뀝니다.</translation>
     </message>
     <message>
         <source>Experimental mode is currently unavailable on this car since the car&apos;s stock ACC is used for longitudinal control.</source>
@@ -1441,6 +1476,18 @@ This may take up to a minute.</source>
     <message>
         <source>Enable the openpilot longitudinal control (alpha) toggle to allow Experimental mode.</source>
         <translation>실험 모드를 허용하려면 openpilot 롱컨트롤(알파)을 활성화하세요.</translation>
+    </message>
+    <message>
+        <source>Always-On Driver Monitoring</source>
+        <translation>상시 운전자 모니터링</translation>
+    </message>
+    <message>
+        <source>Enable driver monitoring even when openpilot is not engaged.</source>
+        <translation>openpilot이 작동하지 않을 때에도 운전자 모니터링을 활성화합니다.</translation>
+    </message>
+    <message>
+        <source>Standard is recommended. In aggressive mode, openpilot will follow lead cars closer and be more aggressive with the gas and brake. In relaxed mode openpilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with your steering wheel distance button.</source>
+        <translation>표준 모드가 권장됩니다. 공격적인 모드에서는 openpilot이 앞차를 더 가깝게 따라가며 가속과 제동을 더 적극적으로 합니다. 여유로운 모드에서는 openpilot이 앞차와 더 멀리 떨어져 있습니다. 지원되는 차량에서는 핸들 거리 버튼을 사용하여 이러한 모드를 순환할 수 있습니다.</translation>
     </message>
 </context>
 <context>
@@ -1536,7 +1583,7 @@ This may take up to a minute.</source>
     <name>nTuneMainWidget</name>
     <message>
         <source>If oversteer occurs in a corner, reduce it.</source>
-        <translation type="vanished">코너에서 오버스티어가 발생하면 줄이세요.</translation>
+        <translation>코너에서 오버스티어가 발생하면 줄이세요.</translation>
     </message>
     <message>
         <source>Acceleration at start, increasing this value will make the acceleration faster.</source>
@@ -1544,15 +1591,19 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>The higher it is, the more sensitive the response to the lead.</source>
-        <translation type="vanished">이 값이 높을수록 선행차에 대한 반응이 더 민감해집니다.</translation>
+        <translation>이 값이 높을수록 선행차에 대한 반응이 더 민감해집니다.</translation>
     </message>
     <message>
         <source>If this value is high, it reduces the distance maintained with the car in front, resulting in more aggressive driving.</source>
-        <translation type="vanished">이 값이 높을수록 앞차와의 거리가 줄어들어 보다 공격적인 주행을 합니다.</translation>
+        <translation>이 값이 높을수록 앞차와의 거리가 줄어들어 보다 공격적인 주행을 합니다.</translation>
     </message>
     <message>
         <source>The distance from the lead when the car stops. There is no guarantee that it will stop at that exact distance.</source>
-        <translation type="vanished">차가 정지했을 때 선행차와의 거리. 정확한 거리에 멈춘다는 보장은 없습니다.</translation>
+        <translation>차가 정지했을 때 선행차와의 거리. 정확한 거리에 멈춘다는 보장은 없습니다.</translation>
+    </message>
+    <message>
+        <source>Longitudinal Actuator Delay</source>
+        <translation></translation>
     </message>
 </context>
 <context>
