@@ -116,11 +116,12 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     paramsdTemporaryError @50;
     paramsdPermanentError @119;
     actuatorsApiUnavailable @120;
+    espActive @121;
 
-    slowingDownSpeed @121;
-    slowingDownSpeedSound @122;
-    cruiseOn @123;
-    cruiseOff @124;
+    slowingDownSpeed @122;
+    slowingDownSpeedSound @123;
+    cruiseOn @124;
+    cruiseOff @125;
 
     radarCanErrorDEPRECATED @15;
     communityFeatureDisallowedDEPRECATED @62;
@@ -199,6 +200,7 @@ struct CarState {
   espDisabled @32 :Bool;
   accFaulted @42 :Bool;
   carFaultedNonCritical @47 :Bool;  # some ECU is faulted, but car remains controllable
+  espActive @51 :Bool;
 
   # cruise state
   cruiseState @10 :CruiseState;
@@ -230,7 +232,7 @@ struct CarState {
   cumLagMs @50 :Float32;
 
   # neokii
-  exState @51 :ExState;
+  exState @52 :ExState;
 
   struct ExState {
     vCruiseKph @0 :Float32;

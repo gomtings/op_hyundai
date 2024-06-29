@@ -20,11 +20,6 @@ AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* par
   experimental_btn = new ExperimentalButton(this);
   main_layout->addWidget(experimental_btn, 0, Qt::AlignTop | Qt::AlignRight);
 
-  map_settings_btn = new MapSettingsButton(this);
-
-  if(!Params().getBool("UseExternalNaviRoutes"))
-    main_layout->addWidget(map_settings_btn, 0, Qt::AlignBottom | Qt::AlignRight);
-
   dm_img = loadPixmap("../assets/img_driver_face.png", {img_size + 5, img_size + 5});
 
   // neokii
@@ -88,12 +83,6 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
 
   hideBottomIcons = (cs.getAlertSize() != cereal::ControlsState::AlertSize::NONE);
   dm_fade_state = std::clamp(dm_fade_state+0.2*(0.5-dmActive), 0.0, 1.0);
-
-  // hide map settings button for alerts and flip for right hand DM
-  if (map_settings_btn->isEnabled()) {
-    map_settings_btn->setVisible(!hideBottomIcons);
-    main_layout->setAlignment(map_settings_btn, (rightHandDM ? Qt::AlignLeft : Qt::AlignRight) | Qt::AlignBottom);
-  }
 }
 
 void AnnotatedCameraWidget::updateFrameMat() {

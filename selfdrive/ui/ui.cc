@@ -222,7 +222,6 @@ static void update_state(UIState *s) {
 void ui_update_params(UIState *s) {
   auto params = Params();
   s->scene.is_metric = params.getBool("IsMetric");
-  s->scene.map_on_left = params.getBool("NavSettingLeftSide");
   s->scene.driver_camera = params.getBool("DriverCameraOnReverse");
 }
 
@@ -253,7 +252,7 @@ UIState::UIState(QObject *parent) : QObject(parent) {
   sm = std::make_unique<SubMaster, const std::initializer_list<const char *>>({
     "modelV2", "controlsState", "liveCalibration", "radarState", "deviceState",
     "pandaStates", "carParams", "driverMonitoringState", "carState", "liveLocationKalman", "driverStateV2",
-    "wideRoadCameraState", "managerState", "navInstruction", "navRoute", "clocks",
+    "wideRoadCameraState", "managerState", "clocks",
     "gpsLocationExternal", "carControl", "liveParameters", "liveTorqueParameters", "naviData",
   });
 
@@ -274,6 +273,10 @@ void UIState::update() {
   update_sockets(this);
   update_state(this);
   updateStatus();
+
+  if (std::getenv("PRIME_TYPE")) {
+      setPrimeType((PrimeType)atoi(std::getenv("PRIME_TYPE")));
+  }
 
   if (sm->frame % UI_FREQ == 0) {
     watchdog_kick(nanos_since_boot());

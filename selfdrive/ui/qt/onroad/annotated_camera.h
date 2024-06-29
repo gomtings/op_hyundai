@@ -14,8 +14,6 @@ public:
   explicit AnnotatedCameraWidget(VisionStreamType type, QWidget* parent = 0);
   void updateState(const UIState &s);
 
-  MapSettingsButton *map_settings_btn;
-
 protected:
   void paintGL() override;
   void initializeGL() override;
