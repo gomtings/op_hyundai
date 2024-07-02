@@ -6,38 +6,42 @@
 #include <QFont>
 #include <QDebug>
 
-QList<QString> nTuneMainWidget::mainTitles = {
-    "General", "SCC", "Torque"
-    };
-
-QList<QList<TuneItemInfo>> nTuneMainWidget::mainItems = {
-{
-    TuneItemInfo("common.json", "pathFactor", tr("If oversteer occurs in a corner, reduce it."),
-                 0.95f, 0.9f, 1.1f, 0.01f, 2),
-    TuneItemInfo("common.json", "steerActuatorDelay", "Steer Actuator Delay",
-                 0.2f, 0.0f, 0.8f, 0.05f, 2, "sec"),
-},
-{
-    TuneItemInfo("scc_v3.json", "longActuatorDelay", tr("Longitudinal Actuator Delay"),
-                 0.3f, 0.1f, 1.0f, 0.05f, 2, "sec"),
-    TuneItemInfo("scc_v3.json", "aTargetFactor", tr("The higher it is, the more sensitive the response to the lead."),
-                 1.0f, 0.7f, 1.5f, 0.05f, 2),
-    TuneItemInfo("scc_v3.json", "comportBrake", tr("If this value is high, it reduces the distance maintained with the car in front, resulting in more aggressive driving."),
-                 2.6f, 2.2f, 3.0f, 0.1f, 1, "m/s²"),
-    TuneItemInfo("scc_v3.json", "stopDistance", tr("The distance from the lead when the car stops. There is no guarantee that it will stop at that exact distance."),
-                 5.0f, 4.0f, 7.0f, 0.1f, 1, "m"),
-    /*TuneItemInfo("scc_v3.json", "longDisableRadar", "(0: Use radar, 1: Do not use radar)",
-                 0.0f, 0.0f, 1.0f, 1.0f, 0),*/
-},
-{
-    TuneItemInfo("lat_torque_v4.json", "latAccelFactor", "", 2.5f, 0.5f, 4.5f, 0.1f, 2),
-    TuneItemInfo("lat_torque_v4.json", "friction", "", 0.1f, 0.0f, 0.2f, 0.01f, 3),
-    TuneItemInfo("lat_torque_v4.json", "angle_deadzone_v2", "", 0.0f, 0.0f, 2.0f, 0.01f, 3),
-},
+QMap<QString, QString> NTUNE_FILES = {
+  { "common", "common.json" },
+  { "scc", "scc_v3.json" },
+  { "lat_torque", "lat_torque_v4.json" }
 };
 
 nTuneMainWidget::nTuneMainWidget(QWidget *parent)
     : QWidget{parent} {
+
+    mainTitles = {"General", "SCC", "Torque"};
+
+    mainItems = {
+    {
+        TuneItemInfo(NTUNE_FILES["common"], "pathFactor", tr("If oversteer occurs in a corner, reduce it."),
+                     0.95f, 0.9f, 1.1f, 0.01f, 2),
+        TuneItemInfo(NTUNE_FILES["common"], "steerActuatorDelay", "Steer Actuator Delay",
+                     0.2f, 0.0f, 0.8f, 0.05f, 2, "sec"),
+    },
+    {
+        TuneItemInfo(NTUNE_FILES["scc"], "longActuatorDelay", tr("Longitudinal Actuator Delay"),
+                     0.3f, 0.1f, 1.0f, 0.05f, 2, "sec"),
+        TuneItemInfo(NTUNE_FILES["scc"], "aTargetFactor", tr("The higher it is, the more sensitive the response to the lead."),
+                     1.0f, 0.7f, 1.5f, 0.05f, 2),
+        TuneItemInfo(NTUNE_FILES["scc"], "comportBrake", tr("If this value is high, it reduces the distance maintained with the car in front, resulting in more aggressive driving."),
+                     2.6f, 2.2f, 3.0f, 0.1f, 1, "m/s²"),
+        TuneItemInfo(NTUNE_FILES["scc"], "stopDistance", tr("The distance from the lead when the car stops. There is no guarantee that it will stop at that exact distance."),
+                     5.0f, 4.0f, 7.0f, 0.1f, 1, "m"),
+        /*TuneItemInfo("scc_v3.json", "longDisableRadar", "(0: Use radar, 1: Do not use radar)",
+                     0.0f, 0.0f, 1.0f, 1.0f, 0),*/
+    },
+    {
+        TuneItemInfo(NTUNE_FILES["lat_torque"], "latAccelFactor", "", 2.5f, 0.5f, 4.5f, 0.1f, 2),
+        TuneItemInfo(NTUNE_FILES["lat_torque"], "friction", "", 0.1f, 0.0f, 0.2f, 0.01f, 3),
+        TuneItemInfo(NTUNE_FILES["lat_torque"], "angle_deadzone_v2", "", 0.0f, 0.0f, 2.0f, 0.01f, 3),
+    },
+    };
 
     setStyleSheet(R"(
         * {
@@ -109,12 +113,10 @@ nTuneMainWidget::nTuneMainWidget(QWidget *parent)
 }
 
 bool nTuneMainWidget::checkFilesExist() {
-    for (const auto& itemList : mainItems) {
-        for (const auto& item : itemList) {
-            QFile file(item.fullPath());
-            if (!file.exists()) {
-                return false;
-            }
+    for (const auto& fileName : NTUNE_FILES.values()) {
+        QFile file(QString("%1/%2").arg(CONF_PATH, fileName));
+        if (!file.exists()) {
+            return false;
         }
     }
     return true;

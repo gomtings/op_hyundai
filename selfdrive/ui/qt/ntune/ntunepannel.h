@@ -31,8 +31,8 @@ public:
     static bool checkFilesExist();
 
 private:
-    static QList<QString> mainTitles;
-    static QList<QList<TuneItemInfo>> mainItems;
+    QList<QString> mainTitles;
+    QList<QList<TuneItemInfo>> mainItems;
     QListView* listView;
     QStackedWidget *stackedWidget;
 };

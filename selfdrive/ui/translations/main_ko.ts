@@ -227,27 +227,23 @@
     <name>DestinationWidget</name>
     <message>
         <source>Home</source>
-        <translation>집</translation>
+        <translation type="vanished">집</translation>
     </message>
     <message>
         <source>Work</source>
-        <translation>회사</translation>
+        <translation type="vanished">회사</translation>
     </message>
     <message>
         <source>No destination set</source>
-        <translation>목적지가 설정되지 않았습니다</translation>
+        <translation type="vanished">목적지가 설정되지 않았습니다</translation>
     </message>
     <message>
         <source>home</source>
-        <translation>집</translation>
+        <translation type="vanished">집</translation>
     </message>
     <message>
         <source>work</source>
-        <translation>회사</translation>
-    </message>
-    <message>
-        <source>No %1 location set</source>
-        <translation></translation>
+        <translation type="vanished">회사</translation>
     </message>
 </context>
 <context>
@@ -503,15 +499,15 @@
     <name>MapETA</name>
     <message>
         <source>eta</source>
-        <translation>도착</translation>
+        <translation type="vanished">도착</translation>
     </message>
     <message>
         <source>min</source>
-        <translation>분</translation>
+        <translation type="vanished">분</translation>
     </message>
     <message>
         <source>hr</source>
-        <translation>시간</translation>
+        <translation type="vanished">시간</translation>
     </message>
     <message>
         <source>km</source>
@@ -586,26 +582,22 @@ location set</source>
     <name>MapSettings</name>
     <message>
         <source>NAVIGATION</source>
-        <translation>내비게이션</translation>
-    </message>
-    <message>
-        <source>Manage at connect.comma.ai</source>
-        <translation></translation>
+        <translation type="vanished">내비게이션</translation>
     </message>
 </context>
 <context>
     <name>MapWindow</name>
     <message>
         <source>Map Loading</source>
-        <translation>지도 로딩</translation>
+        <translation type="vanished">지도 로딩</translation>
     </message>
     <message>
         <source>Waiting for GPS</source>
-        <translation>GPS를 기다리는 중</translation>
+        <translation type="vanished">GPS를 기다리는 중</translation>
     </message>
     <message>
         <source>Waiting for route</source>
-        <translation>경로안내를 기다리는 중</translation>
+        <translation type="vanished">경로안내를 기다리는 중</translation>
     </message>
 </context>
 <context>
@@ -785,12 +777,12 @@ location set</source>
         <translation></translation>
     </message>
     <message>
-        <source>Turn-by-turn navigation</source>
-        <translation></translation>
-    </message>
-    <message>
         <source>1 year of drive storage</source>
         <translation>1년 동안의 드라이브 저장공간</translation>
+    </message>
+    <message>
+        <source>Remote snapshots</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -842,19 +834,11 @@ location set</source>
     </message>
     <message>
         <source>km</source>
-        <translation>km</translation>
-    </message>
-    <message>
-        <source>m</source>
-        <translation></translation>
+        <translation type="vanished">km</translation>
     </message>
     <message>
         <source>mi</source>
-        <translation>mi</translation>
-    </message>
-    <message>
-        <source>ft</source>
-        <translation></translation>
+        <translation type="vanished">mi</translation>
     </message>
     <message>
         <source>now</source>
@@ -1355,19 +1339,19 @@ This may take up to a minute.</source>
     </message>
     <message>
         <source>Show ETA in 24h Format</source>
-        <translation>24시간 형식으로 도착예정시간 표시</translation>
+        <translation type="vanished">24시간 형식으로 도착예정시간 표시</translation>
     </message>
     <message>
         <source>Use 24h format instead of am/pm</source>
-        <translation>오전/오후 대신 24시간 형식 사용</translation>
+        <translation type="vanished">오전/오후 대신 24시간 형식 사용</translation>
     </message>
     <message>
         <source>Show Map on Left Side of UI</source>
-        <translation>UI 왼쪽에 지도 표시</translation>
+        <translation type="vanished">UI 왼쪽에 지도 표시</translation>
     </message>
     <message>
         <source>Show map on left side when in split screen view.</source>
-        <translation>분할 화면 보기에서 지도를 왼쪽에 표시합니다.</translation>
+        <translation type="vanished">분할 화면 보기에서 지도를 왼쪽에 표시합니다.</translation>
     </message>
     <message>
         <source>Experimental Mode</source>
@@ -1584,10 +1568,6 @@ This may take up to a minute.</source>
     <message>
         <source>If oversteer occurs in a corner, reduce it.</source>
         <translation>코너에서 오버스티어가 발생하면 줄이세요.</translation>
-    </message>
-    <message>
-        <source>Acceleration at start, increasing this value will make the acceleration faster.</source>
-        <translation type="vanished">출발 시 가속, 이 값을 높이면 가속이 더 빨라집니다.</translation>
     </message>
     <message>
         <source>The higher it is, the more sensitive the response to the lead.</source>
