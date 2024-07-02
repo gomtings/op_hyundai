@@ -19,7 +19,7 @@ QList<QList<TuneItemInfo>> nTuneMainWidget::mainItems = {
 },
 {
     TuneItemInfo("scc_v3.json", "longActuatorDelay", tr("Longitudinal Actuator Delay"),
-                 0.5f, 0.1f, 1.0f, 0.05f, 2, "sec"),
+                 0.3f, 0.1f, 1.0f, 0.05f, 2, "sec"),
     TuneItemInfo("scc_v3.json", "aTargetFactor", tr("The higher it is, the more sensitive the response to the lead."),
                  1.0f, 0.7f, 1.5f, 0.05f, 2),
     TuneItemInfo("scc_v3.json", "comportBrake", tr("If this value is high, it reduces the distance maintained with the car in front, resulting in more aggressive driving."),

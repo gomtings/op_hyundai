@@ -207,7 +207,7 @@ class nTune():
   def checkValidSCC(self):
     updated = False
 
-    if self.checkValue("longActuatorDelay", 0.1, 1.0, 0.5):
+    if self.checkValue("longActuatorDelay", 0.1, 1.0, 0.3):
       updated = True
 
     if self.checkValue("aTargetFactor", 0.7, 1.5, 1.0):
