@@ -615,12 +615,12 @@ CommunityPanel::CommunityPanel(SettingsWindow *parent) : ListWidget(parent) {
       tr("Haptic feedback when a speed camera is detected"),
       "../assets/offroad/icon_openpilot.png",
     },
-    {
+    /*{
       "UseExternalNaviRoutes",
       tr("Use external navi routes"),
       "",
       "../assets/offroad/icon_openpilot.png",
-    },
+    },*/
     {
       "DriverCameraOnReverse",
       tr("Driver Camera On Reverse"),
