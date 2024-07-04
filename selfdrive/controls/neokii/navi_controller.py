@@ -399,6 +399,7 @@ class SpeedLimiter:
 
     self.sock = messaging.sub_sock("naviData")
     self.naviData = None
+    self.logMonoTime = 0
 
     self.haptic_feedback_speed_camera = Params().get_bool('HapticFeedbackWhenSpeedCamera')
     self.prev_active_cam = False
@@ -410,6 +411,7 @@ class SpeedLimiter:
     try:
       dat = messaging.recv_sock(self.sock, wait=False)
       if dat is not None:
+        self.logMonoTime = dat.logMonoTime
         self.naviData = dat.naviData
     except:
       pass
@@ -446,6 +448,12 @@ class SpeedLimiter:
           return True
 
     return False
+
+  def get_road_limit_speed(self):
+    print(self.logMonoTime)
+    if self.naviData is None or time.monotonic() - self.logMonoTime > 3.:
+      return 0
+    return self.naviData.roadLimitSpeed
 
   def get_max_speed(self, cluster_speed, is_metric):
 

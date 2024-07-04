@@ -7,6 +7,7 @@ from openpilot.common.conversions import Conversions as CV
 from openpilot.common.params import Params
 from openpilot.selfdrive.car.hyundai.values import CANFD_CAR, HyundaiFlags
 from openpilot.selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX, V_CRUISE_ENABLE_MIN
+from openpilot.selfdrive.controls.neokii.navi_controller import SpeedLimiter
 
 V_CRUISE_MIN_CRUISE_STATE = 10
 
@@ -177,6 +178,9 @@ class CruiseStateManager:
           self.enabled = True
           v_cruise_kph = clip(round(self.speed * CV.MS_TO_KPH, 1), V_CRUISE_ENABLE_MIN, V_CRUISE_MAX)
           v_cruise_kph = clip(v_cruise_kph, round(CS.vEgoCluster * CV.MS_TO_KPH, 1), V_CRUISE_MAX)
+          road_limit_speed = SpeedLimiter.instance().get_road_limit_speed()
+          if V_CRUISE_ENABLE_MIN < road_limit_speed < V_CRUISE_MAX:
+            v_cruise_kph = max(v_cruise_kph, road_limit_speed)
 
     if btn == ButtonType.gapAdjustCruise:
       if not self.btn_long_pressed:
