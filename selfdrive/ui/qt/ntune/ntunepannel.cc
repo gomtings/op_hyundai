@@ -26,11 +26,11 @@ nTuneMainWidget::nTuneMainWidget(QWidget *parent)
     },
     {
         TuneItemInfo(NTUNE_FILES["scc"], "longActuatorDelay", tr("Longitudinal Actuator Delay"),
-                     0.35f, 0.1f, 1.0f, 0.05f, 2, "sec"),
+                     0.4f, 0.1f, 1.0f, 0.05f, 2, "sec"),
         TuneItemInfo(NTUNE_FILES["scc"], "aTargetFactor", tr("The higher it is, the more sensitive the response to the lead."),
                      1.0f, 0.7f, 1.5f, 0.05f, 2),
         TuneItemInfo(NTUNE_FILES["scc"], "comportBrake", tr("If this value is high, it reduces the distance maintained with the car in front, resulting in more aggressive driving."),
-                     2.6f, 2.2f, 3.0f, 0.1f, 1, "m/s²"),
+                     2.6f, 2.3f, 2.7f, 0.1f, 1, "m/s²"),
         TuneItemInfo(NTUNE_FILES["scc"], "stopDistance", tr("The distance from the lead when the car stops. There is no guarantee that it will stop at that exact distance."),
                      5.0f, 4.0f, 7.0f, 0.1f, 1, "m"),
         /*TuneItemInfo("scc_v3.json", "longDisableRadar", "(0: Use radar, 1: Do not use radar)",

@@ -207,13 +207,13 @@ class nTune():
   def checkValidSCC(self):
     updated = False
 
-    if self.checkValue("longActuatorDelay", 0.1, 1.0, 0.35):
+    if self.checkValue("longActuatorDelay", 0.1, 1.0, 0.4):
       updated = True
 
     if self.checkValue("aTargetFactor", 0.7, 1.5, 1.0):
       updated = True
 
-    if self.checkValue("comportBrake", 2.2, 3.0, 2.6):
+    if self.checkValue("comportBrake", 2.3, 2.7, 2.6):
       updated = True
 
     if self.checkValue("stopDistance", 4., 7., 5.0):
