@@ -1,3 +1,5 @@
+import datetime
+import json
 import os
 import time
 from collections.abc import Callable
@@ -207,6 +209,18 @@ def get_car(logcan, sendcan, experimental_long_allowed, num_pandas=1):
       candidate = found_platform
 
   print('candidate !!!!!!!!!', candidate)
+
+  car_fingerprints = {
+    'candidate': candidate,
+    'fingerprints': fingerprints
+  }
+
+  try:
+    with open('/data/log/car_fingerprints', 'w') as f:
+      now = datetime.datetime.now()
+      f.write(now.strftime('[%Y-%m-%d %H:%M:%S]') + "\n\n" + json.dumps(car_fingerprints, indent=2))
+  except:
+    pass
 
   CarInterface, _, _ = interfaces[candidate]
   CP = CarInterface.get_params(candidate, fingerprints, car_fw, experimental_long_allowed, docs=False)
