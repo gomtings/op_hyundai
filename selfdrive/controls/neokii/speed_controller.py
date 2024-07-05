@@ -11,7 +11,7 @@ from openpilot.selfdrive.controls.neokii.cruise_state_manager import CruiseState
 from openpilot.selfdrive.car.hyundai.values import Buttons
 from openpilot.common.params import Params
 from openpilot.selfdrive.controls.neokii.navi_controller import SpeedLimiter
-from openpilot.selfdrive.controls.ntune import ntune_common_get, ntune_common_enabled
+from openpilot.selfdrive.controls.ntune import ntune_common_get, ntune_common_enabled, ntune_scc_get
 from openpilot.selfdrive.controls.radard import RADAR_TO_CAMERA
 
 TRAJECTORY_SIZE = 33
@@ -402,5 +402,6 @@ class SpeedController:
     exState.cruiseMaxSpeed = self.real_set_speed_kph
     exState.applyMaxSpeed = self.cruise_speed_kph
     exState.steerActuatorDelay = ntune_common_get('steerActuatorDelay')
+    exState.longActuatorDelay = ntune_scc_get('longActuatorDelay')
 
 

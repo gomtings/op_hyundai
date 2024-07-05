@@ -122,7 +122,7 @@ class CarInterface(CarInterfaceBase):
     ret.vEgoStarting = 0.1
     ret.vEgoStopping = 0.1
     ret.startAccel = 1.0
-    ret.longitudinalActuatorDelay = 0.4
+    ret.longitudinalActuatorDelay = 0.45
     ret.radarTimeStep = 0.02
 
     # *** feature detection ***
