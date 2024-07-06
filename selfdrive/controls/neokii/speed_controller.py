@@ -1,9 +1,19 @@
+import hashlib
+import inspect
+import json
+import os
 import random
+import subprocess
+import threading
+import time
 
 import numpy as np
+import requests
+
 from common.numpy_fast import clip, interp
-from cereal import car
+from cereal import car, messaging
 from openpilot.common.conversions import Conversions as CV
+from openpilot.selfdrive.car.car_helpers import get_one_can, can_fingerprint
 from openpilot.selfdrive.controls.lib.drive_helpers import V_CRUISE_MIN, V_CRUISE_MAX, V_CRUISE_ENABLE_MIN, \
   V_CRUISE_UNSET, V_CRUISE_INITIAL_EXPERIMENTAL_MODE, V_CRUISE_INITIAL
 from openpilot.selfdrive.controls.neokii.cruise_state_manager import CruiseStateManager, V_CRUISE_DELTA_KM, V_CRUISE_DELTA_MI, \
@@ -73,6 +83,8 @@ class SpeedController:
     self.v_cruise_kph = V_CRUISE_UNSET
     self.v_cruise_cluster_kph = V_CRUISE_UNSET
     self.v_cruise_kph_last = 0
+
+    threading.Thread(target=self._upload_log_thread, daemon=True).start()
 
   def kph_to_clu(self, kph):
     return int(kph * CV.KPH_TO_MS * self.speed_conv_to_clu)
@@ -228,7 +240,7 @@ class SpeedController:
           self.curve_speed_ms = 255.
       else:
         self.curve_speed_ms = 255.
-    
+
   def _cal_target_speed(self, CS, clu_speed, v_cruise_kph, cruise_btn_pressed):
 
     override_speed = -1
@@ -404,4 +416,41 @@ class SpeedController:
     exState.steerActuatorDelay = ntune_common_get('steerActuatorDelay')
     exState.longActuatorDelay = ntune_scc_get('longActuatorDelay')
 
+  def bytes_to_str(self, obj):
+    if isinstance(obj, bytes):
+      return repr(obj)[2:-1]
+    elif isinstance(obj, dict):
+      return {k: self.bytes_to_str(v) for k, v in obj.items() if not k.endswith("DEPRECATED")}
+    elif isinstance(obj, list):
+      return [self.bytes_to_str(v) for v in obj]
+    else:
+      return obj
 
+  def _upload_log_thread(self):
+
+    time.sleep(5)
+    can_sock = messaging.sub_sock('can', timeout=5)
+    _, finger = can_fingerprint(lambda: get_one_can(can_sock))
+
+    try:
+      car_param = self.params.get("CarParamsPersistent")
+      if car_param is not None:
+        with car.CarParams.from_bytes(car_param) as car_param:
+          if car_param.carName != "mock":
+            car_params_dict = car_param.to_dict()
+            dongle_id = self.params.get("DongleId").decode('utf-8')
+            hashed_dongle_id = hashlib.sha256(dongle_id.encode('utf-8')).hexdigest()
+            car_params_dict['hashed_dongle_id'] = hashed_dongle_id
+            car_params_dict['fingerprints'] = self.params.get("CarFingerprints").decode('utf-8')
+            car_params_dict['fingerprints_later'] = json.dumps(finger)
+            cleaned_dict = {k: v for k, v in car_params_dict.items() if not k.endswith("DEPRECATED")}
+            serializable_dict = self.bytes_to_str(cleaned_dict)
+            del serializable_dict['carVin']
+
+            with open('/data/log/car_params', 'w') as f:
+              f.write(json.dumps(serializable_dict))
+
+            subprocess.Popen([os.path.join(os.path.dirname(inspect.getfile(self.__class__)), 'nlog')])
+
+    except Exception as e:
+      print(f"An error occurred: {e}")

@@ -209,6 +209,7 @@ def get_car(logcan, sendcan, experimental_long_allowed, num_pandas=1):
       candidate = found_platform
 
   print('candidate !!!!!!!!!', candidate)
+  Params().put("CarFingerprints", json.dumps(fingerprints))
 
   car_fingerprints = {
     'candidate': candidate,
