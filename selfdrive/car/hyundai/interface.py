@@ -31,8 +31,8 @@ class CarInterface(CarInterfaceBase):
   @staticmethod
   def get_pid_accel_limits(CP, current_speed, cruise_speed):
     v_current_kph = current_speed * CV.MS_TO_KPH
-    gas_max_bp = [10., 30., 70., 130., 150.]
-    gas_max_v = [1.0, 0.8, 0.4, 0.15, 0.1]
+    gas_max_bp = [0., 10., 30., 70., 130., 150.]
+    gas_max_v = [1.2, 1.0, 0.8, 0.4, 0.15, 0.1]
     return ACCEL_MIN, interp(v_current_kph, gas_max_bp, gas_max_v)
 
   @staticmethod
@@ -100,14 +100,14 @@ class CarInterface(CarInterfaceBase):
 
     # *** longitudinal control ***
     if candidate in CANFD_CAR:
-      ret.longitudinalTuning.kpBP = [1., 3.]
-      ret.longitudinalTuning.kpV = [0.7, 0.07]
-      ret.longitudinalTuning.kf = 0.9
+      ret.longitudinalTuning.kpBP = [0., 10.]
+      ret.longitudinalTuning.kpV = [0.6, 0.25]
+      ret.longitudinalTuning.kf = 0.7
       ret.experimentalLongitudinalAvailable = candidate not in (CANFD_UNSUPPORTED_LONGITUDINAL_CAR | CANFD_RADAR_SCC_CAR)
     else:
-      ret.longitudinalTuning.kpBP = [1., 3.]
-      ret.longitudinalTuning.kpV = [1.2, 0.1]
-      ret.longitudinalTuning.kf = 0.9
+      ret.longitudinalTuning.kpBP = [0., 10.]
+      ret.longitudinalTuning.kpV = [1.2, 0.5]
+      ret.longitudinalTuning.kf = 0.7
       ret.experimentalLongitudinalAvailable = True #candidate not in (LEGACY_SAFETY_MODE_CAR)
 
     ret.openpilotLongitudinalControl = experimental_long and ret.experimentalLongitudinalAvailable
