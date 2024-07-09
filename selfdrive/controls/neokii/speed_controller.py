@@ -84,7 +84,8 @@ class SpeedController:
     self.v_cruise_cluster_kph = V_CRUISE_UNSET
     self.v_cruise_kph_last = 0
 
-    threading.Thread(target=self._upload_log_thread, daemon=True).start()
+    if self.params.get_bool('SendCarParamLogs'):
+      threading.Thread(target=self._upload_log_thread, daemon=True).start()
 
   def kph_to_clu(self, kph):
     return int(kph * CV.KPH_TO_MS * self.speed_conv_to_clu)
@@ -106,6 +107,7 @@ class SpeedController:
   def read_param(self):
     self.slow_on_curves = True
     self.sync_set_speed_while_gas_pressed = self.params.get_bool('SyncSetSpeedWhileGas')
+
     self.is_metric = self.params.get_bool('IsMetric')
     self.experimental_mode = self.params.get_bool("ExperimentalMode") and self.CP.openpilotLongitudinalControl
 
