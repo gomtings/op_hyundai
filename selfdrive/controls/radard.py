@@ -10,8 +10,9 @@ from openpilot.common.numpy_fast import interp
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_CTRL, Ratekeeper, Priority, config_realtime_process
 from openpilot.common.swaglog import cloudlog
-
 from openpilot.common.simple_kalman import KF1D
+from openpilot.selfdrive.pandad import can_capnp_to_list
+
 from openpilot.selfdrive.controls.ntune import ntune_scc_get
 
 # Default lead acceleration decay set to 50% at 1s
@@ -150,6 +151,7 @@ def match_vision_to_track(v_ego: float, model: capnp._DynamicStructReader, lead:
     return track
   else:
     return None
+
 
 def get_RadarState_from_vision(lead_msg: capnp._DynamicStructReader, v_ego: float, model_v_ego: float):
   lead_v_rel_pred = lead_msg.v[0] - model_v_ego
@@ -319,7 +321,7 @@ def main():
 
   while 1:
     can_strings = messaging.drain_sock_raw(can_sock, wait_for_one=True)
-    rr = RI.update(can_strings)
+    rr = RI.update(can_capnp_to_list(can_strings))
     sm.update(0)
     if rr is None:
       continue

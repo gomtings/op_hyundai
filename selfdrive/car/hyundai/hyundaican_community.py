@@ -12,7 +12,7 @@ def create_mdps12(packer, frame, mdps12):
   values["CF_Mdps_MsgCount2"] = frame % 0x100
   values["CF_Mdps_Chksum2"] = 0
 
-  dat = packer.make_can_msg("MDPS12", 2, values)[2]
+  dat = packer.make_can_msg("MDPS12", 2, values)[1]
   checksum = sum(dat) % 256
   values["CF_Mdps_Chksum2"] = checksum
 
@@ -53,7 +53,7 @@ def create_acc_commands(packer, enabled, accel, upper_jerk, idx, hud_control,
   values["aReqValue"] = accel
   values["CR_VSM_Alive"] = idx % 0xF
   values["CR_VSM_ChkSum"] = 0
-  scc12_dat = packer.make_can_msg("SCC12", 0, values)[2]
+  scc12_dat = packer.make_can_msg("SCC12", 0, values)[1]
   values["CR_VSM_ChkSum"] = 0x10 - sum(sum(divmod(i, 16)) for i in scc12_dat) % 0x10
 
   commands.append(packer.make_can_msg("SCC12", 0, values))
