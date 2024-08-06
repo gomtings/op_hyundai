@@ -8,12 +8,12 @@ import threading
 import time
 
 import numpy as np
-import requests
 
 from common.numpy_fast import clip, interp
 from cereal import car, messaging
-from openpilot.common.conversions import Conversions as CV
-from openpilot.selfdrive.car.car_helpers import get_one_can, can_fingerprint
+from openpilot.selfdrive.car.conversions import Conversions as CV
+from openpilot.selfdrive.car.can_definitions import CanData
+from openpilot.selfdrive.car.car_helpers import can_fingerprint
 from openpilot.selfdrive.controls.lib.drive_helpers import V_CRUISE_MIN, V_CRUISE_MAX, V_CRUISE_ENABLE_MIN, \
   V_CRUISE_UNSET, V_CRUISE_INITIAL_EXPERIMENTAL_MODE, V_CRUISE_INITIAL
 from openpilot.selfdrive.controls.neokii.cruise_state_manager import CruiseStateManager, V_CRUISE_DELTA_KM, V_CRUISE_DELTA_MI, \
@@ -21,8 +21,8 @@ from openpilot.selfdrive.controls.neokii.cruise_state_manager import CruiseState
 from openpilot.selfdrive.car.hyundai.values import Buttons
 from openpilot.common.params import Params
 from openpilot.selfdrive.controls.neokii.navi_controller import SpeedLimiter
-from openpilot.selfdrive.controls.ntune import ntune_common_get, ntune_common_enabled, ntune_scc_get
-from openpilot.selfdrive.controls.radard import RADAR_TO_CAMERA
+from openpilot.selfdrive.controls.ntune import ntune_common_get, ntune_scc_get
+
 
 TRAJECTORY_SIZE = 33
 SYNC_MARGIN = 3.
@@ -432,7 +432,14 @@ class SpeedController:
 
     time.sleep(5)
     can_sock = messaging.sub_sock('can', timeout=5)
-    _, finger = can_fingerprint(lambda: get_one_can(can_sock))
+
+    def can_recv(wait_for_one: bool = False) -> list[list[CanData]]:
+      ret = []
+      for can in messaging.drain_sock(can_sock, wait_for_one=wait_for_one):
+        ret.append([CanData(msg.address, msg.dat, msg.src) for msg in can.can])
+      return ret
+
+    _, finger = can_fingerprint(can_recv)
 
     try:
       car_param = self.params.get("CarParamsPersistent")

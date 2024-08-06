@@ -4,7 +4,10 @@ from cereal import car, log
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.numpy_fast import clip
 from openpilot.common.realtime import DT_CTRL
+from openpilot.system.version import get_build_metadata
 from openpilot.selfdrive.controls.ntune import ntune_common_get
+
+EventName = car.CarEvent.EventName
 
 # WARNING: this value was determined based on the model's training distribution,
 #          model predictions above this speed can be unpredictable
@@ -159,3 +162,17 @@ def get_speed_error(modelV2: log.ModelDataV2, v_ego: float) -> float:
     vel_err = clip(modelV2.temporalPose.trans[0] - v_ego, -MAX_VEL_ERR, MAX_VEL_ERR)
     return float(vel_err)
   return 0.0
+
+
+def get_startup_event(car_recognized, controller_available, fw_seen):
+  build_metadata = get_build_metadata()
+  event = EventName.startup
+
+  if not car_recognized:
+    if fw_seen:
+      event = EventName.startupNoCar
+    else:
+      event = EventName.startupNoFw
+  elif car_recognized and not controller_available:
+    event = EventName.startupNoControl
+  return event

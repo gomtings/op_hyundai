@@ -3,9 +3,6 @@ import copy
 import math
 
 from cereal import car
-from openpilot.common.conversions import Conversions as CV
-
-from openpilot.common.numpy_fast import interp
 from opendbc.can.parser import CANParser
 from opendbc.can.can_define import CANDefine
 from openpilot.selfdrive.car.hyundai.hyundaicanfd import CanBus
@@ -13,6 +10,8 @@ from openpilot.selfdrive.car.hyundai.values import HyundaiFlags, CAR, DBC, CAN_G
                                                    CANFD_CAR, Buttons, CarControllerParams
 from openpilot.selfdrive.car.interfaces import CarStateBase
 
+from openpilot.common.numpy_fast import interp
+from openpilot.common.conversions import Conversions as CV
 from openpilot.selfdrive.car.hyundai.interface import BUTTONS_DICT
 from openpilot.selfdrive.controls.neokii.cruise_state_manager import CruiseStateManager
 from selfdrive.car.hyundai.values import HyundaiExFlags
@@ -46,8 +45,7 @@ class CarState(CarStateBase):
                                  "ACCELERATOR_ALT" if CP.flags & HyundaiFlags.HYBRID else \
                                  "ACCELERATOR_BRAKE_ALT"
     self.cruise_btns_msg_canfd = "CRUISE_BUTTONS_ALT" if CP.flags & HyundaiFlags.CANFD_ALT_BUTTONS else \
-      "CRUISE_BUTTONS"
-
+                                 "CRUISE_BUTTONS"
     self.is_metric = False
     self.buttons_counter = 0
 
