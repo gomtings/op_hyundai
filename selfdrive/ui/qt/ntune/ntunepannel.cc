@@ -33,8 +33,6 @@ nTuneMainWidget::nTuneMainWidget(QWidget *parent)
                      2.6f, 2.3f, 2.7f, 0.1f, 1, "m/s²"),
         TuneItemInfo(NTUNE_FILES["scc"], "stopDistance", tr("The distance from the lead when the car stops. There is no guarantee that it will stop at that exact distance."),
                      5.0f, 4.0f, 7.0f, 0.1f, 1, "m"),
-        /*TuneItemInfo("scc_v3.json", "longDisableRadar", "(0: Use radar, 1: Do not use radar)",
-                     0.0f, 0.0f, 1.0f, 1.0f, 0),*/
     },
     {
         TuneItemInfo(NTUNE_FILES["lat_torque"], "latAccelFactor", "", 2.5f, 0.5f, 4.5f, 0.1f, 2),

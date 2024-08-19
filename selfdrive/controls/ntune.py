@@ -219,9 +219,6 @@ class nTune():
     if self.checkValue("stopDistance", 4., 7., 5.0):
       updated = True
 
-    if self.checkValue("longDisableRadar", 0., 1., 0.):
-      updated = True
-
     return updated
 
   def updateIndi(self):

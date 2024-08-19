@@ -8,9 +8,8 @@ from openpilot.common.params import Params
 from openpilot.common.realtime import config_realtime_process, DT_MDL
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.swaglog import cloudlog
-from openpilot.common.transformations.orientation import rot_from_euler
 from openpilot.selfdrive.controls.lib.vehicle_model import ACCELERATION_DUE_TO_GRAVITY
-from openpilot.selfdrive.locationd.helpers import PointBuckets, ParameterEstimator
+from openpilot.selfdrive.locationd.helpers import PointBuckets, ParameterEstimator, PoseCalibrator, Pose
 from openpilot.selfdrive.controls.ntune import ntune_torque_get, ntune_common_get
 
 HISTORY = 5  # secs
@@ -87,7 +86,7 @@ class TorqueEstimator(ParameterEstimator):
       self.offline_friction = self.get_friction()
       self.offline_latAccelFactor = self.get_lat_accel_factor()
 
-    self.calib_from_device = np.eye(3)
+    self.calibrator = PoseCalibrator()
 
     self.reset()
 
@@ -185,17 +184,17 @@ class TorqueEstimator(ParameterEstimator):
       self.raw_points["vego"].append(msg.vEgo)
       self.raw_points["steer_override"].append(msg.steeringPressed)
     elif which == "liveCalibration":
-      device_from_calib = rot_from_euler(np.array(msg.rpyCalib))
-      self.calib_from_device = device_from_calib.T
+      self.calibrator.feed_live_calib(msg)
 
     # calculate lateral accel from past steering torque
     elif which == "livePose":
       if len(self.raw_points['steer_torque']) == self.hist_len:
-        angular_velocity_device = np.array([msg.angularVelocityDevice.x, msg.angularVelocityDevice.y, msg.angularVelocityDevice.z])
-        angular_velocity_calibrated = np.matmul(self.calib_from_device, angular_velocity_device)
+        device_pose = Pose.from_live_pose(msg)
+        calibrated_pose = self.calibrator.build_calibrated_pose(device_pose)
+        angular_velocity_calibrated = calibrated_pose.angular_velocity
 
-        yaw_rate = angular_velocity_calibrated[2]
-        roll = msg.orientationNED.x
+        yaw_rate = angular_velocity_calibrated.yaw
+        roll = device_pose.orientation.roll
         # check lat active up to now (without lag compensation)
         lat_active = np.interp(np.arange(t - MIN_ENGAGE_BUFFER, t + self.lag, DT_MDL),
                                self.raw_points['carControl_t'], self.raw_points['lat_active']).astype(bool)
