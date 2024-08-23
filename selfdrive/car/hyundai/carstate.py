@@ -2,10 +2,9 @@ from collections import deque
 import copy
 import math
 
-from cereal import car
 from opendbc.can.parser import CANParser
 from opendbc.can.can_define import CANDefine
-from openpilot.selfdrive.car import create_button_events
+from openpilot.selfdrive.car import create_button_events, structs
 from openpilot.selfdrive.car.conversions import Conversions as CV
 from openpilot.selfdrive.car.hyundai.hyundaicanfd import CanBus
 from openpilot.selfdrive.car.hyundai.values import HyundaiFlags, CAR, DBC, CAN_GEARS, CAMERA_SCC_CAR, \
@@ -19,7 +18,7 @@ from openpilot.selfdrive.controls.neokii.cruise_state_manager import CruiseState
 from selfdrive.car.hyundai.values import HyundaiExFlags
 
 
-ButtonType = car.CarState.ButtonEvent.Type
+ButtonType = structs.CarState.ButtonEvent.Type
 
 PREV_BUTTON_SAMPLES = 8
 CLUSTER_SAMPLE_RATE = 20  # frames
@@ -71,11 +70,11 @@ class CarState(CarStateBase):
     self.lfa_enabled = False
     self.canfd_buttons = None
 
-  def update(self, cp, cp_cam, *_):
+  def update(self, cp, cp_cam, *_) -> structs.CarState:
     if self.CP.carFingerprint in CANFD_CAR:
       return self.update_canfd(cp, cp_cam)
 
-    ret = car.CarState.new_message()
+    ret = structs.CarState()
     cp_cruise = cp_cam if self.CP.sccBus == 2 else cp
     self.is_metric = cp.vl["CLU11"]["CF_Clu_SPEED_UNIT"] == 0
     speed_conv = CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS
@@ -250,8 +249,8 @@ class CarState(CarStateBase):
 
     return ret
 
-  def update_canfd(self, cp, cp_cam):
-    ret = car.CarState.new_message()
+  def update_canfd(self, cp, cp_cam) -> structs.CarState:
+    ret = structs.CarState()
 
     self.is_metric = cp.vl["CRUISE_BUTTONS_ALT"]["DISTANCE_UNIT"] != 1
     speed_factor = CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS

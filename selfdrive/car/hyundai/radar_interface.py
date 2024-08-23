@@ -1,11 +1,11 @@
 import math
 
-from cereal import car
-from common.numpy_fast import clip
 from opendbc.can.parser import CANParser
+from openpilot.selfdrive.car import structs
 from openpilot.selfdrive.car.interfaces import RadarInterfaceBase
 from openpilot.selfdrive.car.hyundai.values import DBC, CANFD_CAR
 from openpilot.selfdrive.controls.neokii.cruise_state_manager import is_radar_disabler
+from common.numpy_fast import clip
 
 RADAR_START_ADDR = 0x500
 RADAR_MSG_COUNT = 32
@@ -57,7 +57,7 @@ class RadarInterface(RadarInterfaceBase):
     return rr
 
   def _update(self, updated_messages):
-    ret = car.RadarData.new_message()
+    ret = structs.RadarData()
     if self.rcp is None:
       return ret
 
@@ -73,7 +73,7 @@ class RadarInterface(RadarInterfaceBase):
         msg = self.rcp.vl[f"RADAR_TRACK_{addr:x}"]
 
         if addr not in self.pts:
-          self.pts[addr] = car.RadarData.RadarPoint.new_message()
+          self.pts[addr] = structs.RadarData.RadarPoint()
           self.pts[addr].trackId = self.track_id
           self.track_id += 1
 
@@ -106,7 +106,7 @@ class RadarInterface(RadarInterfaceBase):
 
         target_id = 0
         if target_id not in self.pts:
-          self.pts[target_id] = car.RadarData.RadarPoint.new_message()
+          self.pts[target_id] = structs.RadarData.RadarPoint()
           self.pts[target_id].trackId = self.track_id
           self.track_id += 1
 
