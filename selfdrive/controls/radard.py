@@ -6,12 +6,12 @@ from typing import Any
 
 import capnp
 from cereal import messaging, log, car
+from opendbc.car import structs
 from openpilot.common.numpy_fast import interp
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_CTRL, Ratekeeper, Priority, config_realtime_process
 from openpilot.common.swaglog import cloudlog
 from openpilot.common.simple_kalman import KF1D
-from openpilot.selfdrive.car import structs
 from openpilot.selfdrive.pandad import can_capnp_to_list
 
 from openpilot.selfdrive.controls.ntune import ntune_scc_get
@@ -299,7 +299,7 @@ def main() -> None:
 
   # import the radar from the fingerprint
   cloudlog.info("radard is importing %s", CP.carName)
-  RadarInterface = importlib.import_module(f'selfdrive.car.{CP.carName}.radar_interface').RadarInterface
+  RadarInterface = importlib.import_module(f'opendbc.car.{CP.carName}.radar_interface').RadarInterface
 
   # *** setup messaging
   can_sock = messaging.sub_sock('can')

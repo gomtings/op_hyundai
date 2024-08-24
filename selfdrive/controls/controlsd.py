@@ -17,8 +17,9 @@ from openpilot.common.numpy_fast import clip
 from openpilot.common.params import Params
 from openpilot.common.realtime import config_realtime_process, Priority, Ratekeeper, DT_CTRL
 from openpilot.common.swaglog import cloudlog
+from openpilot.common.gps import get_gps_location_service
 
-from openpilot.selfdrive.car.car_helpers import get_car_interface
+from opendbc.car.car_helpers import get_car_interface
 from openpilot.selfdrive.controls.lib.alertmanager import AlertManager, set_offroad_alert
 from openpilot.selfdrive.controls.lib.drive_helpers import VCruiseHelper, clip_curvature, get_startup_event
 from openpilot.selfdrive.controls.lib.events import Events, ET
@@ -81,10 +82,7 @@ class Controls:
     # Setup sockets
     self.pm = messaging.PubMaster(['controlsState', 'carControl', 'onroadEvents'])
 
-    if self.params.get_bool("UbloxAvailable"):
-      self.gps_location_service = "gpsLocationExternal"
-    else:
-      self.gps_location_service = "gpsLocation"
+    self.gps_location_service = get_gps_location_service(self.params)
     self.gps_packets = [self.gps_location_service]
     self.sensor_packets = ["accelerometer", "gyroscope"]
     self.camera_packets = ["roadCameraState", "driverCameraState", "wideRoadCameraState"]

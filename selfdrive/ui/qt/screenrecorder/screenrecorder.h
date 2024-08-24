@@ -4,7 +4,6 @@
 #include <cstdint>
 #include <QPainter>
 #include <QPushButton>
-#include <QSoundEffect>
 #include <thread>
 #include <chrono>
 

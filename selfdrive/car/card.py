@@ -15,13 +15,13 @@ from openpilot.common.params import Params
 from openpilot.common.realtime import config_realtime_process, Priority, Ratekeeper
 from openpilot.common.swaglog import cloudlog, ForwardingHandler
 
+from opendbc.car import DT_CTRL, carlog, structs
+from opendbc.car.can_definitions import CanData, CanRecvCallable, CanSendCallable
+from opendbc.car.fw_versions import ObdCallback
+from opendbc.car.car_helpers import get_car
+from opendbc.car.interfaces import CarInterfaceBase
 from openpilot.selfdrive.pandad import can_capnp_to_list, can_list_to_can_capnp
-from openpilot.selfdrive.car import DT_CTRL, carlog, structs
-from openpilot.selfdrive.car.can_definitions import CanData, CanRecvCallable, CanSendCallable
 from openpilot.selfdrive.car.car_specific import CarSpecificEvents, MockCarState
-from openpilot.selfdrive.car.fw_versions import ObdCallback
-from openpilot.selfdrive.car.car_helpers import get_car
-from openpilot.selfdrive.car.interfaces import CarInterfaceBase
 from openpilot.selfdrive.controls.lib.events import Events
 
 REPLAY = "REPLAY" in os.environ
@@ -67,6 +67,18 @@ def is_dataclass(obj):
   return hasattr(obj, _FIELDS)
 
 
+def _asdictref_inner(obj) -> dict[str, Any] | Any:
+  if is_dataclass(obj):
+    ret = {}
+    for field in getattr(obj, _FIELDS):  # similar to dataclasses.fields()
+      ret[field] = _asdictref_inner(getattr(obj, field))
+    return ret
+  elif isinstance(obj, (tuple, list)):
+    return type(obj)(_asdictref_inner(v) for v in obj)
+  else:
+    return obj
+
+
 def asdictref(obj) -> dict[str, Any]:
   """
   Similar to dataclasses.asdict without recursive type checking and copy.deepcopy
@@ -74,17 +86,6 @@ def asdictref(obj) -> dict[str, Any]:
   """
   if not is_dataclass(obj):
     raise TypeError("asdictref() should be called on dataclass instances")
-
-  def _asdictref_inner(obj) -> dict[str, Any] | Any:
-    if is_dataclass(obj):
-      ret = {}
-      for field in getattr(obj, _FIELDS):  # similar to dataclasses.fields()
-        ret[field] = _asdictref_inner(getattr(obj, field))
-      return ret
-    elif isinstance(obj, (tuple, list)):
-      return type(obj)(_asdictref_inner(v) for v in obj)
-    else:
-      return obj
 
   return _asdictref_inner(obj)
 
