@@ -81,7 +81,7 @@ function launch {
   # write tmux scrollback to a file
   tmux capture-pane -pq -S-1000 > /tmp/launch_log
 
-  python ./openpilot/selfdrive/car/hyundai/values.py > /data/params/d/SupportedCars
+  python ./opendbc/car/hyundai/values.py > /data/params/d/SupportedCars
 
   # start manager
   cd system/manager
