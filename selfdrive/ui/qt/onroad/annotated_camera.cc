@@ -11,7 +11,7 @@
 
 // Window that shows camera view and variety of info drawn on top
 AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget* parent) : last_update_params(0), fps_filter(UI_FREQ, 3, 1. / UI_FREQ), CameraWidget("camerad", type, true, parent) {
-  pm = std::make_unique<PubMaster, const std::initializer_list<const char *>>({"uiDebug"});
+  pm = std::make_unique<PubMaster>(std::vector<const char*>{"uiDebug"});
 
   main_layout = new QVBoxLayout(this);
   main_layout->setMargin(UI_BORDER_SIZE);
@@ -155,6 +155,7 @@ void AnnotatedCameraWidget::drawLaneLines(QPainter &painter, const UIState *s) {
     bg.setColorAt(0.5, QColor::fromHslF(112 / 360., 1.0, 0.68, 0.35));
     bg.setColorAt(1.0, QColor::fromHslF(112 / 360., 1.0, 0.68, 0.0));
   }
+
   painter.setBrush(bg);
   painter.drawPolygon(scene.track_vertices);
 
