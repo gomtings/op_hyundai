@@ -684,17 +684,52 @@ struct LiveTracks {
   oncoming @9 :Bool;
 }
 
+struct SelfdriveState {
+  # high level system state
+  state @0 :OpenpilotState;
+  enabled @1 :Bool;
+  active @2 :Bool;
+  engageable @9 :Bool;  # can OP be engaged?
+
+  # UI alerts
+  alertText1 @3 :Text;
+  alertText2 @4 :Text;
+  alertStatus @5 :AlertStatus;
+  alertSize @6 :AlertSize;
+  alertType @7 :Text;
+  alertSound @8 :Car.CarControl.HUDControl.AudibleAlert;
+
+  # configurable driving settings
+  experimentalMode @10 :Bool;
+  personality @11 :LongitudinalPersonality;
+
+  enum OpenpilotState @0xdbe58b96d2d1ac61 {
+    disabled @0;
+    preEnabled @1;
+    enabled @2;
+    softDisabling @3;
+    overriding @4;  # superset of overriding with steering or accelerator
+  }
+
+  enum AlertStatus @0xa0d0dcd113193c62 {
+    normal @0;
+    userPrompt @1;
+    critical @2;
+  }
+
+  enum AlertSize @0xe98bb99d6e985f64 {
+    none @0;
+    small @1;
+    mid @2;
+    full @3;
+  }
+}
+
 struct ControlsState @0x97ff69c53601abf1 {
+  cumLagMs @15 :Float32;
   startMonoTime @48 :UInt64;
   longitudinalPlanMonoTime @28 :UInt64;
   lateralPlanMonoTime @50 :UInt64;
-
-  state @31 :OpenpilotState;
-  enabled @19 :Bool;
-  active @36 :Bool;
-
-  experimentalMode @64 :Bool;
-  personality @66 :LongitudinalPersonality;
 
   longControlState @30 :Car.CarControl.Actuators.LongControlState;
   vTargetLead @3 :Float32;
@@ -706,19 +741,21 @@ struct ControlsState @0x97ff69c53601abf1 {
   aTarget @35 :Float32;
   curvature @37 :Float32;  # path curvature from vehicle model
   desiredCurvature @61 :Float32;  # lag adjusted curvatures used by lateral controllers
-  forceDecel @51 :Bool;
 
-  # UI alerts
+  # TODO: remove these, they're now in selfdriveState
   alertText1 @24 :Text;
   alertText2 @25 :Text;
-  alertStatus @38 :AlertStatus;
-  alertSize @39 :AlertSize;
-  alertBlinkingRate @42 :Float32;
+  alertStatus @38 :SelfdriveState.AlertStatus;
+  alertSize @39 :SelfdriveState.AlertSize;
   alertType @44 :Text;
   alertSound @56 :Car.CarControl.HUDControl.AudibleAlert;
   engageable @41 :Bool;  # can OP be engaged?
-
-  cumLagMs @15 :Float32;
+  forceDecel @51 :Bool;
+  state @31 :SelfdriveState.OpenpilotState;
+  enabled @19 :Bool;
+  active @36 :Bool;
+  experimentalMode @64 :Bool;
+  personality @66 :LongitudinalPersonality;
 
   lateralControlState :union {
     indiState @52 :LateralINDIState;
@@ -729,27 +766,6 @@ struct ControlsState @0x97ff69c53601abf1 {
 
     curvatureStateDEPRECATED @65 :LateralCurvatureState;
     lqrStateDEPRECATED @55 :LateralLQRState;
-  }
-
-  enum OpenpilotState @0xdbe58b96d2d1ac61 {
-    disabled @0;
-    preEnabled @1;
-    enabled @2;
-    softDisabling @3;
-    overriding @4;  # superset of overriding with steering or accelerator
-  }
-
-  enum AlertStatus {
-    normal @0;       # low priority alert for user's convenience
-    userPrompt @1;   # mid priority alert that might require user intervention
-    critical @2;     # high priority alert that needs immediate user intervention
-  }
-
-  enum AlertSize {
-    none @0;    # don't display the alert
-    small @1;   # small box
-    mid @2;     # mid screen
-    full @3;    # full screen
   }
 
   struct LateralINDIState {
@@ -868,6 +884,7 @@ struct ControlsState @0x97ff69c53601abf1 {
   desiredCurvatureRateDEPRECATED @62 :Float32;
   canErrorCounterDEPRECATED @57 :UInt32;
   vPidDEPRECATED @2 :Float32;
+  alertBlinkingRateDEPRECATED @42 :Float32;
 }
 
 struct DrivingModelData {
@@ -1136,7 +1153,7 @@ struct LongitudinalPlan @0xe00b5b3eba12876c {
   radarValidDEPRECATED @28 :Bool;
   radarCanErrorDEPRECATED @30 :Bool;
   commIssueDEPRECATED @31 :Bool;
-  eventsDEPRECATED @13 :List(Car.CarEvent);
+  eventsDEPRECATED @13 :List(Car.OnroadEvent);
   gpsTrajectoryDEPRECATED @12 :GpsTrajectory;
   gpsPlannerActiveDEPRECATED @19 :Bool;
   personalityDEPRECATED @36 :LongitudinalPersonality;
@@ -2042,7 +2059,7 @@ struct DriverStateDEPRECATED @0xb83c6cc593ed0a00 {
 }
 
 struct DriverMonitoringState @0xb83cda094a1da284 {
-  events @0 :List(Car.CarEvent);
+  events @0 :List(Car.OnroadEvent);
   faceDetected @1 :Bool;
   isDistracted @2 :Bool;
   distractedType @17 :UInt32;
@@ -2307,6 +2324,7 @@ struct Event {
     gpsNMEA @3 :GPSNMEAData;
     can @5 :List(CanData);
     controlsState @7 :ControlsState;
+    selfdriveState @130 :SelfdriveState;
     gyroscope @99 :SensorEventData;
     gyroscope2 @100 :SensorEventData;
     accelerometer @98 :SensorEventData;
@@ -2335,7 +2353,7 @@ struct Event {
     liveTorqueParameters @94 :LiveTorqueParametersData;
     cameraOdometry @63 :CameraOdometry;
     thumbnail @66: Thumbnail;
-    onroadEvents @68: List(Car.CarEvent);
+    onroadEvents @68: List(Car.OnroadEvent);
     carParams @69: Car.CarParams;
     driverMonitoringState @71: DriverMonitoringState;
     livePose @129 :LivePose;
@@ -2407,9 +2425,9 @@ struct Event {
     customReserved9 @116 :Custom.CustomReserved9;
     
     # neokii
-    naviData @130 :NaviData;
-    naviGps @131 :NaviGps;
-    naviObstacles @132 :NaviObstacles;
+    naviData @131 :NaviData;
+    naviGps @132 :NaviGps;
+    naviObstacles @133 :NaviObstacles;
 
     # *********** legacy + deprecated ***********
     model @9 :Legacy.ModelData; # TODO: rename modelV2 and mark this as deprecated

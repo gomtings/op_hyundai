@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "selfdrive/ui/qt/onroad/buttons.h"
+#include "selfdrive/ui/qt/onroad/driver_monitoring.h"
 #include "selfdrive/ui/qt/widgets/cameraview.h"
 #include "selfdrive/ui/qt/screenrecorder/screenrecorder.h"
 
@@ -27,6 +28,7 @@ protected:
 
   QVBoxLayout *main_layout;
   ExperimentalButton *experimental_btn;
+  DriverMonitorRenderer dmon;
   bool dmActive = false;
   bool hideBottomIcons = false;
   bool rightHandDM = false;
@@ -79,7 +81,6 @@ protected:
   void drawTurnSignals(QPainter &p);
   void drawGpsStatus(QPainter &p);
   void drawDebugText(QPainter &p);
-  void drawDriverState(QPainter &painter, const UIState *s);
   void drawMisc(QPainter &p);
   bool drawTrafficSignal(QPainter &p);
   void drawHud(QPainter &p, const cereal::ModelDataV2::Reader &model);
