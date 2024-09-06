@@ -14,7 +14,7 @@ from cereal import car, messaging
 from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.can_definitions import CanData
 from opendbc.car.car_helpers import can_fingerprint
-from openpilot.selfdrive.controls.lib.drive_helpers import V_CRUISE_MIN, V_CRUISE_MAX, V_CRUISE_ENABLE_MIN, \
+from openpilot.selfdrive.car.cruise import V_CRUISE_MIN, V_CRUISE_MAX, V_CRUISE_ENABLE_MIN, \
   V_CRUISE_UNSET, V_CRUISE_INITIAL_EXPERIMENTAL_MODE, V_CRUISE_INITIAL
 from openpilot.selfdrive.controls.neokii.cruise_state_manager import CruiseStateManager, V_CRUISE_DELTA_KM, V_CRUISE_DELTA_MI, \
   V_CRUISE_MIN_CRUISE_STATE

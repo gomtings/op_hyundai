@@ -5,8 +5,7 @@ from cereal import car
 from openpilot.common.numpy_fast import clip
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.params import Params
-from opendbc.car.hyundai.values import CANFD_CAR, HyundaiFlags
-from openpilot.selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX, V_CRUISE_ENABLE_MIN
+from openpilot.selfdrive.car.cruise import V_CRUISE_ENABLE_MIN, V_CRUISE_MAX
 from openpilot.selfdrive.controls.neokii.navi_controller import SpeedLimiter
 
 V_CRUISE_MIN_CRUISE_STATE = 10
