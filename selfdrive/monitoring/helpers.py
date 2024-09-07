@@ -2,7 +2,7 @@ from math import atan2
 
 from cereal import car
 import cereal.messaging as messaging
-from openpilot.selfdrive.controls.lib.events import Events
+from openpilot.selfdrive.selfdrived.events import Events
 from openpilot.common.numpy_fast import interp
 from openpilot.common.realtime import DT_DMON
 from openpilot.common.filter_simple import FirstOrderFilter
@@ -403,13 +403,13 @@ class DriverMonitoring:
       driver_state=sm['driverStateV2'],
       cal_rpy=sm['liveCalibration'].rpyCalib,
       car_speed=sm['carState'].vEgo,
-      op_engaged=sm['controlsState'].enabled
+      op_engaged=sm['selfdriveState'].enabled
     )
 
     # Update distraction events
     self._update_events(
       driver_engaged=sm['carState'].steeringPressed or sm['carState'].gasPressed,
-      op_engaged=sm['controlsState'].enabled,
+      op_engaged=sm['selfdriveState'].enabled,
       standstill=sm['carState'].standstill,
       wrong_gear=sm['carState'].gearShifter in [car.CarState.GearShifter.reverse, car.CarState.GearShifter.park],
       car_speed=sm['carState'].vEgo
