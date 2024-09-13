@@ -361,7 +361,6 @@ class LongitudinalMpc:
     leadDistanceBars = carstate.cruiseState.leadDistanceBars
     cruise_gap = int(clip(leadDistanceBars, 1., 4.)) if leadDistanceBars > 0 else 4
     self.t_follow = interp(float(cruise_gap), CRUISE_GAP_BP, CRUISE_GAP_V)
-    self.t_follow *= get_T_FOLLOW_Factor(personality)
     stop_distance = ntune_scc_get('stopDistance')
     comfort_brake = ntune_scc_get('comportBrake')
     self.params[:,6] = stop_distance
