@@ -1,3 +1,4 @@
+/build/
 .mypy_cache/
 *.pyc
 *.os
@@ -7,6 +8,10 @@
 .*.swp
 .DS_Store
 .sconsign.dblite
+.hypothesis
+*.egg-info/
+*.html
+uv.lock
 
 opendbc/can/*.so
 opendbc/can/*.a
