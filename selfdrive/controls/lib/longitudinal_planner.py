@@ -14,7 +14,7 @@ from openpilot.selfdrive.controls.lib.longcontrol import LongCtrlState
 from openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import LongitudinalMpc
 from openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import T_IDXS as T_IDXS_MPC
 from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N, get_speed_error
-from openpilot.selfdrive.car.cruise import V_CRUISE_MAX
+from openpilot.selfdrive.car.cruise import V_CRUISE_MAX, V_CRUISE_UNSET
 from openpilot.common.swaglog import cloudlog
 
 LON_MPC_STEP = 0.2  # first step is 0.2s
@@ -104,6 +104,7 @@ class LongitudinalPlanner:
     v_ego = sm['carState'].vEgo
     v_cruise_kph = min(sm['carState'].vCruise, V_CRUISE_MAX)
     v_cruise = v_cruise_kph * CV.KPH_TO_MS
+    v_cruise_initialized = sm['carState'].vCruise != V_CRUISE_UNSET
 
     # neokii
     vCluRatio = sm['carState'].exState.vCluRatio
@@ -116,6 +117,8 @@ class LongitudinalPlanner:
 
     # Reset current state when not engaged, or user is controlling the speed
     reset_state = long_control_off if self.CP.openpilotLongitudinalControl else not sm['selfdriveState'].enabled
+    # PCM cruise speed may be updated a few cycles later, check if initialized
+    reset_state = reset_state or not v_cruise_initialized
     reset_state = reset_state or sm['carState'].gasPressed or sm['carState'].brakePressed
 
     # No change cost when user is controlling the speed, or when standstill
