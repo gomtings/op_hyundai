@@ -1,7 +1,7 @@
 from panda import Panda
 from opendbc.car import get_safety_config, structs
 from opendbc.car.hyundai.hyundaicanfd import CanBus
-from opendbc.car.hyundai.values import HyundaiFlags, CAR, DBC, CANFD_CAR, CAMERA_SCC_CAR, CANFD_RADAR_SCC_CAR, \
+from opendbc.car.hyundai.values import HyundaiFlags, CAR, DBC, CAMERA_SCC_CAR, CANFD_RADAR_SCC_CAR, \
                                                    CANFD_UNSUPPORTED_LONGITUDINAL_CAR, EV_CAR, HYBRID_CAR, LEGACY_SAFETY_MODE_CAR, \
                                                    UNSUPPORTED_LONGITUDINAL_CAR, Buttons
 from opendbc.car.hyundai.radar_interface import RADAR_START_ADDR
@@ -50,7 +50,7 @@ class CarInterface(CarInterfaceBase):
     hda2 = Ecu.adas in [fw.ecu for fw in car_fw] or Params().get_bool('CanFdHda2')
     CAN = CanBus(None, hda2, fingerprint)
 
-    if candidate in CANFD_CAR:
+    if ret.flags & HyundaiFlags.CANFD:
       # detect if car is hybrid
       if 0x105 in fingerprint[CAN.ECAN]:
         ret.flags |= HyundaiFlags.HYBRID.value
@@ -95,11 +95,14 @@ class CarInterface(CarInterfaceBase):
     ret.steerLimitTimer = 0.4
     CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
 
+    if ret.flags & HyundaiFlags.ALT_LIMITS:
+      ret.safetyConfigs[-1].safetyParam |= Panda.FLAG_HYUNDAI_ALT_LIMITS
+
     if candidate == CAR.KIA_OPTIMA_G4_FL:
       ret.steerActuatorDelay = 0.2
 
     # *** longitudinal control ***
-    if candidate in CANFD_CAR:
+    if ret.flags & HyundaiFlags.CANFD:
       ret.longitudinalTuning.kpBP = [0., 10.]
       ret.longitudinalTuning.kpV = [0.6, 0.25]
       ret.longitudinalTuning.kf = 0.7
@@ -126,7 +129,7 @@ class CarInterface(CarInterfaceBase):
     ret.radarTimeStep = 0.02
 
     # *** feature detection ***
-    if candidate in CANFD_CAR:
+    if ret.flags & HyundaiFlags.CANFD:
       ret.enableBsm = 0x1e5 in fingerprint[CAN.ECAN]
     else:
       ret.enableBsm = 0x58b in fingerprint[0]
@@ -134,7 +137,7 @@ class CarInterface(CarInterfaceBase):
     ret.sccBus = 2 if (candidate in CAMERA_SCC_CAR or Params().get_bool('SccOnBus2')) else 0
 
     # *** panda safety config ***
-    if candidate in CANFD_CAR:
+    if ret.flags & HyundaiFlags.CANFD:
       cfgs = [get_safety_config(structs.CarParams.SafetyModel.hyundaiCanfd), ]
       if CAN.ECAN >= 4:
         cfgs.insert(0, get_safety_config(structs.CarParams.SafetyModel.noOutput))
@@ -220,12 +223,12 @@ class CarInterface(CarInterfaceBase):
 
   @staticmethod
   def get_params_adjust_set_speed(CP):
-    if CP.carFingerprint in CANFD_CAR:
+    if CP.flags & HyundaiFlags.CANFD:
       return [16], [20]
     return [16, 20], [12, 14, 16, 18]
 
   def create_buttons(self, button):
-    if self.CP.carFingerprint in CANFD_CAR:
+    if self.CP.flags & HyundaiFlags.CANFD:
       if self.CP.flags & HyundaiFlags.CANFD_ALT_BUTTONS:
         return self.create_buttons_can_fd_alt(button)
       return self.create_buttons_can_fd(button)

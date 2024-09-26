@@ -3,7 +3,8 @@ import math
 from opendbc.can.parser import CANParser
 from opendbc.car import structs
 from opendbc.car.interfaces import RadarInterfaceBase
-from opendbc.car.hyundai.values import DBC, CANFD_CAR
+from opendbc.car.hyundai.values import DBC
+from opendbc_repo.opendbc.car.hyundai.values import HyundaiFlags
 from openpilot.selfdrive.controls.neokii.cruise_state_manager import is_radar_disabler
 from common.numpy_fast import clip
 
@@ -14,7 +15,7 @@ RADAR_MSG_COUNT = 32
 
 def get_radar_can_parser(CP):
 
-  if CP.carFingerprint in CANFD_CAR or is_radar_disabler(CP):
+  if CP.flags & HyundaiFlags.CANFD or is_radar_disabler(CP):
 
     if DBC[CP.carFingerprint]['radar'] is None:
       return None
