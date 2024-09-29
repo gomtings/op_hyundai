@@ -136,8 +136,6 @@ class SpeedController:
     if CS.cruiseState.enabled:
       if self.slowing_down_sound_alert:
         self.slowing_down_sound_alert = False
-        events.add(EventName.slowingDownSpeedSound)
-      elif self.slowing_down_alert:
         events.add(EventName.slowingDownSpeed)
 
   def _cal_max_speed(self, CS, sm, clu_speed, v_cruise_kph):

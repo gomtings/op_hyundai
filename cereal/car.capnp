@@ -119,9 +119,8 @@ struct OnroadEvent @0x9b1657f34caf3ad3 {
     aeb @123;
 
     slowingDownSpeed @125;
-    slowingDownSpeedSound @126;
-    cruiseOn @127;
-    cruiseOff @128;
+    cruiseOn @126;
+    cruiseOff @127;
 
     radarCanErrorDEPRECATED @15;
     communityFeatureDisallowedDEPRECATED @62;
