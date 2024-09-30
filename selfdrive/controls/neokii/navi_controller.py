@@ -47,8 +47,8 @@ class NaviServer:
     broadcast = Thread(target=self.broadcast_thread, args=[])
     broadcast.start()
 
-    subprocess.Popen([os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ngpsd')])
-    subprocess.Popen([os.path.join(os.path.dirname(os.path.abspath(__file__)), 'nobsd')])
+    #subprocess.Popen([os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ngpsd')])
+    #subprocess.Popen([os.path.join(os.path.dirname(os.path.abspath(__file__)), 'nobsd')])
 
     update = Thread(target=self.update_thread, args=[self.sm])
     update.start()
