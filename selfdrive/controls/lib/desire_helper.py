@@ -2,6 +2,7 @@ from cereal import log
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.realtime import DT_MDL
 
+AutoLaneChangeEnabled = True
 LaneChangeState = log.LaneChangeState
 LaneChangeDirection = log.LaneChangeDirection
 
@@ -62,7 +63,7 @@ class DesireHelper:
 
         torque_applied = carstate.steeringPressed and \
                          ((carstate.steeringTorque > 0 and self.lane_change_direction == LaneChangeDirection.left) or
-                          (carstate.steeringTorque < 0 and self.lane_change_direction == LaneChangeDirection.right))
+                          (carstate.steeringTorque < 0 and self.lane_change_direction == LaneChangeDirection.right)) or AutoLaneChangeEnabled
 
         blindspot_detected = ((carstate.leftBlindspot and self.lane_change_direction == LaneChangeDirection.left) or
                               (carstate.rightBlindspot and self.lane_change_direction == LaneChangeDirection.right))
