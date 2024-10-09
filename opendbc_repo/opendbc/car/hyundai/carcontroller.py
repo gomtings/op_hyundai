@@ -199,7 +199,7 @@ class CarController(CarControllerBase):
           use_fca = self.CP.flags & HyundaiFlags.USE_FCA.value
           can_sends.extend(hyundaican.create_acc_commands(self.packer, CC.enabled, accel, jerk, int(self.frame / 2),
                                                         hud_control, set_speed_in_units, stopping,
-                                                          CC.cruiseControl.override, use_fca, CS, stock_cam))
+                                                          CC.cruiseControl.override, use_fca, CS, stock_cam,hud_control.objDist,hud_control.objRelSpd))
         else:
           can_sends.extend(hyundaican_community.create_acc_commands(self.packer, CC.enabled, accel, jerk, int(self.frame / 2),
                                                           hud_control, set_speed_in_units, stopping,
