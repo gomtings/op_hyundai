@@ -115,6 +115,9 @@ class CruiseStateManager:
       CS.cruiseState.standstill = False
       CS.cruiseState.speed = self.speed
       CS.cruiseState.leadDistanceBars = self.leadDistanceBars
+    
+    if self.enabled : # 롱컨 시작
+      CS.cruiseState.enabled = self.enabled
 
   def update_buttons(self):
     if self.button_events is None:
@@ -191,7 +194,11 @@ class CruiseStateManager:
         self.params.put_bool("ExperimentalMode", not self.params.get_bool("ExperimentalMode"))
 
     if btn == ButtonType.cancel:
-      self.enabled = False
+      if not self.enabled :
+        self.available = False
+      if not self.enabled :
+        self.available = False
+      self.enabled = False # 메드모드로 변경함.
 
     v_cruise_kph = clip(round(v_cruise_kph, 1), V_CRUISE_MIN_CRUISE_STATE, V_CRUISE_MAX)
     self.speed = v_cruise_kph * CV.KPH_TO_MS
