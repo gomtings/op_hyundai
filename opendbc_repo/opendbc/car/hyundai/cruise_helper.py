@@ -2,10 +2,10 @@ from common.numpy_fast import clip, interp
 from cereal import car
 from common.realtime import DT_CTRL
 from common.conversions import Conversions as CV
-from selfdrive.car.hyundai.values import Buttons
+from opendbc.car.hyundai.values import Buttons
 from common.params import Params
-from selfdrive.car.hyundai.values import CAR
-from selfdrive.car.isotp_parallel_query import IsoTpParallelQuery
+from opendbc.car.hyundai.values import CAR
+from opendbc.car.isotp_parallel_query import IsoTpParallelQuery
       
 # ajouatom
 def enable_radar_tracks(CP, logcan, sendcan):
