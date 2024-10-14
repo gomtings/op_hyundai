@@ -40,7 +40,7 @@ const CanMsg HYUNDAI_TX_MSGS[] = {
   {1265, 0, 4}, {1265, 2, 4},               // CLU11, Bus 0, 2
 };
 
-#define HYUNDAI_COMMON_RX_CHECKS(legacy)                                                                                      \
+#define HYUNDAI_COMMON_RX_CHECKS(legacy)                                                                                              \
   {.msg = {{0x260, 0, 8, .check_checksum = true, .max_counter = 3U, .frequency = 100U},                                       \
            {0x371, 0, 8, .frequency = 100U},                                                                                  \
            {0x91, 0, 8, .frequency = 100U}}},                                                                                 \

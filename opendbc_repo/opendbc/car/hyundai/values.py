@@ -90,6 +90,7 @@ class HyundaiFlags(IntFlag):
   TCU_GEARS = 2 ** 22
 
   MIN_STEER_32_MPH = 2 ** 23
+  
   FCEV = 2 ** 24
 
 class HyundaiExFlags(IntFlag):
