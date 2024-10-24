@@ -35,8 +35,8 @@ nTuneMainWidget::nTuneMainWidget(QWidget *parent)
                      5.0f, 4.0f, 7.0f, 0.1f, 1, "m"),
     },
     {
-        TuneItemInfo(NTUNE_FILES["lat_torque"], "latAccelFactor", "", 2.5f, 0.5f, 4.5f, 0.1f, 2),
-        TuneItemInfo(NTUNE_FILES["lat_torque"], "friction", "", 0.1f, 0.0f, 0.2f, 0.01f, 3),
+        TuneItemInfo(NTUNE_FILES["lat_torque"], "latAccelFactor", "", 2.5f, 0.5f, 4.5f, 0.01f, 2),
+        TuneItemInfo(NTUNE_FILES["lat_torque"], "friction", "", 0.1f, 0.0f, 0.2f, 0.001f, 3),
         TuneItemInfo(NTUNE_FILES["lat_torque"], "angle_deadzone_v2", "", 0.0f, 0.0f, 2.0f, 0.01f, 3),
     },
     };
