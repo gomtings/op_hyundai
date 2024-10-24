@@ -63,7 +63,11 @@ bool VisionIpcClient::connect(bool blocking){
     buffers[i] = bufs[i];
     buffers[i].fd = fds[i];
     buffers[i].import();
-    buffers[i].init_yuv(buffers[i].width, buffers[i].height, buffers[i].stride, buffers[i].uv_offset);
+    if (buffers[i].rgb) {
+      buffers[i].init_rgb(buffers[i].width, buffers[i].height, buffers[i].stride);
+    } else {
+      buffers[i].init_yuv(buffers[i].width, buffers[i].height, buffers[i].stride, buffers[i].uv_offset);
+    }
 
     if (device_id) buffers[i].init_cl(device_id, ctx);
   }

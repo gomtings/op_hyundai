@@ -27,13 +27,10 @@ class AlertEntry:
   alert: Alert | None = None
   start_frame: int = -1
   end_frame: int = -1
-  added_frame: int = -1
 
   def active(self, frame: int) -> bool:
     return frame <= self.end_frame
 
-  def just_added(self, frame: int) -> bool:
-    return self.active(frame) and frame == (self.added_frame + 1)
 
 class AlertManager:
   def __init__(self):
@@ -44,11 +41,10 @@ class AlertManager:
     for alert in alerts:
       entry = self.alerts[alert.alert_type]
       entry.alert = alert
-      if not entry.just_added(frame):
+      if not entry.active(frame):
         entry.start_frame = frame
       min_end_frame = entry.start_frame + alert.duration
       entry.end_frame = max(frame + 1, min_end_frame)
-      entry.added_frame = frame
 
   def process_alerts(self, frame: int, clear_event_types: set):
     ae = AlertEntry()

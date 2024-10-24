@@ -3,13 +3,13 @@ import pytest
 import time
 import subprocess
 
-from cereal import log
+from cereal import car
 import cereal.messaging as messaging
 from openpilot.common.basedir import BASEDIR
 from openpilot.common.timeout import Timeout
 from openpilot.selfdrive.test.helpers import set_params_enabled
 
-EventName = log.OnroadEvent.EventName
+EventName = car.OnroadEvent.EventName
 
 
 @pytest.mark.tici

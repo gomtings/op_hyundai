@@ -13,6 +13,7 @@ from opendbc.car.interfaces import CarStateBase
 
 from openpilot.common.numpy_fast import interp
 from openpilot.common.conversions import Conversions as CV
+from opendbc.car.hyundai.interface import BUTTONS_DICT
 from openpilot.selfdrive.controls.neokii.cruise_state_manager import CruiseStateManager
 from opendbc.car.hyundai.values import HyundaiExFlags
 
@@ -45,7 +46,7 @@ class CarState(CarStateBase):
       self.shifter_values = can_define.dv["CLU15"]["CF_Clu_Gear"]
     elif self.CP.flags & HyundaiFlags.TCU_GEARS:
       self.shifter_values = can_define.dv["TCU12"]["CUR_GR"]
-   elif CP.flags & HyundaiFlags.FCEV:
+    elif CP.flags & HyundaiFlags.FCEV:
       self.shifter_values = can_define.dv["EMS20"]["HYDROGEN_GEAR_SHIFTER"]
     else:  # preferred and elect gear methods use same definition
       self.shifter_values = can_define.dv["LVR12"]["CF_Lvr_Gear"]

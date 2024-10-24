@@ -16,7 +16,7 @@ AlertSize = log.SelfdriveState.AlertSize
 AlertStatus = log.SelfdriveState.AlertStatus
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 AudibleAlert = car.CarControl.HUDControl.AudibleAlert
-EventName = log.OnroadEvent.EventName
+EventName = car.OnroadEvent.EventName
 
 
 # Alert priorities
@@ -98,7 +98,7 @@ class Events:
   def to_msg(self):
     ret = []
     for event_name in self.events:
-      event = log.OnroadEvent.new_message()
+      event = car.OnroadEvent.new_message()
       event.name = event_name
       for event_type in EVENTS.get(event_name, {}):
         setattr(event, event_type, True)
@@ -722,6 +722,11 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
       "Ensure device has a clear view of the sky",
       AlertStatus.normal, AlertSize.mid,
       Priority.LOWER, VisualAlert.none, AudibleAlert.none, .2, creation_delay=600.)
+  },
+
+  EventName.soundsUnavailable: {
+    ET.PERMANENT: NormalPermanentAlert("Speaker not found", "Reboot your Device"),
+    ET.NO_ENTRY: NoEntryAlert("Speaker not found"),
   },
 
   EventName.tooDistracted: {

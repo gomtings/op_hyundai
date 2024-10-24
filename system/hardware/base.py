@@ -42,6 +42,10 @@ class HardwareBase(ABC):
     pass
 
   @abstractmethod
+  def get_sound_card_online(self):
+    pass
+
+  @abstractmethod
   def get_imei(self, slot) -> str:
     pass
 

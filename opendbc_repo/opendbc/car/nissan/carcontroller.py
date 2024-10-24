@@ -1,3 +1,4 @@
+import copy
 from opendbc.can.packer import CANPacker
 from opendbc.car.common.numpy_fast import clip
 from opendbc.car import apply_std_steer_angle_limits, structs
@@ -75,7 +76,7 @@ class CarController(CarControllerBase):
           self.packer, CS.lkas_hud_info_msg, steer_hud_alert
         ))
 
-    new_actuators = actuators.as_builder()
+    new_actuators = copy.copy(actuators)
     new_actuators.steeringAngleDeg = apply_angle
 
     self.frame += 1
