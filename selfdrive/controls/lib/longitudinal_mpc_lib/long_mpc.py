@@ -3,8 +3,7 @@ import os
 import time
 import numpy as np
 from cereal import log
-from opendbc.car.interfaces import ACCEL_MIN
-from openpilot.common.numpy_fast import clip, interp
+from opendbc.car.interfaces import ACCEL_MIN, ACCEL_MAX
 from openpilot.common.realtime import DT_MDL
 from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.controls.ntune import ntune_scc_get
@@ -60,6 +59,8 @@ FCW_IDXS = T_IDXS < 5.0
 T_DIFFS = np.diff(T_IDXS, prepend=[0.])
 COMFORT_BRAKE = 2.5
 STOP_DISTANCE = 5.0
+CRUISE_MIN_ACCEL = -1.2
+CRUISE_MAX_ACCEL = 1.6
 
 def get_jerk_factor(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
@@ -337,17 +338,11 @@ class LongitudinalMpc:
     # MPC will not converge if immediate crash is expected
     # Clip lead distance to what is still possible to brake for
     min_x_lead = ((v_ego + v_lead)/2) * (v_ego - v_lead) / (-ACCEL_MIN * 2)
-    x_lead = clip(x_lead, min_x_lead, 1e8)
-    v_lead = clip(v_lead, 0.0, 1e8)
-    a_lead = clip(a_lead, -10., 5.)
+    x_lead = np.clip(x_lead, min_x_lead, 1e8)
+    v_lead = np.clip(v_lead, 0.0, 1e8)
+    a_lead = np.clip(a_lead, -10., 5.)
     lead_xv = self.extrapolate_lead(x_lead, v_lead, a_lead, a_lead_tau)
     return lead_xv
-
-  def set_accel_limits(self, min_a, max_a):
-    # TODO this sets a max accel limit, but the minimum limit is only for cruise decel
-    # needs refactor
-    self.cruise_min_a = min_a
-    self.max_a = max_a
 
   def update(self, carstate, radarstate, sm, v_cruise, x, v, a, j, personality=log.LongitudinalPersonality.standard):
     #t_follow = get_T_FOLLOW(personality)
@@ -359,8 +354,8 @@ class LongitudinalMpc:
 
     # neokii
     leadDistanceBars = carstate.cruiseState.leadDistanceBars
-    cruise_gap = int(clip(leadDistanceBars, 1., 4.)) if leadDistanceBars > 0 else 4
-    self.t_follow = interp(float(cruise_gap), CRUISE_GAP_BP, CRUISE_GAP_V)
+    cruise_gap = int(np.clip(leadDistanceBars, 1., 4.)) if leadDistanceBars > 0 else 4
+    self.t_follow = np.interp(float(cruise_gap), CRUISE_GAP_BP, CRUISE_GAP_V)
     stop_distance = ntune_scc_get('stopDistance')
     comfort_brake = ntune_scc_get('comportBrake')
     self.params[:,6] = stop_distance
@@ -373,13 +368,13 @@ class LongitudinalMpc:
     lead_1_obstacle = lead_xv_1[:,0] + get_stopped_equivalence_factor(lead_xv_1[:,1], comfort_brake)
 
     self.params[:,0] = ACCEL_MIN
-    self.params[:,1] = self.max_a
+    self.params[:,1] = ACCEL_MAX
 
     # Update in ACC mode or ACC/e2e blend
     if self.mode == 'acc':
 
       if radarstate.leadOne.status:
-        lead_danger_factor = interp(radarstate.leadOne.dRel, [STOP_DISTANCE, 10.], [0.85, LEAD_DANGER_FACTOR])
+        lead_danger_factor = np.interp(radarstate.leadOne.dRel, [STOP_DISTANCE, 10.], [0.85, LEAD_DANGER_FACTOR])
       else:
         lead_danger_factor = LEAD_DANGER_FACTOR
 
@@ -387,8 +382,9 @@ class LongitudinalMpc:
 
       # Fake an obstacle for cruise, this ensures smooth acceleration to set speed
       # when the leads are no factor.
-      v_lower = v_ego + (T_IDXS * self.cruise_min_a * 1.05)
-      v_upper = v_ego + (T_IDXS * self.max_a * 1.05)
+      v_lower = v_ego + (T_IDXS * CRUISE_MIN_ACCEL * 1.05)
+      # TODO does this make sense when max_a is negative?
+      v_upper = v_ego + (T_IDXS * CRUISE_MAX_ACCEL * 1.05)
       v_cruise_clipped = np.clip(v_cruise * np.ones(N+1),
                                  v_lower,
                                  v_upper)

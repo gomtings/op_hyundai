@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 import os
+from openpilot.system.hardware import TICI
+from tinygrad.tensor import Tensor
+from tinygrad.dtype import dtypes
+if TICI:
+  from openpilot.selfdrive.modeld.runners.tinygrad_helpers import qcom_tensor_from_opencl_address
+  os.environ['QCOM'] = '1'
+else:
+  os.environ['LLVM'] = '1'
 import time
 import pickle
 import numpy as np
@@ -13,27 +21,48 @@ from opendbc.car.car_helpers import get_demo_car_params
 from openpilot.common.swaglog import cloudlog
 from openpilot.common.params import Params
 from openpilot.common.filter_simple import FirstOrderFilter
-from openpilot.common.realtime import config_realtime_process
+from openpilot.common.realtime import config_realtime_process, DT_MDL
 from openpilot.common.transformations.camera import DEVICE_CAMERAS
 from openpilot.common.transformations.model import get_warp_matrix
 from openpilot.system import sentry
 from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper
-from openpilot.selfdrive.modeld.runners import ModelRunner, Runtime
+from openpilot.selfdrive.controls.lib.drive_helpers import get_accel_from_plan, smooth_value
 from openpilot.selfdrive.modeld.parse_model_outputs import Parser
 from openpilot.selfdrive.modeld.fill_model_msg import fill_model_msg, fill_pose_msg, PublishState
-from openpilot.selfdrive.modeld.constants import ModelConstants
-from openpilot.selfdrive.modeld.models.commonmodel_pyx import ModelFrame, CLContext
-from openpilot.selfdrive.controls.ntune import ntune_common_get
+from openpilot.selfdrive.modeld.constants import ModelConstants, Plan
+from openpilot.selfdrive.modeld.models.commonmodel_pyx import DrivingModelFrame, CLContext
 
+from openpilot.selfdrive.controls.ntune import ntune_common_get, ntune_scc_get
 PROCESS_NAME = "selfdrive.modeld.modeld"
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
 
-MODEL_PATHS = {
-  ModelRunner.THNEED: Path(__file__).parent / 'models/supercombo.thneed',
-  ModelRunner.ONNX: Path(__file__).parent / 'models/supercombo.onnx'}
+VISION_PKL_PATH = Path(__file__).parent / 'models/driving_vision_tinygrad.pkl'
+POLICY_PKL_PATH = Path(__file__).parent / 'models/driving_policy_tinygrad.pkl'
+VISION_METADATA_PATH = Path(__file__).parent / 'models/driving_vision_metadata.pkl'
+POLICY_METADATA_PATH = Path(__file__).parent / 'models/driving_policy_metadata.pkl'
 
-METADATA_PATH = Path(__file__).parent / 'models/supercombo_metadata.pkl'
+LAT_SMOOTH_SECONDS = 0.3
+LONG_SMOOTH_SECONDS = 0.3
+MIN_LAT_CONTROL_SPEED = 0.3
 
+def get_action_from_model(model_output: dict[str, np.ndarray], prev_action: log.ModelDataV2.Action,
+                          lat_action_t: float, long_action_t: float,v_ego: float) -> log.ModelDataV2.Action:
+    plan = model_output['plan'][0]
+    desired_accel, should_stop, _ = get_accel_from_plan(plan[:,Plan.VELOCITY][:,0],
+                                                     plan[:,Plan.ACCELERATION][:,0],
+                                                     ModelConstants.T_IDXS,
+                                                     action_t=long_action_t)
+    desired_accel = smooth_value(desired_accel, prev_action.desiredAcceleration, LONG_SMOOTH_SECONDS)  
+    desired_curvature = model_output['desired_curvature'][0, 0]
+    
+    if v_ego > MIN_LAT_CONTROL_SPEED:
+      desired_curvature = smooth_value(desired_curvature, prev_action.desiredCurvature, LAT_SMOOTH_SECONDS)
+    else:
+      desired_curvature = prev_action.desiredCurvature
+
+    return log.ModelDataV2.Action(desiredCurvature=float(desired_curvature),
+                                  desiredAcceleration=float(desired_accel),
+                                  shouldStop=bool(should_stop))
 
 class FrameMeta:
   frame_id: int = 0
@@ -45,48 +74,59 @@ class FrameMeta:
       self.frame_id, self.timestamp_sof, self.timestamp_eof = vipc.frame_id, vipc.timestamp_sof, vipc.timestamp_eof
 
 class ModelState:
-  frame: ModelFrame
-  wide_frame: ModelFrame
+  frames: dict[str, DrivingModelFrame]
   inputs: dict[str, np.ndarray]
   output: np.ndarray
   prev_desire: np.ndarray  # for tracking the rising edge of the pulse
-  model: ModelRunner
 
   def __init__(self, context: CLContext):
-    self.frame = ModelFrame(context)
-    self.wide_frame = ModelFrame(context)
+    self.frames = {
+      'input_imgs': DrivingModelFrame(context, ModelConstants.TEMPORAL_SKIP),
+      'big_input_imgs': DrivingModelFrame(context, ModelConstants.TEMPORAL_SKIP)
+    }
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
-    self.full_features_20Hz = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN, ModelConstants.FEATURE_LEN), dtype=np.float32)
-    self.desire_20Hz =  np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.DESIRE_LEN), dtype=np.float32)
-    self.prev_desired_curv_20hz = np.zeros((ModelConstants.FULL_HISTORY_BUFFER_LEN + 1, ModelConstants.PREV_DESIRED_CURV_LEN), dtype=np.float32)
 
-    # img buffers are managed in openCL transform code
-    self.inputs = {
-      'desire': np.zeros(ModelConstants.DESIRE_LEN * (ModelConstants.HISTORY_BUFFER_LEN+1), dtype=np.float32),
-      'traffic_convention': np.zeros(ModelConstants.TRAFFIC_CONVENTION_LEN, dtype=np.float32),
-      'lateral_control_params': np.zeros(ModelConstants.LATERAL_CONTROL_PARAMS_LEN, dtype=np.float32),
-      'prev_desired_curv': np.zeros(ModelConstants.PREV_DESIRED_CURV_LEN * (ModelConstants.HISTORY_BUFFER_LEN+1), dtype=np.float32),
-      'features_buffer': np.zeros(ModelConstants.HISTORY_BUFFER_LEN * ModelConstants.FEATURE_LEN, dtype=np.float32),
+    self.full_features_buffer = np.zeros((1, ModelConstants.FULL_HISTORY_BUFFER_LEN,  ModelConstants.FEATURE_LEN), dtype=np.float32)
+    self.full_desire = np.zeros((1, ModelConstants.FULL_HISTORY_BUFFER_LEN, ModelConstants.DESIRE_LEN), dtype=np.float32)
+    self.full_prev_desired_curv = np.zeros((1, ModelConstants.FULL_HISTORY_BUFFER_LEN, ModelConstants.PREV_DESIRED_CURV_LEN), dtype=np.float32)
+    self.temporal_idxs = slice(-1-(ModelConstants.TEMPORAL_SKIP*(ModelConstants.INPUT_HISTORY_BUFFER_LEN-1)), None, ModelConstants.TEMPORAL_SKIP)
+
+    # policy inputs
+    self.numpy_inputs = {
+      'desire': np.zeros((1, ModelConstants.INPUT_HISTORY_BUFFER_LEN, ModelConstants.DESIRE_LEN), dtype=np.float32),
+      'traffic_convention': np.zeros((1, ModelConstants.TRAFFIC_CONVENTION_LEN), dtype=np.float32),
+      'lateral_control_params': np.zeros((1, ModelConstants.LATERAL_CONTROL_PARAMS_LEN), dtype=np.float32),
+      'prev_desired_curv': np.zeros((1, ModelConstants.INPUT_HISTORY_BUFFER_LEN, ModelConstants.PREV_DESIRED_CURV_LEN), dtype=np.float32),
+      'features_buffer': np.zeros((1, ModelConstants.INPUT_HISTORY_BUFFER_LEN,  ModelConstants.FEATURE_LEN), dtype=np.float32),
     }
 
-    with open(METADATA_PATH, 'rb') as f:
-      model_metadata = pickle.load(f)
+    with open(VISION_METADATA_PATH, 'rb') as f:
+      vision_metadata = pickle.load(f)
+      self.vision_input_shapes =  vision_metadata['input_shapes']
+      self.vision_output_slices = vision_metadata['output_slices']
+      vision_output_size = vision_metadata['output_shapes']['outputs'][1]
 
-    self.output_slices = model_metadata['output_slices']
-    net_output_size = model_metadata['output_shapes']['outputs'][1]
-    self.output = np.zeros(net_output_size, dtype=np.float32)
+    with open(POLICY_METADATA_PATH, 'rb') as f:
+      policy_metadata = pickle.load(f)
+      self.policy_input_shapes =  policy_metadata['input_shapes']
+      self.policy_output_slices = policy_metadata['output_slices']
+      policy_output_size = policy_metadata['output_shapes']['outputs'][1]
+
+    # img buffers are managed in openCL transform code
+    self.vision_inputs: dict[str, Tensor] = {}
+    self.vision_output = np.zeros(vision_output_size, dtype=np.float32)
+    self.policy_inputs = {k: Tensor(v, device='NPY').realize() for k,v in self.numpy_inputs.items()}
+    self.policy_output = np.zeros(policy_output_size, dtype=np.float32)
     self.parser = Parser()
 
-    self.model = ModelRunner(MODEL_PATHS, self.output, Runtime.GPU, False, context)
-    self.model.addInput("input_imgs", None)
-    self.model.addInput("big_input_imgs", None)
-    for k,v in self.inputs.items():
-      self.model.addInput(k, v)
+    with open(VISION_PKL_PATH, "rb") as f:
+      self.vision_run = pickle.load(f)
 
-  def slice_outputs(self, model_outputs: np.ndarray) -> dict[str, np.ndarray]:
-    parsed_model_outputs = {k: model_outputs[np.newaxis, v] for k,v in self.output_slices.items()}
-    if SEND_RAW_PRED:
-      parsed_model_outputs['raw_pred'] = model_outputs.copy()
+    with open(POLICY_PKL_PATH, "rb") as f:
+      self.policy_run = pickle.load(f)
+
+  def slice_outputs(self, model_outputs: np.ndarray, output_slices: dict[str, slice]) -> dict[str, np.ndarray]:
+    parsed_model_outputs = {k: model_outputs[np.newaxis, v] for k,v in output_slices.items()}
     return parsed_model_outputs
 
   def run(self, buf: VisionBuf, wbuf: VisionBuf, transform: np.ndarray, transform_wide: np.ndarray,
@@ -96,33 +136,48 @@ class ModelState:
     new_desire = np.where(inputs['desire'] - self.prev_desire > .99, inputs['desire'], 0)
     self.prev_desire[:] = inputs['desire']
 
-    self.desire_20Hz[:-1] = self.desire_20Hz[1:]
-    self.desire_20Hz[-1] = new_desire
-    self.inputs['desire'][:] = self.desire_20Hz.reshape((25,4,-1)).max(axis=1).flatten()
+    self.full_desire[0,:-1] = self.full_desire[0,1:]
+    self.full_desire[0,-1] = new_desire
+    self.numpy_inputs['desire'][:] = self.full_desire.reshape((1,ModelConstants.INPUT_HISTORY_BUFFER_LEN,ModelConstants.TEMPORAL_SKIP,-1)).max(axis=2)
 
-    self.inputs['traffic_convention'][:] = inputs['traffic_convention']
-    self.inputs['lateral_control_params'][:] = inputs['lateral_control_params']
+    self.numpy_inputs['traffic_convention'][:] = inputs['traffic_convention']
+    self.numpy_inputs['lateral_control_params'][:] = inputs['lateral_control_params']
+    imgs_cl = {'input_imgs': self.frames['input_imgs'].prepare(buf, transform.flatten()),
+               'big_input_imgs': self.frames['big_input_imgs'].prepare(wbuf, transform_wide.flatten())}
 
-    self.model.setInputBuffer("input_imgs", self.frame.prepare(buf, transform.flatten(), self.model.getCLBuffer("input_imgs")))
-    self.model.setInputBuffer("big_input_imgs", self.wide_frame.prepare(wbuf, transform_wide.flatten(), self.model.getCLBuffer("big_input_imgs")))
+    if TICI:
+      # The imgs tensors are backed by opencl memory, only need init once
+      for key in imgs_cl:
+        if key not in self.vision_inputs:
+          self.vision_inputs[key] = qcom_tensor_from_opencl_address(imgs_cl[key].mem_address, self.vision_input_shapes[key], dtype=dtypes.uint8)
+    else:
+      for key in imgs_cl:
+        frame_input = self.frames[key].buffer_from_cl(imgs_cl[key]).reshape(self.vision_input_shapes[key])
+        self.vision_inputs[key] = Tensor(frame_input, dtype=dtypes.uint8).realize()
 
     if prepare_only:
       return None
 
-    self.model.execute()
-    outputs = self.parser.parse_outputs(self.slice_outputs(self.output))
+    self.vision_output = self.vision_run(**self.vision_inputs).numpy().flatten()
+    vision_outputs_dict = self.parser.parse_vision_outputs(self.slice_outputs(self.vision_output, self.vision_output_slices))
 
-    self.full_features_20Hz[:-1] = self.full_features_20Hz[1:]
-    self.full_features_20Hz[-1] = outputs['hidden_state'][0, :]
+    self.full_features_buffer[0,:-1] = self.full_features_buffer[0,1:]
+    self.full_features_buffer[0,-1] = vision_outputs_dict['hidden_state'][0, :]
+    self.numpy_inputs['features_buffer'][:] = self.full_features_buffer[0, self.temporal_idxs]
 
-    self.prev_desired_curv_20hz[:-1] = self.prev_desired_curv_20hz[1:]
-    self.prev_desired_curv_20hz[-1] = outputs['desired_curvature'][0, :]
+    self.policy_output = self.policy_run(**self.policy_inputs).numpy().flatten()
+    policy_outputs_dict = self.parser.parse_policy_outputs(self.slice_outputs(self.policy_output, self.policy_output_slices))
 
-    idxs = np.arange(-4,-100,-4)[::-1]
-    self.inputs['features_buffer'][:] = self.full_features_20Hz[idxs].flatten()
-    # TODO model only uses last value now, once that changes we need to input strided action history buffer
-    self.inputs['prev_desired_curv'][-ModelConstants.PREV_DESIRED_CURV_LEN:] = 0. * self.prev_desired_curv_20hz[-4, :]
-    return outputs
+    # TODO model only uses last value now
+    self.full_prev_desired_curv[0,:-1] = self.full_prev_desired_curv[0,1:]
+    self.full_prev_desired_curv[0,-1,:] = policy_outputs_dict['desired_curvature'][0, :]
+    self.numpy_inputs['prev_desired_curv'][:] = 0*self.full_prev_desired_curv[0, self.temporal_idxs]
+
+    combined_outputs_dict = {**vision_outputs_dict, **policy_outputs_dict}
+    if SEND_RAW_PRED:
+      combined_outputs_dict['raw_pred'] = np.concatenate([self.vision_output.copy(), self.policy_output.copy()])
+
+    return combined_outputs_dict
 
 
 def main(demo=False):
@@ -164,7 +219,7 @@ def main(demo=False):
 
   # messaging
   pm = PubMaster(["modelV2", "drivingModelData", "cameraOdometry"])
-  sm = SubMaster(["deviceState", "carState", "roadCameraState", "liveCalibration", "driverMonitoringState", "carControl"])
+  sm = SubMaster(["deviceState", "carState", "roadCameraState", "liveCalibration", "driverMonitoringState", "carControl", "liveDelay"])
 
   publish_state = PublishState()
   params = Params()
@@ -187,10 +242,12 @@ def main(demo=False):
     CP = get_demo_car_params()
   else:
     CP = messaging.log_from_bytes(params.get("CarParams", block=True), car.CarParams)
-  cloudlog.info("modeld got CarParams: %s", CP.carName)
+  cloudlog.info("modeld got CarParams: %s", CP.brand)
 
   # TODO this needs more thought, use .2s extra for now to estimate other delays
-  steer_delay = CP.steerActuatorDelay + .2
+  # TODO Move smooth seconds to action function
+  long_delay = CP.longitudinalActuatorDelay + LONG_SMOOTH_SECONDS
+  prev_action = log.ModelDataV2.Action()
 
   DH = DesireHelper()
 
@@ -232,7 +289,8 @@ def main(demo=False):
     is_rhd = sm["driverMonitoringState"].isRHD
     frame_id = sm["roadCameraState"].frameId
     v_ego = max(sm["carState"].vEgo, 0.)
-    lateral_control_params = np.array([v_ego, ntune_common_get('steerActuatorDelay')+.2], dtype=np.float32)
+    lat_delay = sm["liveDelay"].lateralDelay + LAT_SMOOTH_SECONDS
+    lateral_control_params = np.array([v_ego, lat_delay], dtype=np.float32)
     if sm.updated["liveCalibration"] and sm.seen['roadCameraState'] and sm.seen['deviceState']:
       device_from_calib_euler = np.array(sm["liveCalibration"].rpyCalib, dtype=np.float32)
       dc = DEVICE_CAMERAS[(str(sm['deviceState'].deviceType), str(sm['roadCameraState'].sensor))]
@@ -275,7 +333,11 @@ def main(demo=False):
       modelv2_send = messaging.new_message('modelV2')
       drivingdata_send = messaging.new_message('drivingModelData')
       posenet_send = messaging.new_message('cameraOdometry')
-      fill_model_msg(drivingdata_send, modelv2_send, model_output, publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id,
+
+      action = get_action_from_model(model_output, prev_action,lat_delay + DT_MDL,(ntune_scc_get('longActuatorDelay') + LONG_SMOOTH_SECONDS) + DT_MDL, v_ego)
+      prev_action = action
+      fill_model_msg(drivingdata_send, modelv2_send, model_output, action,
+                     publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id,
                      frame_drop_ratio, meta_main.timestamp_eof, model_execution_time, live_calib_seen)
 
       desire_state = modelv2_send.modelV2.meta.desireState
@@ -292,7 +354,6 @@ def main(demo=False):
       pm.send('modelV2', modelv2_send)
       pm.send('drivingModelData', drivingdata_send)
       pm.send('cameraOdometry', posenet_send)
-
     last_vipc_frame_id = meta_main.frame_id
 
 

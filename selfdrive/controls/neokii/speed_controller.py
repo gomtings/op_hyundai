@@ -231,9 +231,7 @@ class SpeedController:
         dy = np.gradient(y, x)
         d2y = np.gradient(dy, x)
         curv = d2y / (1 + dy ** 2) ** 1.5
-
-        start = int(interp(v_ego, [10., 27.], [10, TRAJECTORY_SIZE-10]))
-        curv = curv[start:min(start+10, TRAJECTORY_SIZE)]
+        curv = curv[-10:]
         a_y_max = 2.975 - v_ego * 0.0375  # ~1.85 @ 75mph, ~2.6 @ 25mph
         v_curvature = np.sqrt(a_y_max / np.clip(np.abs(curv), 1e-4, None))
         model_speed = np.mean(v_curvature) * 0.85
@@ -451,7 +449,7 @@ class SpeedController:
       car_param = self.params.get("CarParamsPersistent")
       if car_param is not None:
         with car.CarParams.from_bytes(car_param) as car_param:
-          if car_param.carName != "mock":
+          if car_param.brand != "mock":
             car_params_dict = car_param.to_dict()
             dongle_id = self.params.get("DongleId").decode('utf-8')
             hashed_dongle_id = hashlib.sha256(dongle_id.encode('utf-8')).hexdigest()

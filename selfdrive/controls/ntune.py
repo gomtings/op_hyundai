@@ -69,6 +69,7 @@ class nTune():
 
     try:
       signal.signal(signal.SIGIO, file_watch_handler)
+      signal.siginterrupt(signal.SIGIO, False)
       fd = os.open(CONF_PATH, os.O_RDONLY)
       fcntl.fcntl(fd, fcntl.F_SETSIG, 0)
       fcntl.fcntl(fd, fcntl.F_NOTIFY, fcntl.DN_MODIFY | fcntl.DN_CREATE | fcntl.DN_MULTISHOT)

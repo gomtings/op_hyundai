@@ -30,8 +30,8 @@ class Plant:
 
     self.distance = 0.
     self.speed = speed
+    self.should_stop = False
     self.acceleration = 0.0
-    self.speeds = []
 
     # lead car
     self.lead_relevancy = lead_relevancy
@@ -107,6 +107,7 @@ class Plant:
     position = log.XYZTData.new_message()
     position.x = [float(x) for x in (self.speed + 0.5) * np.array(ModelConstants.T_IDXS)]
     model.modelV2.position = position
+    model.modelV2.action.desiredAcceleration = float(self.acceleration + 0.1)
     velocity = log.XYZTData.new_message()
     velocity.x = [float(x) for x in (self.speed + 0.5) * np.ones_like(ModelConstants.T_IDXS)]
     velocity.x[0] = float(self.speed) # always start at current speed
@@ -121,7 +122,7 @@ class Plant:
     ss.selfdriveState.personality = self.personality
     control.controlsState.forceDecel = self.force_decel
     car_state.carState.vEgo = float(self.speed)
-    car_state.carState.standstill = self.speed < 0.01
+    car_state.carState.standstill = bool(self.speed < 0.01)
     car_state.carState.vCruise = float(v_cruise * 3.6)
     car_control.carControl.orientationNED = [0., float(pitch), 0.]
 
@@ -134,9 +135,9 @@ class Plant:
           'liveParameters': lp.liveParameters,
           'modelV2': model.modelV2}
     self.planner.update(sm)
-    self.speed = self.planner.v_desired_filter.x
-    self.acceleration = self.planner.a_desired
-    self.speeds = self.planner.v_desired_trajectory.tolist()
+    self.acceleration = self.planner.output_a_target
+    self.speed = self.speed + self.acceleration * self.ts
+    self.should_stop = self.planner.output_should_stop
     fcw = self.planner.fcw
     self.distance_lead = self.distance_lead + v_lead * self.ts
 
@@ -168,7 +169,7 @@ class Plant:
       "distance": self.distance,
       "speed": self.speed,
       "acceleration": self.acceleration,
-      "speeds": self.speeds,
+      "should_stop": self.should_stop,
       "distance_lead": self.distance_lead,
       "fcw": fcw,
     }

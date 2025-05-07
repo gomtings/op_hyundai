@@ -742,6 +742,11 @@ location set</source>
         <source>Bookmark connect.comma.ai to your home screen to use it like an app</source>
         <translation>connect.comma.ai을 앱처럼 사용하려면 홈 화면에 바로가기를 만드십시오</translation>
     </message>
+    <message>
+        <source>Please connect to Wi-Fi to complete initial pairing</source>
+        <translatorcomment>초기 페어링을 완료하려면 Wi-Fi에 연결하세요.</translatorcomment>
+        <translation>초기 페어링을 완료하려면 Wi-Fi에 연결하세요.</translation>
+    </message>
 </context>
 <context>
     <name>ParamControl</name>
@@ -782,7 +787,8 @@ location set</source>
     </message>
     <message>
         <source>Remote snapshots</source>
-        <translation type="unfinished"></translation>
+        <translatorcomment>원격 스냅샷</translatorcomment>
+        <translation>원격 스냅샷</translation>
     </message>
 </context>
 <context>
@@ -1464,6 +1470,21 @@ This may take up to a minute.</source>
     <message>
         <source>Standard is recommended. In aggressive mode, openpilot will follow lead cars closer and be more aggressive with the gas and brake. In relaxed mode openpilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with your steering wheel distance button.</source>
         <translation>표준 모드가 권장됩니다. 공격적인 모드에서는 openpilot이 앞차를 더 가깝게 따라가며 가속과 제동을 더 적극적으로 합니다. 여유로운 모드에서는 openpilot이 앞차와 더 멀리 떨어져 있습니다. 지원되는 차량에서는 핸들 거리 버튼을 사용하여 이러한 모드를 순환할 수 있습니다.</translation>
+    </message>
+    <message>
+        <source>FIREHOSE Mode</source>
+        <translatorcomment>FIREHOSE 모드</translatorcomment>
+        <translation>FIREHOSE 모드</translation>
+    </message>
+    <message>
+        <source>Enable &lt;b&gt;FIREHOSE Mode&lt;/b&gt; to get your driving data in the training set.&lt;br&gt;&lt;br&gt;Follow these steps to get your device ready:&lt;br&gt;  1. Bring your device inside and connect to a good USB-C adapter&lt;br&gt;  2. Connect to Wi-Fi&lt;br&gt;  3. Enable this toggle&lt;br&gt;  4. Leave it connected for at least 30 minutes&lt;br&gt;&lt;br&gt;This toggle turns off once you restart your device. Repeat once a week for maximum effectiveness.</source>
+        <translation>&lt;b&gt;FIREHOSE 모드&lt;/b&gt;를 활성화하여 운전 데이터를 학습 세트에 추가하세요.&lt;br&gt;
+장치를 준비하려면 다음 단계를 따르세요:&lt;br&gt;
+1. 장치를 실내로 가져와 안정적인 USB-C 어댑터에 연결하세요.&lt;br&gt;
+2. Wi-Fi에 연결하세요.&lt;br&gt;
+3. 이 토글을 활성화하세요.&lt;br&gt;
+4. 최소 30분 동안 연결된 상태로 두세요.&lt;br&gt;
+&lt;br&gt;이 토글은 장치를 재시작하면 자동으로 꺼집니다. 최대한 효과적으로 활용하려면 일주일에 한 번 반복하세요.</translation>
     </message>
 </context>
 <context>

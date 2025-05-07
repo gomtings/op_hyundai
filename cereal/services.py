@@ -22,6 +22,7 @@ _services: dict[str, tuple] = {
   "temperatureSensor2": (True, 2., 200),
   "gpsNMEA": (True, 9.),
   "deviceState": (True, 2., 1),
+  "touch": (True, 20., 1),
   "can": (True, 100., 2053),  # decimation gives ~3 msgs in a full segment
   "controlsState": (True, 100., 10),
   "selfdriveState": (True, 100., 10),
@@ -35,6 +36,7 @@ _services: dict[str, tuple] = {
   "errorLogMessage": (True, 0., 1),
   "liveCalibration": (True, 4., 4),
   "liveTorqueParameters": (True, 4., 1),
+  "liveDelay": (True, 4., 1),
   "androidLog": (True, 0.),
   "carState": (True, 100., 10),
   "carControl": (True, 100., 10),
@@ -52,7 +54,7 @@ _services: dict[str, tuple] = {
   "livePose": (True, 20., 4),
   "liveParameters": (True, 20., 5),
   "cameraOdometry": (True, 20., 10),
-  "thumbnail": (True, 0.2, 1),
+  "thumbnail": (True, 1 / 60., 1),
   "onroadEvents": (True, 1., 1),
   "carParams": (True, 0.02, 1),
   "roadCameraState": (True, 20., 20),
@@ -76,6 +78,7 @@ _services: dict[str, tuple] = {
   "naviData": (False, 0.),
   "naviGps": (False, 0.),
   "naviObstacles": (False, 0.),
+  "lateralPlan": (True, 20., 5),
 
   # debug
   "uiDebug": (True, 0., 1),

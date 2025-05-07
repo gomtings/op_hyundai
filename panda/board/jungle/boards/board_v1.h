@@ -2,24 +2,8 @@
 // Jungle board v1 (STM32F4) //
 // ///////////////////////// //
 
-void board_v1_set_led(uint8_t color, bool enabled) {
-  switch (color) {
-    case LED_RED:
-      set_gpio_output(GPIOC, 9, !enabled);
-      break;
-     case LED_GREEN:
-      set_gpio_output(GPIOC, 7, !enabled);
-      break;
-    case LED_BLUE:
-      set_gpio_output(GPIOC, 6, !enabled);
-      break;
-    default:
-      break;
-  }
-}
-
-void board_v1_enable_can_transciever(uint8_t transciever, bool enabled) {
-  switch (transciever) {
+void board_v1_enable_can_transceiver(uint8_t transceiver, bool enabled) {
+  switch (transceiver) {
     case 1U:
       set_gpio_output(GPIOC, 1, !enabled);
       break;
@@ -33,14 +17,14 @@ void board_v1_enable_can_transciever(uint8_t transciever, bool enabled) {
       set_gpio_output(GPIOB, 10, !enabled);
       break;
     default:
-      print("Invalid CAN transciever ("); puth(transciever); print("): enabling failed\n");
+      print("Invalid CAN transceiver ("); puth(transceiver); print("): enabling failed\n");
       break;
   }
 }
 
 void board_v1_set_can_mode(uint8_t mode) {
-  board_v1_enable_can_transciever(2U, false);
-  board_v1_enable_can_transciever(4U, false);
+  board_v1_enable_can_transceiver(2U, false);
+  board_v1_enable_can_transceiver(4U, false);
   switch (mode) {
     case CAN_MODE_NORMAL:
       print("Setting normal CAN mode\n");
@@ -52,7 +36,7 @@ void board_v1_set_can_mode(uint8_t mode) {
       set_gpio_alternate(GPIOB, 5, GPIO_AF9_CAN2);
       set_gpio_alternate(GPIOB, 6, GPIO_AF9_CAN2);
       can_mode = CAN_MODE_NORMAL;
-      board_v1_enable_can_transciever(2U, true);
+      board_v1_enable_can_transceiver(2U, true);
       break;
     case CAN_MODE_OBD_CAN2:
       print("Setting OBD CAN mode\n");
@@ -64,7 +48,7 @@ void board_v1_set_can_mode(uint8_t mode) {
       set_gpio_alternate(GPIOB, 12, GPIO_AF9_CAN2);
       set_gpio_alternate(GPIOB, 13, GPIO_AF9_CAN2);
       can_mode = CAN_MODE_OBD_CAN2;
-      board_v1_enable_can_transciever(4U, true);
+      board_v1_enable_can_transceiver(4U, true);
       break;
     default:
       print("Tried to set unsupported CAN mode: "); puth(mode); print("\n");
@@ -135,15 +119,10 @@ void board_v1_init(void) {
 
   board_v1_set_can_mode(CAN_MODE_NORMAL);
 
-  // Enable CAN transcievers
+  // Enable CAN transceivers
   for(uint8_t i = 1; i <= 4; i++) {
-    board_v1_enable_can_transciever(i, true);
+    board_v1_enable_can_transceiver(i, true);
   }
-
-  // Disable LEDs
-  board_v1_set_led(LED_RED, false);
-  board_v1_set_led(LED_GREEN, false);
-  board_v1_set_led(LED_BLUE, false);
 
   // Set normal CAN mode
   board_v1_set_can_mode(CAN_MODE_NORMAL);
@@ -162,7 +141,8 @@ board board_v1 = {
   .has_sbu_sense = false,
   .avdd_mV = 3300U,
   .init = &board_v1_init,
-  .set_led = &board_v1_set_led,
+  .led_GPIO = {GPIOC, GPIOC, GPIOC},
+  .led_pin = {9, 7, 6},
   .board_tick = &board_v1_tick,
   .get_button = &board_v1_get_button,
   .set_panda_power = &board_v1_set_panda_power,
@@ -171,7 +151,7 @@ board board_v1 = {
   .set_individual_ignition = &unused_set_individual_ignition,
   .set_harness_orientation = &board_v1_set_harness_orientation,
   .set_can_mode = &board_v1_set_can_mode,
-  .enable_can_transciever = &board_v1_enable_can_transciever,
+  .enable_can_transceiver = &board_v1_enable_can_transceiver,
   .enable_header_pin = &unused_board_enable_header_pin,
   .get_channel_power = &board_v1_get_channel_power,
   .get_sbu_mV = &board_v1_get_sbu_mV,

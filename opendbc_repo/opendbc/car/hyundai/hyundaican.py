@@ -4,7 +4,7 @@ from openpilot.selfdrive.controls.neokii.navi_controller import SpeedLimiter
 
 hyundai_checksum = crcmod.mkCrcFun(0x11D, initCrc=0xFD, rev=False, xorOut=0xdf)
 
-def create_lkas11(packer, frame, apply_steer, steer_req,
+def create_lkas11(packer, frame, apply_torque, steer_req,
                   torque_fault, lkas11, sys_warning, sys_state, enabled,
                   left_lane, right_lane,
                   left_lane_depart, right_lane_depart, ldws_opt, CP):
@@ -29,7 +29,7 @@ def create_lkas11(packer, frame, apply_steer, steer_req,
   values["CF_Lkas_SysWarning"] = 3 if sys_warning else 0
   values["CF_Lkas_LdwsLHWarning"] = left_lane_depart
   values["CF_Lkas_LdwsRHWarning"] = right_lane_depart
-  values["CR_Lkas_StrToqReq"] = apply_steer
+  values["CR_Lkas_StrToqReq"] = apply_torque
   values["CF_Lkas_ActToi"] = steer_req
   values["CF_Lkas_ToiFlt"] = torque_fault  # seems to allow actuation on CR_Lkas_StrToqReq
   values["CF_Lkas_MsgCount"] = frame % 0x10
@@ -123,12 +123,14 @@ def create_lfahda_mfc(packer, enabled, hda_set_speed=0):
   }
   return packer.make_can_msg("LFAHDA_MFC", 0, values)
 
-def create_acc_commands(packer, enabled, accel, upper_jerk, idx, lead_visible, set_speed, stopping, long_override, use_fca, CS, stock_cam,vision_dist,RelSpd):
+def create_acc_commands(packer, enabled, accel, upper_jerk, idx, hud_control, set_speed, stopping, long_override, use_fca, CP, CS, stock_cam):
+  # ,hud_control.objDist,hud_control.objRelSpd ,vision_dist,RelSpd
+  vision_dist = hud_control.vision_dist
+  objGap = 0 if vision_dist == 0 else 2 if vision_dist < 25 else 3 if vision_dist < 40 else 4 if vision_dist < 70 else 5
+
   commands = []
 
   cruise_enabled = enabled and CS.out.cruiseState.enabled
-
-  objGap = 0 if vision_dist == 0 else 2 if vision_dist < 25 else 3 if vision_dist < 40 else 4 if vision_dist < 70 else 5
 
   scc11_values = {
     "MainMode_ACC": CS.out.cruiseState.available,
@@ -138,7 +140,7 @@ def create_acc_commands(packer, enabled, accel, upper_jerk, idx, lead_visible, s
     "ObjValid": 1, # close lead makes controls tighter
     "ACC_ObjStatus": 1, # close lead makes controls tighter
     "ACC_ObjLatPos": 0,
-    "ACC_ObjRelSpd": RelSpd,
+    "ACC_ObjRelSpd": hud_control.RelSpd,
     "ACC_ObjDist": vision_dist, # close lead makes controls tighter
     }
 
@@ -174,12 +176,13 @@ def create_acc_commands(packer, enabled, accel, upper_jerk, idx, lead_visible, s
     "JerkUpperLimit": upper_jerk, # stock usually is 1.0 but sometimes uses higher values
     "JerkLowerLimit": 5.0, # stock usually is 0.5 but sometimes uses higher values
     "ACCMode": 2 if enabled and long_override else 1 if enabled else 4, # stock will always be 4 instead of 0 after first disengage
-    "ObjGap": objGap #2 if lead_visible else 0, # 5: >30, m, 4: 25-30 m, 3: 20-25 m, 2: < 20 m, 0: no lead
+    "ObjGap": objGap, # 5: >30, m, 4: 25-30 m, 3: 20-25 m, 2: < 20 m, 0: no lead
   }
   commands.append(packer.make_can_msg("SCC14", 0, scc14_values))
 
   # Only send FCA11 on cars where it exists on the bus
-  if use_fca:
+  # On Camera SCC cars, FCA11 is not disabled, so we forward stock FCA11 back to the car forward hooks
+  if use_fca and not (CP.flags & HyundaiFlags.CAMERA_SCC):
     # note that some vehicles most likely have an alternate checksum/counter definition
     # https://github.com/commaai/opendbc/commit/9ddcdb22c4929baf310295e832668e6e7fcfa602
     fca11_values = {
@@ -194,7 +197,7 @@ def create_acc_commands(packer, enabled, accel, upper_jerk, idx, lead_visible, s
 
   return commands
 
-def create_acc_opt(packer, use_fca):
+def create_acc_opt(packer, CP):
   commands = []
 
   scc13_values = {
@@ -204,7 +207,9 @@ def create_acc_opt(packer, use_fca):
   }
   commands.append(packer.make_can_msg("SCC13", 0, scc13_values))
 
-  if use_fca:
+  # TODO: this needs to be detected and conditionally sent on unsupported long cars
+  # On Camera SCC cars, FCA12 is not disabled, so we forward stock FCA12 back to the car forward hooks
+  if not (CP.flags & HyundaiFlags.CAMERA_SCC):
     fca12_values = {
       "FCA_DrvSetState": 2,
       "FCA_USM": 0, # AEB disabled

@@ -131,10 +131,10 @@ void can_clear(can_ring *q) {
 // Helpers
 // Panda:       Bus 0=CAN1   Bus 1=CAN2   Bus 2=CAN3
 bus_config_t bus_config[BUS_CONFIG_ARRAY_SIZE] = {
-  { .bus_lookup = 0U, .can_num_lookup = 0U, .forwarding_bus = -1, .can_speed = 5000U, .can_data_speed = 20000U, .canfd_enabled = false, .brs_enabled = false, .canfd_non_iso = false },
-  { .bus_lookup = 1U, .can_num_lookup = 1U, .forwarding_bus = -1, .can_speed = 5000U, .can_data_speed = 20000U, .canfd_enabled = false, .brs_enabled = false, .canfd_non_iso = false },
-  { .bus_lookup = 2U, .can_num_lookup = 2U, .forwarding_bus = -1, .can_speed = 5000U, .can_data_speed = 20000U, .canfd_enabled = false, .brs_enabled = false, .canfd_non_iso = false },
-  { .bus_lookup = 0xFFU, .can_num_lookup = 0xFFU, .forwarding_bus = -1, .can_speed = 333U, .can_data_speed = 333U, .canfd_enabled = false, .brs_enabled = false, .canfd_non_iso = false },
+  { .bus_lookup = 0U, .can_num_lookup = 0U, .forwarding_bus = -1, .can_speed = 5000U, .can_data_speed = 20000U, .canfd_auto = false, .canfd_enabled = false, .brs_enabled = false, .canfd_non_iso = false },
+  { .bus_lookup = 1U, .can_num_lookup = 1U, .forwarding_bus = -1, .can_speed = 5000U, .can_data_speed = 20000U, .canfd_auto = false, .canfd_enabled = false, .brs_enabled = false, .canfd_non_iso = false },
+  { .bus_lookup = 2U, .can_num_lookup = 2U, .forwarding_bus = -1, .can_speed = 5000U, .can_data_speed = 20000U, .canfd_auto = false, .canfd_enabled = false, .brs_enabled = false, .canfd_non_iso = false },
+  { .bus_lookup = 0xFFU, .can_num_lookup = 0xFFU, .forwarding_bus = -1, .can_speed = 333U, .can_data_speed = 333U, .canfd_auto = false, .canfd_enabled = false, .brs_enabled = false, .canfd_non_iso = false },
 };
 
 void can_init_all(void) {
@@ -165,7 +165,7 @@ void ignition_can_hook(CANPacket_t *to_push) {
   if (bus == 0) {
     int addr = GET_ADDR(to_push);
     int len = GET_LEN(to_push);
-    
+
     // GM exception
     if ((addr == 0x1F1) && (len == 8)) {
       // SystemPowerMode (2=Run, 3=Crank Request)
@@ -173,11 +173,33 @@ void ignition_can_hook(CANPacket_t *to_push) {
       ignition_can_cnt = 0U;
     }
 
-    // Tesla exception
-    if ((addr == 0x348) && (len == 8)) {
-      // GTW_status
-      ignition_can = (GET_BYTE(to_push, 0) & 0x1U) != 0U;
-      ignition_can_cnt = 0U;
+    // Rivian R1S/T GEN1 exception
+    if ((addr == 0x152) && (len == 8)) {
+      // 0x152 overlaps with Subaru pre-global which has this bit as the high beam
+      int counter = GET_BYTE(to_push, 1) & 0xFU;  // max is only 14
+
+      static int prev_counter = -1;
+      if ((counter == ((prev_counter + 1) % 15)) && (prev_counter != -1)) {
+        // VDM_OutputSignals->VDM_EpasPowerMode
+        ignition_can = ((GET_BYTE(to_push, 7) >> 4U) & 0x3U) == 1U;  // VDM_EpasPowerMode_Drive_On=1
+        ignition_can_cnt = 0U;
+      }
+      prev_counter = counter;
+    }
+
+    // Tesla Model 3/Y exception
+    if ((addr == 0x221) && (len == 8)) {
+      // 0x221 overlaps with Rivian which has random data on byte 0
+      int counter = GET_BYTE(to_push, 6) >> 4;
+
+      static int prev_counter = -1;
+      if ((counter == ((prev_counter + 1) % 16)) && (prev_counter != -1)) {
+        // VCFRONT_LVPowerState->VCFRONT_vehiclePowerState
+        int power_state = (GET_BYTE(to_push, 0) >> 5U) & 0x3U;
+        ignition_can = power_state == 0x3;  // VEHICLE_POWER_STATE_DRIVE=3
+        ignition_can_cnt = 0U;
+      }
+      prev_counter = counter;
     }
 
     // Mazda exception

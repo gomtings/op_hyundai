@@ -6,6 +6,7 @@ from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.controls.lib.ldw import LaneDepartureWarning
 from openpilot.selfdrive.controls.lib.longitudinal_planner import LongitudinalPlanner
 import cereal.messaging as messaging
+from selfdrive.controls.neokii.lateral_lane_planner import LateralLanePlanner
 
 
 def main():
@@ -14,17 +15,20 @@ def main():
   cloudlog.info("plannerd is waiting for CarParams")
   params = Params()
   CP = messaging.log_from_bytes(params.get("CarParams", block=True), car.CarParams)
-  cloudlog.info("plannerd got CarParams: %s", CP.carName)
+  cloudlog.info("plannerd got CarParams: %s", CP.brand)
 
   ldw = LaneDepartureWarning()
+  lateral_planner = LateralLanePlanner(CP)
   longitudinal_planner = LongitudinalPlanner(CP)
-  pm = messaging.PubMaster(['longitudinalPlan', 'driverAssistance'])
+  pm = messaging.PubMaster(['longitudinalPlan', 'driverAssistance', 'lateralPlan'])
   sm = messaging.SubMaster(['carControl', 'carState', 'controlsState', 'liveParameters', 'radarState', 'modelV2', 'selfdriveState', 'naviObstacles'],
-                           poll='modelV2', ignore_avg_freq=['radarState'])
+                           poll='modelV2')
 
   while True:
     sm.update()
     if sm.updated['modelV2']:
+      lateral_planner.update(sm)
+      lateral_planner.publish(sm, pm)
       longitudinal_planner.update(sm)
       longitudinal_planner.publish(sm, pm)
 

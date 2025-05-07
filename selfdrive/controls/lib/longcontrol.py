@@ -1,5 +1,5 @@
+import numpy as np
 from cereal import car
-from openpilot.common.numpy_fast import clip, interp
 from openpilot.common.realtime import DT_CTRL
 from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
 from openpilot.common.pid import PIDController
@@ -86,7 +86,7 @@ class LongControl:
           output_accel -= self.CP.stoppingDecelRate * 1.5 * DT_CTRL
         else:
           m_accel = -0.6
-          d_accel = interp(output_accel,
+          d_accel = np.interp(output_accel,
                            [m_accel - 0.5, m_accel, m_accel + 0.5],
                            [self.CP.stoppingDecelRate, 0.05, self.CP.stoppingDecelRate])
 
@@ -102,7 +102,7 @@ class LongControl:
       self.stopping_accel_weight = 0.0
 
     else:  # LongCtrlState.pid
-      #error = a_target - CS.aEgo
+      #error = long_plan.aTarget - CS.aEgo
       error = long_plan.vTarget - CS.vEgo
       output_accel = self.pid.update(error, speed=CS.vEgo,
                                      feedforward=long_plan.aTarget * ntune_scc_get('aTargetFactor'))
@@ -110,5 +110,5 @@ class LongControl:
       self.stopping_accel_weight = max(self.stopping_accel_weight - 2. * DT_CTRL, 0.)
       output_accel = self.last_output_accel * self.stopping_accel_weight + output_accel * (1. - self.stopping_accel_weight)
 
-    self.last_output_accel = clip(output_accel, accel_limits[0], accel_limits[1])
+    self.last_output_accel = np.clip(output_accel, accel_limits[0], accel_limits[1])
     return self.last_output_accel

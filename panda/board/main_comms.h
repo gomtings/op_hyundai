@@ -212,7 +212,7 @@ int comms_control_handler(ControlPacket_t *req, uint8_t *resp) {
       break;
     // **** 0xdb: set OBD CAN multiplexing mode
     case 0xdb:
-      if (current_board->has_obd) {
+      if (current_board->harness_config->has_harness) {
         if (req->param1 == 1U) {
           // Enable OBD CAN
           current_board->set_can_mode(CAN_MODE_OBD_CAN2);
@@ -316,6 +316,10 @@ int comms_control_handler(ControlPacket_t *req, uint8_t *resp) {
     // **** 0xe7: set power save state
     case 0xe7:
       set_power_save_state(req->param1);
+      break;
+    // **** 0xe8: set can-fd auto swithing mode
+    case 0xe8:
+      bus_config[req->param1].canfd_auto = req->param2 > 0U;
       break;
     // **** 0xf1: Clear CAN ring buffer.
     case 0xf1:

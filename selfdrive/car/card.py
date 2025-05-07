@@ -8,17 +8,17 @@ import cereal.messaging as messaging
 from cereal import car, log
 from openpilot.selfdrive.controls.neokii.speed_controller import SpeedController
 
-from panda import ALTERNATIVE_EXPERIENCE
-
 from openpilot.common.params import Params
 from openpilot.common.realtime import config_realtime_process, Priority, Ratekeeper
 from openpilot.common.swaglog import cloudlog, ForwardingHandler
 
-from opendbc.car import DT_CTRL, carlog, structs
+from opendbc.car import DT_CTRL, structs
 from opendbc.car.can_definitions import CanData, CanRecvCallable, CanSendCallable
+from opendbc.car.carlog import carlog
 from opendbc.car.fw_versions import ObdCallback
-from opendbc.car.car_helpers import get_car, get_radar_interface
+from opendbc.car.car_helpers import get_car, interfaces
 from opendbc.car.interfaces import CarInterfaceBase, RadarInterfaceBase
+from opendbc.safety import ALTERNATIVE_EXPERIENCE
 from openpilot.selfdrive.pandad import can_capnp_to_list, can_list_to_can_capnp
 from openpilot.selfdrive.car.cruise import VCruiseHelper
 from openpilot.selfdrive.car.car_specific import MockCarState
@@ -73,6 +73,7 @@ class Car:
     self.can_rcv_cum_timeout_counter = 0
 
     self.CC_prev = car.CarControl.new_message()
+    self.CS_prev = car.CarState.new_message()
     self.initialized_prev = False
 
     self.last_actuators_output = structs.CarControl.Actuators()
@@ -89,7 +90,7 @@ class Car:
         if len(can.can) > 0:
           break
 
-      experimental_long_allowed = self.params.get_bool("ExperimentalLongitudinalEnabled")
+      alpha_long_allowed = self.params.get_bool("AlphaLongitudinalEnabled")
       num_pandas = len(messaging.recv_one_retry(self.sm.sock['pandaStates']).pandaStates)
 
       cached_params = None
@@ -98,8 +99,8 @@ class Car:
         with car.CarParams.from_bytes(cached_params_raw) as _cached_params:
           cached_params = _cached_params
 
-      self.CI = get_car(*self.can_callbacks, obd_callback(self.params), experimental_long_allowed, num_pandas, cached_params)
-      self.RI = get_radar_interface(self.CI.CP)
+      self.CI = get_car(*self.can_callbacks, obd_callback(self.params), alpha_long_allowed, num_pandas, cached_params)
+      self.RI = interfaces[self.CI.CP.carFingerprint].RadarInterface(self.CI.CP)
       self.CP = self.CI.CP
 
       # continue onto next fingerprinting step in pandad
@@ -125,6 +126,15 @@ class Car:
       self.CP.safetyConfigs = [safety_config]
 
     if self.CP.secOcRequired and not self.params.get_bool("IsReleaseBranch"):
+      # Copy user key if available
+      try:
+        with open("/cache/params/SecOCKey") as f:
+          user_key = f.readline().strip()
+          if len(user_key) == 32:
+            self.params.put("SecOCKey", user_key)
+      except Exception:
+        pass
+
       secoc_key = self.params.get("SecOCKey", encoding='utf8')
       if secoc_key is not None:
         saved_secoc_key = bytes.fromhex(secoc_key.strip())
@@ -166,7 +176,7 @@ class Car:
 
     # Update carState from CAN
     CS = self.CI.update(can_list)
-    if self.CP.carName == 'mock':
+    if self.CP.brand == 'mock':
       CS = self.mock_carstate.update(CS)
 
     # Update radar tracks from CAN
@@ -183,10 +193,14 @@ class Car:
     if can_rcv_valid and REPLAY:
       self.can_log_mono_time = messaging.log_from_bytes(can_strs[0]).logMonoTime
 
-    # TODO: mirror the carState.cruiseState struct?
-    #self.v_cruise_helper.update_v_cruise(CS, self.sm['carControl'].enabled, self.is_metric)
-    #CS.vCruise = float(self.v_cruise_helper.v_cruise_kph)
-    #CS.vCruiseCluster = float(self.v_cruise_helper.v_cruise_cluster_kph)
+    # self.v_cruise_helper.update_v_cruise(CS, self.sm['carControl'].enabled, self.is_metric)
+    # if self.sm['carControl'].enabled and not self.CC_prev.enabled:
+    #   # Use CarState w/ buttons from the step selfdrived enables on
+    #   self.v_cruise_helper.initialize_v_cruise(self.CS_prev, self.experimental_mode)
+    #
+    # # TODO: mirror the carState.cruiseState struct?
+    # CS.vCruise = float(self.v_cruise_helper.v_cruise_kph)
+    # CS.vCruiseCluster = float(self.v_cruise_helper.v_cruise_cluster_kph)
 
     self.speed_controller.update_v_cruise(CS, self.sm, self.sm['carControl'].enabled)
     CS.vCruise = self.speed_controller.cruise_speed_kph
@@ -220,7 +234,7 @@ class Car:
 
     if RD is not None:
       tracks_msg = messaging.new_message('liveTracks')
-      tracks_msg.valid = len(RD.errors) == 0
+      tracks_msg.valid = not any(RD.errors.to_dict().values())
       tracks_msg.liveTracks = RD
       self.pm.send('liveTracks', tracks_msg)
 
@@ -246,9 +260,6 @@ class Car:
   def step(self):
     CS, RD = self.state_update()
 
-    if self.sm['carControl'].enabled and not self.CC_prev.enabled:
-      self.v_cruise_helper.initialize_v_cruise(CS, self.experimental_mode)
-
     self.state_publish(CS, RD)
 
     initialized = (not any(e.name == EventName.selfdriveInitializing for e in self.sm['onroadEvents']) and
@@ -257,6 +268,7 @@ class Car:
       self.controls_update(CS, self.sm['carControl'])
 
     self.initialized_prev = initialized
+    self.CS_prev = CS
 
   def params_thread(self, evt):
     while not evt.is_set():

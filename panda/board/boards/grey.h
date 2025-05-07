@@ -11,7 +11,6 @@
 board board_grey = {
   .set_bootkick = unused_set_bootkick,
   .harness_config = &white_harness_config,
-  .has_obd = false,
   .has_spi = false,
   .has_canfd = false,
   .fan_max_rpm = 0U,
@@ -22,8 +21,8 @@ board board_grey = {
   .init = white_grey_init,
   .init_bootloader = white_grey_init_bootloader,
   .enable_can_transceiver = white_enable_can_transceiver,
-  .enable_can_transceivers = white_enable_can_transceivers,
-  .set_led = white_set_led,
+  .led_GPIO = {GPIOC, GPIOC, GPIOC},
+  .led_pin = {9, 7, 6},
   .set_can_mode = white_set_can_mode,
   .check_ignition = white_check_ignition,
   .read_voltage_mV = white_read_voltage_mV,
@@ -31,5 +30,6 @@ board board_grey = {
   .set_fan_enabled = unused_set_fan_enabled,
   .set_ir_power = unused_set_ir_power,
   .set_siren = unused_set_siren,
-  .read_som_gpio = unused_read_som_gpio
+  .read_som_gpio = unused_read_som_gpio,
+  .set_amp_enabled = unused_set_amp_enabled
 };

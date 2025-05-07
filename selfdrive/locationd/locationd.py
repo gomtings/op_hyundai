@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import os
-import json
 import time
 import capnp
 import numpy as np
@@ -8,9 +7,11 @@ from enum import Enum
 from collections import defaultdict
 
 from cereal import log, messaging
+from cereal.services import SERVICE_LIST
 from openpilot.common.transformations.orientation import rot_from_euler
 from openpilot.common.realtime import config_realtime_process
 from openpilot.common.params import Params
+from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.locationd.helpers import rotate_std
 from openpilot.selfdrive.locationd.models.pose_kf import PoseKalman, States
 from openpilot.selfdrive.locationd.models.constants import ObservationKind, GENERATED_DIR
@@ -23,10 +24,14 @@ MIN_STD_SANITY_CHECK = 1e-5  # m or rad
 MAX_FILTER_REWIND_TIME = 0.8  # s
 MAX_SENSOR_TIME_DIFF = 0.1  # s
 YAWRATE_CROSS_ERR_CHECK_FACTOR = 30
-INPUT_INVALID_THRESHOLD = 0.5
-INPUT_INVALID_DECAY = 0.9993  # ~10 secs to resume after a bad input
+INPUT_INVALID_LIMIT = 2.0 # 1 (camodo) / 9 (sensor) bad input[s] ignored
+INPUT_INVALID_RECOVERY = 10.0 # ~10 secs to resume after exceeding allowed bad inputs by one
 POSENET_STD_INITIAL_VALUE = 10.0
 POSENET_STD_HIST_HALF = 20
+
+
+def calculate_invalid_input_decay(invalid_limit, recovery_time, frequency):
+  return (1 - 1 / (2 * invalid_limit)) ** (1 / (recovery_time * frequency))
 
 
 def init_xyz_measurement(measurement: capnp._DynamicStructBuilder, values: np.ndarray, stds: np.ndarray, valid: bool):
@@ -59,7 +64,7 @@ class LocationEstimator:
     self.observation_errors = {kind: np.zeros(3, dtype=np.float32) for kind in obs_kinds}
 
   def reset(self, t: float, x_initial: np.ndarray = PoseKalman.initial_x, P_initial: np.ndarray = PoseKalman.initial_P):
-    self.kf.reset(t, x_initial, P_initial)
+    self.kf.init_state(x_initial, covs=P_initial, filter_time=t)
 
   def _validate_sensor_source(self, source: log.SensorEventData.SensorSource):
     # some segments have two IMUs, ignore the second one
@@ -73,20 +78,20 @@ class LocationEstimator:
     # sensor time and log time should be close
     sensor_time_invalid = abs(sensor_time - t) > MAX_SENSOR_TIME_DIFF
     if sensor_time_invalid:
-      print("Sensor reading ignored, sensor timestamp more than 100ms off from log time")
+      cloudlog.warning("Sensor reading ignored, sensor timestamp more than 100ms off from log time")
     return not sensor_time_invalid
 
   def _validate_timestamp(self, t: float):
     kf_t = self.kf.t
     invalid = not np.isnan(kf_t) and (kf_t - t) > MAX_FILTER_REWIND_TIME
     if invalid:
-      print("Observation timestamp is older than the max rewind threshold of the filter")
+      cloudlog.warning("Observation timestamp is older than the max rewind threshold of the filter")
     return not invalid
 
   def _finite_check(self, t: float, new_x: np.ndarray, new_P: np.ndarray):
     all_finite = np.isfinite(new_x).all() and np.isfinite(new_P).all()
     if not all_finite:
-      print("Non-finite values detected, kalman reset")
+      cloudlog.error("Non-finite values detected, kalman reset")
       self.reset(t)
 
   def handle_log(self, t: float, which: str, msg: capnp._DynamicStructReader) -> HandleLogResult:
@@ -141,13 +146,13 @@ class LocationEstimator:
       self.car_speed = abs(msg.vEgo)
 
     elif which == "liveCalibration":
+      # Note that we use this message during calibration
       if len(msg.rpyCalib) > 0:
         calib = np.array(msg.rpyCalib)
         if calib.min() < -CALIB_RPY_SANITY_CHECK or calib.max() > CALIB_RPY_SANITY_CHECK:
           return HandleLogResult.INPUT_INVALID
 
         self.device_from_calib = rot_from_euler(calib)
-        self.calibrated = msg.calStatus == log.LiveCalibrationData.Status.calibrated
 
     elif which == "cameraOdometry":
       if not self._validate_timestamp(t):
@@ -180,8 +185,8 @@ class LocationEstimator:
       rot_device_noise = rot_device_std ** 2
       trans_device_noise = trans_device_std ** 2
 
-      cam_odo_rot_res = self.kf.predict_and_observe(t, ObservationKind.CAMERA_ODO_ROTATION, rot_device, rot_device_noise)
-      cam_odo_trans_res = self.kf.predict_and_observe(t, ObservationKind.CAMERA_ODO_TRANSLATION, trans_device, trans_device_noise)
+      cam_odo_rot_res = self.kf.predict_and_observe(t, ObservationKind.CAMERA_ODO_ROTATION, rot_device, np.array([np.diag(rot_device_noise)]))
+      cam_odo_trans_res = self.kf.predict_and_observe(t, ObservationKind.CAMERA_ODO_TRANSLATION, trans_device, np.array([np.diag(trans_device_noise)]))
       self.camodo_yawrate_distribution =  np.array([rot_device[2], rot_device_std[2]])
       if cam_odo_rot_res is not None:
         _, new_x, _, new_P, _, _, (cam_odo_rot_err,), _, _ = cam_odo_rot_res
@@ -265,16 +270,20 @@ def main():
   estimator = LocationEstimator(DEBUG)
 
   filter_initialized = False
-  critcal_services = ["accelerometer", "gyroscope", "liveCalibration", "cameraOdometry"]
-  observation_timing_invalid = False
+  critcal_services = ["accelerometer", "gyroscope", "cameraOdometry"]
   observation_input_invalid = defaultdict(int)
 
-  initial_pose = params.get("LocationFilterInitialState")
-  if initial_pose is not None:
-    initial_pose = json.loads(initial_pose)
-    x_initial = np.array(initial_pose["x"], dtype=np.float64)
-    P_initial = np.diag(np.array(initial_pose["P"], dtype=np.float64))
-    estimator.reset(None, x_initial, P_initial)
+  input_invalid_limit = {s: round(INPUT_INVALID_LIMIT * (SERVICE_LIST[s].frequency / 20.)) for s in critcal_services}
+  input_invalid_threshold = {s: input_invalid_limit[s] - 0.5 for s in critcal_services}
+  input_invalid_decay = {s: calculate_invalid_input_decay(input_invalid_limit[s], INPUT_INVALID_RECOVERY, SERVICE_LIST[s].frequency) for s in critcal_services}
+
+  initial_pose_data = params.get("LocationFilterInitialState")
+  if initial_pose_data is not None:
+    with log.Event.from_bytes(initial_pose_data) as lp_msg:
+      filter_state = lp_msg.livePose.debugFilterState
+      x_initial = np.array(filter_state.value, dtype=np.float64) if len(filter_state.value) != 0 else PoseKalman.initial_x
+      P_initial = np.diag(np.array(filter_state.std, dtype=np.float64)) if len(filter_state.std) != 0 else PoseKalman.initial_P
+      estimator.reset(None, x_initial, P_initial)
 
   while True:
     sm.update()
@@ -282,8 +291,6 @@ def main():
     acc_msgs, gyro_msgs = (messaging.drain_sock(sock) for sock in sensor_sockets)
 
     if filter_initialized:
-      observation_timing_invalid = False
-
       msgs = []
       for msg in acc_msgs + gyro_msgs:
         t, valid, which, data = msg.logMonoTime, msg.valid, msg.which(), getattr(msg, msg.which())
@@ -298,18 +305,23 @@ def main():
         if valid:
           t = log_mono_time * 1e-9
           res = estimator.handle_log(t, which, msg)
+          if which not in critcal_services:
+            continue
+
           if res == HandleLogResult.TIMING_INVALID:
-            observation_timing_invalid = True
-          elif res == HandleLogResult.INPUT_INVALID:
+            cloudlog.warning(f"Observation {which} ignored due to failed timing check")
             observation_input_invalid[which] += 1
-          else:
-            observation_input_invalid[which] *= INPUT_INVALID_DECAY
+          elif res == HandleLogResult.INPUT_INVALID:
+            cloudlog.warning(f"Observation {which} ignored due to failed sanity check")
+            observation_input_invalid[which] += 1
+          elif res == HandleLogResult.SUCCESS:
+            observation_input_invalid[which] *= input_invalid_decay[which]
     else:
       filter_initialized = sm.all_checks() and sensor_all_checks(acc_msgs, gyro_msgs, sensor_valid, sensor_recv_time, sensor_alive, SIMULATION)
 
     if sm.updated["cameraOdometry"]:
-      critical_service_inputs_valid = all(observation_input_invalid[s] < INPUT_INVALID_THRESHOLD for s in critcal_services)
-      inputs_valid = sm.all_valid() and critical_service_inputs_valid and not observation_timing_invalid
+      critical_service_inputs_valid = all(observation_input_invalid[s] < input_invalid_threshold[s] for s in critcal_services)
+      inputs_valid = sm.all_valid() and critical_service_inputs_valid
       sensors_valid = sensor_all_checks(acc_msgs, gyro_msgs, sensor_valid, sensor_recv_time, sensor_alive, SIMULATION)
 
       msg = estimator.get_msg(sensors_valid, inputs_valid, filter_initialized)

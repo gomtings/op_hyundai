@@ -1,7 +1,5 @@
 #include "usb_declarations.h"
 
-bool usb_enumerated = false;
-
 static uint8_t response[USBPACKET_MAX_SIZE];
 
 // current packet
@@ -122,13 +120,6 @@ static char to_hex_char(uint8_t a) {
     ret = 'a' + (a - 10U);
   }
   return ret;
-}
-
-void usb_tick(void) {
-  static uint16_t usb_last_frame_num = 0U;
-  uint16_t current_frame_num = (USBx_DEVICE->DSTS & USB_OTG_DSTS_FNSOF_Msk) >> USB_OTG_DSTS_FNSOF_Pos;
-  usb_enumerated = (current_frame_num != usb_last_frame_num);
-  usb_last_frame_num = current_frame_num;
 }
 
 static void usb_setup(void) {
@@ -547,21 +538,26 @@ void usb_irqhandler(void) {
   }
 
   if ((gintsts & USB_OTG_GINTSTS_USBRST) != 0U) {
-    print("USB reset\n");
+    #ifdef DEBUG_USB
+      print("USB reset\n");
+    #endif
     usb_reset();
   }
 
   if ((gintsts & USB_OTG_GINTSTS_ENUMDNE) != 0U) {
-    print("enumeration done");
+    #ifdef DEBUG_USB
+      print("enumeration done\n");
+    #endif
     // Full speed, ENUMSPD
     //puth(USBx_DEVICE->DSTS);
-    print("\n");
   }
 
   if ((gintsts & USB_OTG_GINTSTS_OTGINT) != 0U) {
-    print("OTG int:");
-    puth(USBx->GOTGINT);
-    print("\n");
+    #ifdef DEBUG_USB
+      print("OTG int:");
+      puth(USBx->GOTGINT);
+      print("\n");
+    #endif
 
     // getting ADTOCHG
     //USBx->GOTGINT = USBx->GOTGINT;

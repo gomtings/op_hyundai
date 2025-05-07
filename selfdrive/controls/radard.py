@@ -1,20 +1,21 @@
 #!/usr/bin/env python3
 import math
+import numpy as np
 from collections import deque
 from typing import Any
 
 import capnp
 from cereal import messaging, log, car
-from openpilot.common.numpy_fast import interp
+from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL, Priority, config_realtime_process
 from openpilot.common.swaglog import cloudlog
 from openpilot.common.simple_kalman import KF1D
-
+from openpilot.common.numpy_fast import interp
 from openpilot.selfdrive.controls.ntune import ntune_scc_get
 
 # Default lead acceleration decay set to 50% at 1s
-_LEAD_ACCEL_TAU = 1.5
+_LEAD_ACCEL_TAU = 1.0
 
 # radar tracks
 SPEED, ACCEL = 0, 1     # Kalman filter states enum
@@ -45,14 +46,14 @@ class KalmanParams:
           0.28144091, 0.27958406, 0.27783249, 0.27617149, 0.27458948, 0.27307714,
           0.27162685, 0.27023228, 0.26888809, 0.26758976, 0.26633338, 0.26511557,
           0.26393339, 0.26278425]
-    self.K = [[interp(dt, dts, K0)], [interp(dt, dts, K1)]]
+    self.K = [[np.interp(dt, dts, K0)], [np.interp(dt, dts, K1)]]
 
 
 class Track:
   def __init__(self, identifier: int, v_lead: float, kalman_params: KalmanParams):
     self.identifier = identifier
     self.cnt = 0
-    self.aLeadTau = _LEAD_ACCEL_TAU
+    self.aLeadTau = FirstOrderFilter(_LEAD_ACCEL_TAU, 0.45, DT_MDL)
     self.K_A = kalman_params.A
     self.K_C = kalman_params.C
     self.K_K = kalman_params.K
@@ -75,16 +76,11 @@ class Track:
 
     # Learn if constant acceleration
     if abs(self.aLeadK) < 0.5:
-      self.aLeadTau = _LEAD_ACCEL_TAU
+      self.aLeadTau.x = _LEAD_ACCEL_TAU
     else:
-      self.aLeadTau *= 0.9
+      self.aLeadTau.update(0.0)
 
     self.cnt += 1
-
-  def reset_a_lead(self, aLeadK: float, aLeadTau: float):
-    self.kf = KF1D([[self.vLead], [aLeadK]], self.K_A, self.K_C, self.K_K)
-    self.aLeadK = aLeadK
-    self.aLeadTau = aLeadTau
 
   def get_RadarState(self, model_prob: float = 0.0):
     return {
@@ -94,7 +90,7 @@ class Track:
       "vLead": float(self.vLead),
       "vLeadK": float(self.vLeadK),
       "aLeadK": float(self.aLeadK),
-      "aLeadTau": float(self.aLeadTau),
+      "aLeadTau": float(self.aLeadTau.x),
       "status": True,
       "fcw": self.is_potential_fcw(model_prob),
       "modelProb": model_prob,
@@ -216,9 +212,7 @@ class RadarD:
       self.v_ego_hist.append(self.v_ego)
       self.last_v_ego_frame = sm.recv_frame['carState']
 
-    ar_pts = {}
-    for pt in rr.points:
-      ar_pts[pt.trackId] = [pt.dRel, pt.yRel, pt.vRel, pt.measured]
+    ar_pts = {pt.trackId: [pt.dRel, pt.yRel, pt.vRel, pt.measured] for pt in rr.points}
 
     # *** remove missing points from meta data ***
     for ids in list(self.tracks.keys()):
@@ -238,10 +232,10 @@ class RadarD:
       self.tracks[ids].update(rpt[0], rpt[1], rpt[2], v_lead, rpt[3])
 
     # *** publish radarState ***
-    self.radar_state_valid = sm.all_checks() and len(rr.errors) == 0
+    self.radar_state_valid = sm.all_checks()
     self.radar_state = log.RadarState.new_message()
     self.radar_state.mdMonoTime = sm.logMonoTime['modelV2']
-    self.radar_state.radarErrors = list(rr.errors)
+    self.radar_state.radarErrors = rr.errors
     self.radar_state.carStateMonoTime = sm.logMonoTime['carState']
 
     if len(sm['modelV2'].velocity.x):

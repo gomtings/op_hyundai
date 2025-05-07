@@ -4,13 +4,13 @@ from collections import deque, defaultdict
 
 import cereal.messaging as messaging
 from cereal import car, log
+from opendbc.car.vehicle_model import ACCELERATION_DUE_TO_GRAVITY
 from openpilot.common.params import Params
 from openpilot.common.realtime import config_realtime_process, DT_MDL
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.swaglog import cloudlog
-from openpilot.selfdrive.controls.lib.vehicle_model import ACCELERATION_DUE_TO_GRAVITY
 from openpilot.selfdrive.locationd.helpers import PointBuckets, ParameterEstimator, PoseCalibrator, Pose
-from openpilot.selfdrive.controls.ntune import ntune_torque_get, ntune_common_get
+from openpilot.selfdrive.controls.ntune import ntune_torque_get
 
 HISTORY = 5  # secs
 POINTS_PER_BUCKET = 1500
@@ -33,7 +33,7 @@ MIN_BUCKET_POINTS = np.array([100, 300, 500, 500, 500, 500, 300, 100])
 MIN_ENGAGE_BUFFER = 2  # secs
 
 VERSION = 1  # bump this to invalidate old parameter caches
-ALLOWED_CARS = ['toyota', 'hyundai']
+ALLOWED_CARS = ['toyota', 'hyundai', 'rivian']
 
 
 def slope2rot(slope):
@@ -52,15 +52,17 @@ class TorqueBuckets(PointBuckets):
 
 class TorqueEstimator(ParameterEstimator):
 
-  def get_friction(self):
+  @staticmethod
+  def get_friction():
     return ntune_torque_get('friction')
 
-  def get_lat_accel_factor(self):
+  @staticmethod
+  def get_lat_accel_factor():
     return ntune_torque_get('latAccelFactor')
 
   def __init__(self, CP, decimated=False, track_all_points=False):
     self.hist_len = int(HISTORY / DT_MDL)
-    self.lag = ntune_common_get('steerActuatorDelay') + .2  # from controlsd
+    self.lag = 0.0
     self.track_all_points = track_all_points  # for offline analysis, without max lateral accel or max steer torque filters
     if decimated:
       self.min_bucket_points = MIN_BUCKET_POINTS / 10
@@ -79,12 +81,12 @@ class TorqueEstimator(ParameterEstimator):
     self.offline_friction = 0.0
     self.offline_latAccelFactor = 0.0
     self.resets = 0.0
-    #self.use_params = CP.carName in ALLOWED_CARS and CP.lateralTuning.which() == 'torque'
+    #self.use_params = CP.brand in ALLOWED_CARS and CP.lateralTuning.which() == 'torque'
     self.use_params = False
 
     if CP.lateralTuning.which() == 'torque':
-      self.offline_friction = self.get_friction()
-      self.offline_latAccelFactor = self.get_lat_accel_factor()
+      self.offline_friction = TorqueEstimator.get_friction()
+      self.offline_latAccelFactor = TorqueEstimator.get_lat_accel_factor()
 
     self.calibrator = PoseCalibrator()
 
@@ -135,8 +137,8 @@ class TorqueEstimator(ParameterEstimator):
   def get_restore_key(CP, version):
     a, b = None, None
     if CP.lateralTuning.which() == 'torque':
-      a = self.get_friction()
-      b = self.get_lat_accel_factor()
+      a = TorqueEstimator.get_friction()
+      b = TorqueEstimator.get_lat_accel_factor()
     return (CP.carFingerprint, CP.lateralTuning.which(), a, b, version)
 
   def reset(self):
@@ -171,13 +173,12 @@ class TorqueEstimator(ParameterEstimator):
       self.filtered_params[param].update_alpha(self.decay)
 
   def handle_log(self, t, which, msg):
-    self.lag = ntune_common_get('steerActuatorDelay')+.2
     if which == "carControl":
       self.raw_points["carControl_t"].append(t + self.lag)
       self.raw_points["lat_active"].append(msg.latActive)
     elif which == "carOutput":
       self.raw_points["carOutput_t"].append(t + self.lag)
-      self.raw_points["steer_torque"].append(-msg.actuatorsOutput.steer)
+      self.raw_points["steer_torque"].append(-msg.actuatorsOutput.torque)
     elif which == "carState":
       self.raw_points["carState_t"].append(t + self.lag)
       # TODO: check if high aEgo affects resulting lateral accel
@@ -185,6 +186,8 @@ class TorqueEstimator(ParameterEstimator):
       self.raw_points["steer_override"].append(msg.steeringPressed)
     elif which == "liveCalibration":
       self.calibrator.feed_live_calib(msg)
+    elif which == "liveDelay":
+      self.lag = msg.lateralDelay
 
     # calculate lateral accel from past steering torque
     elif which == "livePose":
@@ -255,17 +258,17 @@ class TorqueEstimator(ParameterEstimator):
     return msg
 
   def checkNTune(self):
-    if abs(self.get_friction() - self.offline_friction) > 0.0001 \
-            or abs(self.get_lat_accel_factor() - self.offline_latAccelFactor) > 0.0001:
+    if abs(TorqueEstimator.get_friction() - self.offline_friction) > 0.0001 \
+            or abs(TorqueEstimator.get_lat_accel_factor() - self.offline_latAccelFactor) > 0.0001:
       self.reset()
-      self.offline_friction = self.get_friction()
-      self.offline_latAccelFactor = self.get_lat_accel_factor()
+      self.offline_friction = TorqueEstimator.get_friction()
+      self.offline_latAccelFactor = TorqueEstimator.get_lat_accel_factor()
 
 def main(demo=False):
   config_realtime_process([0, 1, 2, 3], 5)
 
   pm = messaging.PubMaster(['liveTorqueParameters'])
-  sm = messaging.SubMaster(['carControl', 'carOutput', 'carState', 'liveCalibration', 'livePose'], poll='livePose')
+  sm = messaging.SubMaster(['carControl', 'carOutput', 'carState', 'liveCalibration', 'livePose', 'liveDelay'], poll='livePose')
 
   params = Params()
   estimator = TorqueEstimator(messaging.log_from_bytes(params.get("CarParams", block=True), car.CarParams))
