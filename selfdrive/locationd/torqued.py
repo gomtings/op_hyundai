@@ -10,7 +10,7 @@ from openpilot.common.realtime import config_realtime_process, DT_MDL
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.locationd.helpers import PointBuckets, ParameterEstimator, PoseCalibrator, Pose
-from openpilot.selfdrive.controls.ntune import ntune_torque_get
+from openpilot.selfdrive.controls.ntune import ntune_torque_get, ntune_common_get
 
 HISTORY = 5  # secs
 POINTS_PER_BUCKET = 1500
@@ -188,7 +188,6 @@ class TorqueEstimator(ParameterEstimator):
       self.calibrator.feed_live_calib(msg)
     elif which == "liveDelay":
       self.lag = msg.lateralDelay
-
     # calculate lateral accel from past steering torque
     elif which == "livePose":
       if len(self.raw_points['steer_torque']) == self.hist_len:

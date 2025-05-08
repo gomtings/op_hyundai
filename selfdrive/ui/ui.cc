@@ -100,7 +100,8 @@ UIState::UIState(QObject *parent) : QObject(parent) {
     "modelV2", "controlsState", "liveCalibration", "radarState", "deviceState",
     "pandaStates", "carParams", "driverMonitoringState", "carState", "driverStateV2",
     "wideRoadCameraState", "managerState", "selfdriveState", "longitudinalPlan",
-    "gpsLocationExternal", "carControl", "liveParameters", "liveTorqueParameters", "naviData", "lateralPlan"
+    "gpsLocationExternal", "carControl", "liveParameters", "liveTorqueParameters", "naviData", "lateralPlan",
+    "liveDelay"
   });
   prime_state = new PrimeState(this);
   language = QString::fromStdString(Params().get("LanguageSetting"));

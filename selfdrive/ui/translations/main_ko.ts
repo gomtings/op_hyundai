@@ -1583,8 +1583,12 @@ This may take up to a minute.</source>
         <translation>코너에서 오버스티어가 발생하면 줄이세요.</translation>
     </message>
     <message>
-        <source>The higher it is, the more sensitive the response to the lead.</source>
-        <translation>이 값이 높을수록 선행차에 대한 반응이 더 민감해집니다.</translation>
+        <source>The higher it is, the more sensitive the response to the lead when accelerating.</source>
+        <translation>가속일 떄 이 값이 높을수록 선행차에 대한 반응이 더 민감해집니다.</translation>
+    </message>
+    <message>
+        <source>The higher it is, the more sensitive the response to the lead when decelerating.</source>
+        <translation>감속일 떄 이 값이 높을수록 선행차에 대한 반응이 더 민감해집니다.</translation>
     </message>
     <message>
         <source>If this value is high, it reduces the distance maintained with the car in front, resulting in more aggressive driving.</source>

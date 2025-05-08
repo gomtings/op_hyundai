@@ -192,6 +192,8 @@ class CarSpecificEvents:
       events.add(EventName.accFaulted)
     if CS.steeringPressed:
       events.add(EventName.steerOverride)
+    if CS.steeringDisengage and not CS_prev.steeringDisengage:
+      events.add(EventName.steerDisengage)
     if CS.brakePressed and CS.standstill:
       events.add(EventName.preEnableStandstill)
     if CS.gasPressed:
@@ -234,7 +236,7 @@ class CarSpecificEvents:
 
     # we engage when pcm is active (rising edge)
     # enabling can optionally be blocked by the car interface
-    if True: # pcm_enable 가 true 면 롱컨이 아닌상태 롱컨 아닐떄 여기서 인게이지??  22.11.24 - PolorBear
+    if pcm_enable:
       if CS.cruiseState.available and not CS_prev.cruiseState.available and allow_enable:
         events.add(EventName.pcmEnable)
       elif not CS.cruiseState.available:

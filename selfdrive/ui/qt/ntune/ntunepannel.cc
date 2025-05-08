@@ -27,7 +27,9 @@ nTuneMainWidget::nTuneMainWidget(QWidget *parent)
     {
         TuneItemInfo(NTUNE_FILES["scc"], "longActuatorDelay", tr("Longitudinal Actuator Delay"),
                      0.5f, 0.1f, 1.0f, 0.05f, 2, "sec"),
-        TuneItemInfo(NTUNE_FILES["scc"], "aTargetFactor", tr("The higher it is, the more sensitive the response to the lead."),
+        TuneItemInfo(NTUNE_FILES["scc"], "accelTargetFactor", tr("The higher it is, the more sensitive the response to the lead when accelerating."),
+                     1.0f, 0.7f, 1.5f, 0.05f, 2),
+        TuneItemInfo(NTUNE_FILES["scc"], "decelTargetFactor", tr("The higher it is, the more sensitive the response to the lead when decelerating."),
                      1.0f, 0.7f, 1.5f, 0.05f, 2),
         TuneItemInfo(NTUNE_FILES["scc"], "comportBrake", tr("If this value is high, it reduces the distance maintained with the car in front, resulting in more aggressive driving."),
                      2.6f, 2.3f, 2.7f, 0.1f, 1, "m/s²"),

@@ -122,9 +122,10 @@ void CustomHudRenderer::drawHud(QPainter &p, const QRect &rect) {
   const auto torque_state = controls_state.getLateralControlState().getTorqueState();
   const auto car_state = sm["carState"].getCarState();
   const auto ex_state = car_state.getExState();
+  const auto live_delay = sm["liveDelay"].getLiveDelay();
 
   QString infoText;
-  infoText.sprintf("TP(%.2f/%.2f) LTP(%.2f/%.2f/%.0f) AO(%.2f/%.2f) SR(%.2f) SAD(%.2f) LAD(%.2f) SCC(%d)",
+  infoText.sprintf("TP(%.2f/%.2f) LTP(%.2f/%.2f/%.0f) AO(%.2f/%.2f) SR(%.2f) SAD(%.2f/%.2f) LAD(%.2f) SCC(%d)",
 
                       torque_state.getLatAccelFactor(),
                       torque_state.getFriction(),
@@ -138,6 +139,7 @@ void CustomHudRenderer::drawHud(QPainter &p, const QRect &rect) {
 
                       car_control.getSteerRatio(),
                       ex_state.getSteerActuatorDelay(),
+                      live_delay.getLateralDelay(),
                       ex_state.getLongActuatorDelay(),
 
                       car_params.getSccBus()

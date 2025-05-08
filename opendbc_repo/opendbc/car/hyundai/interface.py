@@ -18,6 +18,7 @@ from opendbc.car.hyundai.values import HyundaiExFlags
 from common.numpy_fast import interp
 import copy
 from opendbc.car.hyundai.cruise_helper import enable_radar_tracks # Thank you to ajouatom
+
 ButtonType = structs.CarState.ButtonEvent.Type
 Ecu = structs.CarParams.Ecu
 

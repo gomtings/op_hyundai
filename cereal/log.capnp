@@ -48,6 +48,7 @@ struct OnroadEvent @0xc4fa6047f024e718 {
     preEnableStandstill @12;  # added during pre-enable state with brake
     gasPressedOverride @13;  # added when user is pressing gas with no disengage on gas
     steerOverride @14;
+    steerDisengage @94;  # exits active state
     cruiseDisabled @15;
     speedTooLow @16;
     outOfSpace @17;
@@ -127,9 +128,9 @@ struct OnroadEvent @0xc4fa6047f024e718 {
     personalityChanged @91;
     aeb @92;
 
-    slowingDownSpeed @94;
-    cruiseOn @95;
-    cruiseOff @96;
+    slowingDownSpeed @95;
+    cruiseOn @96;
+    cruiseOff @97;
 
     soundsUnavailableDEPRECATED @47;
   }

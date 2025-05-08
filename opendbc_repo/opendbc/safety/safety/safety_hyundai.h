@@ -27,7 +27,7 @@ const LongitudinalLimits HYUNDAI_LONG_LIMITS = {
 
 const CanMsg HYUNDAI_TX_MSGS[] = {
   {593, 2, 8, .check_relay = false},                              // MDPS12, Bus 2
-  {832, 0, 8, .check_relay = true},                              // LKAS11, Bus 0
+  {832, 0, 8, .check_relay = true, .disable_static_blocking = true},                              // LKAS11, Bus 0
   {1056, 0, 8, .check_relay = false},                             // SCC11, Bus 0
   {1057, 0, 8, .check_relay = false},                             // SCC12, Bus 0
   {1290, 0, 8, .check_relay = false},                             // SCC13, Bus 0
@@ -303,7 +303,7 @@ static bool hyundai_fwd_hook(int bus_num, int addr) {
 static safety_config hyundai_init(uint16_t param) {
   static const CanMsg HYUNDAI_LONG_TX_MSGS[] = {
 	  {593, 2, 8, .check_relay = false},  // MDPS12, Bus 2
-	  {832, 0, 8, .check_relay = true},  // LKAS11 Bus 0
+	  {832, 0, 8, .check_relay = true, .disable_static_blocking = true},  // LKAS11 Bus 0
 	  {1265, 0, 4, .check_relay = false}, {1265, 2, 4, .check_relay = false},               // CLU11, Bus 0, 2
 	  {1157, 0, 4, .check_relay = false}, // LFAHDA_MFC Bus 0
 	  {1056, 0, 8, .check_relay = false}, // SCC11 Bus 0

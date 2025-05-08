@@ -194,10 +194,12 @@ struct CarState {
   steeringTorque @8 :Float32;      # TODO: standardize units
   steeringTorqueEps @27 :Float32;  # TODO: standardize units
   steeringPressed @9 :Bool;        # if the user is using the steering wheel
+  steeringDisengage @58 :Bool;     # more force than steeringPressed, disengages for applicable brands
   steerFaultTemporary @35 :Bool;   # temporary EPS fault
   steerFaultPermanent @36 :Bool;   # permanent EPS fault
   invalidLkasSetting @55 :Bool;    # stock LKAS is incorrectly configured (i.e. on or off)
   stockAeb @30 :Bool;
+  stockLkas @59 :Bool;
   stockFcw @31 :Bool;
   espDisabled @32 :Bool;
   accFaulted @42 :Bool;
@@ -237,7 +239,7 @@ struct CarState {
   cumLagMs @50 :Float32;
 
   # neokii
-  exState @58 :ExState;
+  exState @60 :ExState;
 
   struct ExState {
     vCruiseKph @0 :Float32;
@@ -435,9 +437,6 @@ struct CarControl {
     leftLaneDepart @9: Bool;
     leadDistanceBars @10: Int8;  # 1-3: 1 is closest, 3 is farthest. some ports may utilize 2-4 bars instead
 
-    objDist @11: Int32;
-    objRelSpd @12: Float32;
-    
     # not used with the dash, TODO: separate structs for dash UI and device UI
     audibleAlert @5: AudibleAlert;
 

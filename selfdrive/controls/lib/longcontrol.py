@@ -104,8 +104,9 @@ class LongControl:
     else:  # LongCtrlState.pid
       #error = long_plan.aTarget - CS.aEgo
       error = long_plan.vTarget - CS.vEgo
+      a_target_factor = ntune_scc_get('accelTargetFactor') if long_plan.aTarget > 0 else ntune_scc_get('decelTargetFactor')
       output_accel = self.pid.update(error, speed=CS.vEgo,
-                                     feedforward=long_plan.aTarget * ntune_scc_get('aTargetFactor'))
+                                     feedforward=long_plan.aTarget * a_target_factor)
 
       self.stopping_accel_weight = max(self.stopping_accel_weight - 2. * DT_CTRL, 0.)
       output_accel = self.last_output_accel * self.stopping_accel_weight + output_accel * (1. - self.stopping_accel_weight)

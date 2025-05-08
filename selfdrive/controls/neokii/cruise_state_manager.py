@@ -115,7 +115,7 @@ class CruiseStateManager:
       CS.cruiseState.standstill = False
       CS.cruiseState.speed = self.speed
       CS.cruiseState.leadDistanceBars = self.leadDistanceBars
-
+    
     if self.enabled : # 롱컨 시작
       CS.cruiseState.enabled = self.enabled
 
@@ -194,8 +194,6 @@ class CruiseStateManager:
         self.params.put_bool("ExperimentalMode", not self.params.get_bool("ExperimentalMode"))
 
     if btn == ButtonType.cancel:
-      if not self.enabled :
-        self.available = False
       if not self.enabled :
         self.available = False
       self.enabled = False # 메드모드로 변경함.

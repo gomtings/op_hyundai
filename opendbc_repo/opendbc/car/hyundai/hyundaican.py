@@ -127,7 +127,6 @@ def create_acc_commands(packer, enabled, accel, upper_jerk, idx, hud_control, se
   # ,hud_control.objDist,hud_control.objRelSpd ,vision_dist,RelSpd
   vision_dist = hud_control.vision_dist
   objGap = 0 if vision_dist == 0 else 2 if vision_dist < 25 else 3 if vision_dist < 40 else 4 if vision_dist < 70 else 5
-
   commands = []
 
   cruise_enabled = enabled and CS.out.cruiseState.enabled

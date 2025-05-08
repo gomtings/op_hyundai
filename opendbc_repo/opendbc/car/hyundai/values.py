@@ -7,7 +7,7 @@ from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.structs import CarParams
 from opendbc.car.docs_definitions import CarFootnote, CarHarness, CarDocs, CarParts, Column
 from opendbc.car.fw_query_definitions import FwQueryConfig, Request, p16
-from opendbc.car.hyundai.values import HyundaiFlags
+
 Ecu = CarParams.Ecu
 
 
@@ -254,7 +254,7 @@ class CAR(Platforms):
   HYUNDAI_KONA_2022 = HyundaiPlatformConfig(
     [HyundaiCarDocs("Hyundai Kona 2022", car_parts=CarParts.common([CarHarness.hyundai_o]))],
     CarSpecs(mass=1491, wheelbase=2.6, steerRatio=13.42, tireStiffnessFactor=0.385),
-    flags=HyundaiFlags.CAMERA_SCC,
+    flags=HyundaiFlags.CAMERA_SCC | HyundaiFlags.ALT_LIMITS_2,
   )
   HYUNDAI_KONA_EV = HyundaiPlatformConfig(
     [HyundaiCarDocs("Hyundai Kona Electric 2018-21", car_parts=CarParts.common([CarHarness.hyundai_g]))],
