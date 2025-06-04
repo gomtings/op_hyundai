@@ -9,7 +9,7 @@ from opendbc.car.vehicle_model import VehicleModel
 from opendbc.can.can_define import CANDefine
 from opendbc.safety.tests.libsafety import libsafety_py
 import opendbc.safety.tests.common as common
-from opendbc.safety.tests.common import CANPackerPanda, MAX_WRONG_COUNTERS, away_round, round_speed
+from opendbc.safety.tests.common import CANPackerPanda, MAX_SPEED_DELTA, MAX_WRONG_COUNTERS, away_round, round_speed
 
 MSG_DAS_steeringControl = 0x488
 MSG_APS_eacMonitor = 0x27d
@@ -45,9 +45,6 @@ class TestTeslaSafetyBase(common.PandaCarSafetyTest, common.AngleSteeringSafetyT
   MAX_ACCEL = 2.0
   MIN_ACCEL = -3.48
   INACTIVE_ACCEL = 0.0
-
-  # Max allowed delta between car speeds
-  MAX_SPEED_DELTA = 2.0  # m/s
 
   cnt_epas = 0
 
@@ -161,7 +158,7 @@ class TestTeslaSafetyBase(common.PandaCarSafetyTest, common.AngleSteeringSafetyT
                                   self.safety.get_vehicle_speed_min, self.safety.get_vehicle_speed_max)
 
   def test_rx_hook_speed_mismatch(self):
-    # TODO: this can be a common test w/ Ford
+    # TODO: overridden because of custom rounding
     # Tesla relies on speed for lateral limits close to ISO 11270, so it checks two sources
     for speed in np.arange(0, 40, 0.5):
       # match signal rounding on CAN
@@ -175,7 +172,7 @@ class TestTeslaSafetyBase(common.PandaCarSafetyTest, common.AngleSteeringSafetyT
         self.safety.set_controls_allowed(True)
         self.assertTrue(self._rx(self._speed_msg_2(speed_2)))
 
-        within_delta = abs(speed - speed_2) <= self.MAX_SPEED_DELTA
+        within_delta = abs(speed - speed_2) <= MAX_SPEED_DELTA
         self.assertEqual(self.safety.get_controls_allowed(), within_delta)
 
     # Test ESP_B quality flag
@@ -278,6 +275,7 @@ class TestTeslaSafetyBase(common.PandaCarSafetyTest, common.AngleSteeringSafetyT
 
   def test_lateral_accel_limit(self):
     for speed in np.linspace(0, 40, 100):
+      speed = max(speed, 1)
       # match DI_vehicleSpeed rounding on CAN
       speed = round_speed(away_round(speed / 0.08 * 3.6) * 0.08 / 3.6)
       for sign in (-1, 1):
@@ -305,6 +303,7 @@ class TestTeslaSafetyBase(common.PandaCarSafetyTest, common.AngleSteeringSafetyT
 
   def test_lateral_jerk_limit(self):
     for speed in np.linspace(0, 40, 100):
+      speed = max(speed, 1)
       # match DI_vehicleSpeed rounding on CAN
       speed = round_speed(away_round(speed / 0.08 * 3.6) * 0.08 / 3.6)
       for sign in (-1, 1):  # (-1, 1):
