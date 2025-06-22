@@ -58,6 +58,7 @@ private slots:
 private:
   Params params;
   ButtonControl *pair_device;
+  ButtonControl *resetCalibBtn;
 };
 
 class TogglesPanel : public ListWidget {
