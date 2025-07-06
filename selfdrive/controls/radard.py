@@ -134,10 +134,10 @@ def match_vision_to_track(v_ego: float, model: capnp._DynamicStructReader, lead:
   dist_sane = abs(track.dRel - offset_vision_dist) < max([(offset_vision_dist)*.3, 5.0])
   vel_sane = (abs(track.vRel + v_ego - lead.v[0]) < 10) or (v_ego + track.vRel > 3)
   if dist_sane and vel_sane:
-    if len(model.position.x) == 33:
-      path_y = interp(track.dRel, list(model.position.x), list(model.position.y))
-      if abs(path_y - track.yRel) < 2.:
-        return track
+    # if len(model.position.x) == 33:
+    #   path_y = interp(track.dRel, list(model.position.x), list(model.position.y))
+    #   if abs(path_y - track.yRel) < 2.:
+    #     return track
     return track
   else:
     return None

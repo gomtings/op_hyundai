@@ -83,7 +83,7 @@ class TogglesLayout(Widget):
         DESCRIPTIONS["RecordAudio"],
         self._params.get_bool("RecordAudio"),
         icon="microphone.png",
-      ),      
+      ),
     ]
 
     self._scroller = Scroller(items, line_separator=True, spacing=0)

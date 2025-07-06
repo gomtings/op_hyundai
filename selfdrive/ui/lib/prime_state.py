@@ -8,6 +8,7 @@ from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 from openpilot.system.athena.registration import UNREGISTERED_DONGLE_ID
 
+
 class PrimeType(IntEnum):
   UNKNOWN = -2,
   UNPAIRED = -1,

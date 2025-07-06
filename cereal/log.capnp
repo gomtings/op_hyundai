@@ -2577,7 +2577,7 @@ struct Event {
 
     # microphone data
     soundPressure @103 :SoundPressure;
-    rawAudioData @150 :AudioData;
+    rawAudioData @147 :AudioData;
 
     # systems stuff
     androidLog @20 :AndroidLogEntry;
@@ -2647,9 +2647,9 @@ struct Event {
     customReserved19 @145 :Custom.CustomReserved19;
 
     # neokii
-    naviData @147 :NaviData;
-    naviGps @148 :NaviGps;
-    naviObstacles @149 :NaviObstacles;
+    naviData @148 :NaviData;
+    naviGps @149 :NaviGps;
+    naviObstacles @150 :NaviObstacles;
 
     # *********** legacy + deprecated ***********
     model @9 :Legacy.ModelData; # TODO: rename modelV2 and mark this as deprecated

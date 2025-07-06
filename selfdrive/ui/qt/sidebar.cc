@@ -48,7 +48,7 @@ void Sidebar::mousePressEvent(QMouseEvent *event) {
   } else if (settings_btn.contains(event->pos())) {
     settings_pressed = true;
     update();
-  }else if (recording_audio && mic_indicator_btn.contains(event->pos())) {
+  } else if (recording_audio && mic_indicator_btn.contains(event->pos())) {
     mic_indicator_pressed = true;
     update();
   }

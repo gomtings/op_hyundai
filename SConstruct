@@ -39,7 +39,6 @@ AddOption('--clazy',
           action='store_true',
           help='build with clazy')
 
-
 AddOption('--ccflags',
           action='store',
           type='string',
