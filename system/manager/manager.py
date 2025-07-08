@@ -40,11 +40,6 @@ def manager_init() -> None:
     ("LanguageSetting", "main_en"),
     ("OpenpilotEnabledToggle", "1"),
     ("LongitudinalPersonality", str(log.LongitudinalPersonality.standard)),
-
-    ("IsMetric", "1"),
-    ("UseExternalNaviRoutes", "1"),
-    ("DriverCameraOnReverse", "1"),
-    ("SyncSetSpeedWhileGas", "1"),
   ]
 
   if params.get_bool("RecordFrontLock"):

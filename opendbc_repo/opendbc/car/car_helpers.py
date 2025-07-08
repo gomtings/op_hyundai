@@ -1,5 +1,3 @@
-import datetime
-import json
 import os
 import time
 
@@ -12,8 +10,6 @@ from opendbc.car.fw_versions import ObdCallback, get_fw_versions_ordered, get_pr
 from opendbc.car.mock.values import CAR as MOCK
 from opendbc.car.values import BRANDS
 from opendbc.car.vin import get_vin, is_valid_vin, VIN_UNKNOWN
-
-from openpilot.common.params import Params
 
 FRAME_FINGERPRINT = 100  # 1s
 
@@ -159,34 +155,6 @@ def get_car(can_recv: CanRecvCallable, can_send: CanSendCallable, set_obd_multip
   if candidate is None:
     carlog.error({"event": "car doesn't match any fingerprints", "fingerprints": repr(fingerprints)})
     candidate = "MOCK"
-
-  selected_car = Params().get("SelectedCar_v2")
-  if selected_car:
-    def find_platform_from_hyundai(name: str):
-      from opendbc.car.hyundai.values import CAR as HYUNDAI
-      for platform in HYUNDAI:
-        for doc in platform.config.car_docs:
-          if name == doc.name:
-            return platform
-      return None
-    found_platform = find_platform_from_hyundai(selected_car.decode("utf-8"))
-    if found_platform is not None:
-      candidate = found_platform
-
-  print('candidate !!!!!!!!!', candidate)
-  Params().put("CarFingerprints", json.dumps(fingerprints))
-
-  car_fingerprints = {
-    'candidate': candidate,
-    'fingerprints': fingerprints
-  }
-
-  try:
-    with open('/data/log/car_fingerprints', 'w') as f:
-      now = datetime.datetime.now()
-      f.write(now.strftime('[%Y-%m-%d %H:%M:%S]') + "\n\n" + json.dumps(car_fingerprints, indent=2))
-  except:
-    pass
 
   CarInterface = interfaces[candidate]
   CP: CarParams = CarInterface.get_params(candidate, fingerprints, car_fw, alpha_long_allowed, is_release, docs=False)

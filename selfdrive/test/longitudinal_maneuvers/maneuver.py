@@ -33,6 +33,7 @@ class Maneuver:
       lead_relevancy=self.lead_relevancy,
       speed=self.speed,
       distance_lead=self.distance_lead,
+      enabled=self.enabled,
       only_lead2=self.only_lead2,
       only_radar=self.only_radar,
       e2e=self.e2e,

@@ -347,10 +347,6 @@ static void relay_malfunction_set(void) {
 }
 
 static void generic_rx_checks(void) {
-
-  gas_pressed = brake_pressed = steering_disengage = false;
-  controls_allowed = true;
-
   gas_pressed_prev = gas_pressed;
 
   // exit controls on rising edge of brake press
