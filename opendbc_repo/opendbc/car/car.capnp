@@ -239,6 +239,32 @@ struct CarState {
   # process meta
   cumLagMs @50 :Float32;
 
+  # neokii
+  exState @61 :ExState;
+
+  struct ExState {
+    vCruiseKph @0 :Float32;
+    vCluRatio @1 :Float32;
+    autoHold @2 :Int8;
+    tpms @3 :Tpms;
+    navSpeedLimit @4 :Int16;
+    aReqValue @5 :Float32;
+
+    applyMaxSpeed @6 :Float32;
+    cruiseMaxSpeed @7 :Float32;
+    autoTrGap @8 :UInt32;
+    longActuatorDelay @9 :Float32;
+    slowingDownAlert @10 :Bool;
+  }
+
+  struct Tpms {
+    enabled @0 :Bool;
+    fl @1 :Float32;
+    fr @2 :Float32;
+    rl @3 :Float32;
+    rr @4 :Float32;
+  }
+
   struct WheelSpeeds {
     # optional wheel speeds
     fl @0 :Float32;
@@ -255,6 +281,7 @@ struct CarState {
     speedOffset @3 :Float32;
     standstill @4 :Bool;
     nonAdaptive @5 :Bool;
+    leadDistanceBars @7 :Int8;
   }
 
   enum GearShifter {
@@ -293,7 +320,7 @@ struct CarState {
 
   # deprecated
   errorsDEPRECATED @0 :List(OnroadEventDEPRECATED.EventName);
-  brakeLightsDEPRECATED @19 :Bool;
+  brakeLights @19 :Bool;
   steeringRateLimitedDEPRECATED @29 :Bool;
   canMonoTimesDEPRECATED @12: List(UInt64);
   canRcvTimeoutDEPRECATED @49 :Bool;
@@ -363,6 +390,8 @@ struct CarControl {
 
   cruiseControl @4 :CruiseControl;
   hudControl @5 :HUDControl;
+
+  steerRatio @18 :Float32;
 
   struct Actuators {
     # lateral commands, mutually exclusive
@@ -437,6 +466,10 @@ struct CarControl {
       prompt @6;
       promptRepeat @7;
       promptDistracted @8;
+
+      slowingDownSpeed @9;
+      cruiseOn @10;
+      cruiseOff @11;
     }
   }
 
@@ -532,6 +565,9 @@ struct CarParams {
 
   secOcRequired @75 :Bool;  # Car requires SecOC message authentication to operate
   secOcKeyAvailable @76 :Bool;  # Stored SecOC key loaded from params
+
+  sccBus @78: Int8;
+  exFlags @79 :UInt32;
 
   struct SafetyConfig {
     safetyModel @0 :SafetyModel;
