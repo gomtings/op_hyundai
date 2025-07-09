@@ -229,37 +229,6 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
   });
   addItem(pair_device);
 
-  QHBoxLayout *reset_layout = new QHBoxLayout();
-  reset_layout->setSpacing(30);
-
-  // reset calibration button
-  /*QPushButton *restart_openpilot_btn = new QPushButton(tr("Soft restart"));
-  restart_openpilot_btn->setStyleSheet("height: 120px;border-radius: 15px;background-color: #393939;");
-  reset_layout->addWidget(restart_openpilot_btn);
-  QObject::connect(restart_openpilot_btn, &QPushButton::released, [=]() {
-    emit closeSettings();
-    QTimer::singleShot(100, []() {
-      Hardware::reboot();
-    });
-  });*/
-
-  // reset calibration button
-  QPushButton *reset_calib_btn = new QPushButton(tr("Reset Calibration"));
-  reset_calib_btn->setStyleSheet("height: 120px;border-radius: 15px;background-color: #393939;");
-  reset_layout->addWidget(reset_calib_btn);
-  QObject::connect(reset_calib_btn, &QPushButton::released, [=]() {
-    if (ConfirmationDialog::confirm(tr("Are you sure you want to reset calibration and live params?"), tr("Reset"), this)) {
-      Params().remove("CalibrationParams");
-      Params().remove("LiveParameters");
-      emit closeSettings();
-      QTimer::singleShot(100, []() {
-        Hardware::reboot();
-      });
-    }
-  });
-
-  addItem(reset_layout);
-
   // offroad-only buttons
 
   auto dcamBtn = new ButtonControl(tr("Driver Camera"), tr("PREVIEW"),
@@ -339,11 +308,6 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
   power_layout->addWidget(reboot_btn);
   QObject::connect(reboot_btn, &QPushButton::clicked, this, &DevicePanel::reboot);
 
-  QPushButton *rebuild_btn = new QPushButton(tr("Rebuild"));
-  rebuild_btn->setObjectName("rebuild_btn");
-  power_layout->addWidget(rebuild_btn);
-  QObject::connect(rebuild_btn, &QPushButton::clicked, this, &DevicePanel::rebuild);
-
   QPushButton *poweroff_btn = new QPushButton(tr("Power Off"));
   poweroff_btn->setObjectName("poweroff_btn");
   power_layout->addWidget(poweroff_btn);
@@ -356,8 +320,6 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
   setStyleSheet(R"(
     #reboot_btn { height: 120px; border-radius: 15px; background-color: #393939; }
     #reboot_btn:pressed { background-color: #4a4a4a; }
-    #rebuild_btn { height: 120px; border-radius: 15px; background-color: #393939; }
-    #rebuild_btn:pressed { background-color: #4a4a4a; }
     #poweroff_btn { height: 120px; border-radius: 15px; background-color: #E22C2C; }
     #poweroff_btn:pressed { background-color: #FF2424; }
   )");
@@ -367,21 +329,20 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
 void DevicePanel::updateCalibDescription() {
   QString desc = tr("openpilot requires the device to be mounted within 4° left or right and within 5° up or 9° down.");
   std::string calib_bytes = params.get("CalibrationParams");
-    if (!calib_bytes.empty()) {
-      try {
-        AlignedBuffer aligned_buf;
-        capnp::FlatArrayMessageReader cmsg(aligned_buf.align(calib_bytes.data(), calib_bytes.size()));
-        auto calib = cmsg.getRoot<cereal::Event>().getLiveCalibration();
-        if (calib.getCalStatus() != cereal::LiveCalibrationData::Status::UNCALIBRATED) {
-          double pitch = calib.getRpyCalib()[1] * (180 / M_PI);
-          double yaw = calib.getRpyCalib()[2] * (180 / M_PI);
-          desc += tr(" Your device is pointed %1° %2 and %3° %4.")
-                      .arg(QString::number(std::abs(pitch), 'g', 1), pitch > 0 ? tr("down") : tr("up"),
-                          QString::number(std::abs(yaw), 'g', 1), yaw > 0 ? tr("left") : tr("right"));
-        }
-      } catch (kj::Exception) {
-        qInfo() << "invalid CalibrationParams";
+  if (!calib_bytes.empty()) {
+    try {
+      AlignedBuffer aligned_buf;
+      capnp::FlatArrayMessageReader cmsg(aligned_buf.align(calib_bytes.data(), calib_bytes.size()));
+      auto calib = cmsg.getRoot<cereal::Event>().getLiveCalibration();
+      if (calib.getCalStatus() != cereal::LiveCalibrationData::Status::UNCALIBRATED) {
+        double pitch = calib.getRpyCalib()[1] * (180 / M_PI);
+        double yaw = calib.getRpyCalib()[2] * (180 / M_PI);
+        desc += tr(" Your device is pointed %1° %2 and %3° %4.")
+                    .arg(QString::number(std::abs(pitch), 'g', 1), pitch > 0 ? tr("down") : tr("up"),
+                         QString::number(std::abs(yaw), 'g', 1), yaw > 0 ? tr("left") : tr("right"));
       }
+    } catch (kj::Exception) {
+      qInfo() << "invalid CalibrationParams";
     }
   }
 
@@ -419,8 +380,8 @@ void DevicePanel::updateCalibDescription() {
       }
     } catch (kj::Exception) {
       qInfo() << "invalid LiveTorqueParameters";
-    }
   }
+}
 
   desc += "\n\n";
   desc += tr("openpilot is continuously calibrating, resetting is rarely required. "
@@ -438,24 +399,6 @@ void DevicePanel::reboot() {
     }
   } else {
     ConfirmationDialog::alert(tr("Disengage to Reboot"), this);
-  }
-}
-
-void execAndReboot(const std::string& cmd) {
-    system(cmd.c_str());
-    Params().putBool("DoReboot", true);
-}
-
-void DevicePanel::rebuild() {
-  if (!uiState()->engaged()) {
-    if (ConfirmationDialog::confirm(tr("Are you sure you want to rebuild?"), tr("Rebuild"), this)) {
-      if (!uiState()->engaged()) {
-        std::thread worker(execAndReboot, "cd /data/openpilot; scons -c; rm .sconsign.dblite; rm -rf /tmp/scons_cache; rm prebuilt");
-        worker.detach();
-      }
-    }
-  } else {
-    ConfirmationDialog::alert(tr("Disengage to Rebuild"), this);
   }
 }
 
@@ -508,33 +451,28 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
   panel_widget = new QStackedWidget();
 
   // close button
-  QPushButton *close_btn = new QPushButton(tr("← Back"));
+  QPushButton *close_btn = new QPushButton(tr("×"));
   close_btn->setStyleSheet(R"(
     QPushButton {
-      font-size: 50px;
-      font-weight: bold;
-      margin: 0px;
-      padding: 15px;
-      border-width: 0;
-      border-radius: 30px;
-      color: #dddddd;
-      background-color: #444444;
+      font-size: 140px;
+      padding-bottom: 20px;
+      border-radius: 100px;
+      background-color: #292929;
+      font-weight: 400;
     }
     QPushButton:pressed {
       background-color: #3B3B3B;
     }
   )");
-  close_btn->setFixedSize(300, 110);
-  sidebar_layout->addSpacing(10);
-  sidebar_layout->addWidget(close_btn, 0, Qt::AlignRight);
-  sidebar_layout->addSpacing(10);
+  close_btn->setFixedSize(200, 200);
+  sidebar_layout->addSpacing(45);
+  sidebar_layout->addWidget(close_btn, 0, Qt::AlignCenter);
   QObject::connect(close_btn, &QPushButton::clicked, this, &SettingsWindow::closeSettings);
 
   // setup panels
   DevicePanel *device = new DevicePanel(this);
   QObject::connect(device, &DevicePanel::reviewTrainingGuide, this, &SettingsWindow::reviewTrainingGuide);
   QObject::connect(device, &DevicePanel::showDriverView, this, &SettingsWindow::showDriverView);
-  QObject::connect(device, &DevicePanel::closeSettings, this, &SettingsWindow::closeSettings);
 
   TogglesPanel *toggles = new TogglesPanel(this);
   QObject::connect(this, &SettingsWindow::expandToggleDescription, toggles, &TogglesPanel::expandToggleDescription);
