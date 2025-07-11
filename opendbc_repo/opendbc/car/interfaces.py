@@ -24,7 +24,7 @@ ButtonType = structs.CarState.ButtonEvent.Type
 V_CRUISE_MAX = 145
 MAX_CTRL_SPEED = (V_CRUISE_MAX + 4) * CV.KPH_TO_MS
 ACCEL_MAX = 2.0
-ACCEL_MIN = -3.5
+ACCEL_MIN = -3.7
 FRICTION_THRESHOLD = 0.3
 
 # ISO 11270
@@ -270,7 +270,7 @@ class CarInterfaceBase(ABC):
     self.CS.out = ret
 
     return ret
-  
+
   @staticmethod
   def get_params_adjust_set_speed(CP):
     return [10], [20]
@@ -280,7 +280,7 @@ class CarInterfaceBase(ABC):
 
   def get_buttons_dict(self):
     return None
-  
+
 
 class CarStateBase(ABC):
   def __init__(self, CP: structs.CarParams):
@@ -305,8 +305,16 @@ class CarStateBase(ABC):
     C = [[1.0, 0.0]]
     x0=[[0.0], [0.0]]
     K = get_kalman_gain(DT_CTRL, np.array(A), np.array(C), np.array(Q), R)
+    self.v_ego_kf = KF1D(x0=x0, A=A, C=C[0], K=K)
+
+    Q = [[0.0, 0.0], [0.0, 100.0]]
+    R = 0.3
+    A = [[1.0, DT_CTRL], [0.0, 1.0]]
+    C = [[1.0, 0.0]]
+    x0 = [[0.0], [0.0]]
+    K = get_kalman_gain(DT_CTRL, np.array(A), np.array(C), np.array(Q), R)
     self.v_ego_clu_kf = KF1D(x0=x0, A=A, C=C[0], K=K)
-    
+
   @abstractmethod
   def update(self, can_parsers) -> structs.CarState:
     pass
@@ -324,7 +332,7 @@ class CarStateBase(ABC):
 
     v_ego_x = self.v_ego_clu_kf.update(v_ego_raw)
     return float(v_ego_x[0]), float(v_ego_x[1])
-  
+
   def get_wheel_speeds(self, fl, fr, rl, rr, unit=CV.KPH_TO_MS):
     factor = unit * self.CP.wheelSpeedFactor
 
