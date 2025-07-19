@@ -200,10 +200,6 @@ class HardwareBase(ABC):
     pass
 
   @abstractmethod
-  def get_nvme_temperatures(self):
-    pass
-
-  @abstractmethod
   def initialize_hardware(self):
     pass
 
