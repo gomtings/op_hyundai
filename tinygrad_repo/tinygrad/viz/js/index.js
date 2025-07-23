@@ -129,7 +129,7 @@ async function renderProfiler() {
   const [tickSize, padding] = [10, 8];
   deviceList.style.paddingTop = `${tickSize+padding}px`;
   const ctx = canvas.getContext("2d");
-  const { top:canvasTop, height:canvasHeight } = rect(canvas);
+  const canvasTop = rect(canvas).top;
   // color by key (name/category/device)
   const colorMap = new Map();
   const data = {shapes:[], axes:{}};
@@ -197,12 +197,15 @@ async function renderProfiler() {
     // rescale to match current zoom
     const xscale = d3.scaleLinear().domain([0, et-st]).range([0, canvas.clientWidth]);
     xscale.domain(xscale.range().map(zoomLevel.invertX, zoomLevel).map(xscale.invert, xscale));
+    const zoomDomain = transform != null ? xscale.domain() : null;
     let yscale = null;
     if (data.axes.y != null) {
       yscale = d3.scaleLinear().domain(data.axes.y.domain).range(data.axes.y.range);
     }
     // draw shapes
     for (const e of data.shapes) {
+      const [start, end] = Array.isArray(e.x) ? [e.x[0], e.x[e.x.length-1]] : [e.x, e.x+e.dur];
+      if (zoomDomain != null && (start>zoomDomain[1]|| end<zoomDomain[0])) continue;
       if (Array.isArray(e.x)) {
         const x = e.x.map(xscale);
         ctx.beginPath();
@@ -217,8 +220,8 @@ async function renderProfiler() {
         continue;
       }
       // zoom only changes x and width
-      const x = xscale(e.x);
-      const width = xscale(e.x+e.dur)-x;
+      const x = xscale(start);
+      const width = xscale(end)-x;
       ctx.fillStyle = e.fillColor;
       ctx.fillRect(x, e.y, width, e.height);
       rectLst.push({ y0:e.y, y1:e.y+e.height, x0:x, x1:x+width, ref:e.ref, tooltipText:formatTime(e.dur) });
@@ -254,7 +257,6 @@ async function renderProfiler() {
       ctx.lineTo(x, tickSize);
       ctx.stroke();
       // tick label
-      ctx.fontSize = "10px";
       ctx.textBaseline = "top";
       ctx.textAlign = i === ticks.length-1 ? "right" : "left";
       const padding = i === ticks.length-1 ? -1 : 1;
@@ -296,7 +298,7 @@ async function renderProfiler() {
   window.addEventListener("resize", resize);
   canvasZoom = d3.zoom().filter(e => (!e.ctrlKey || e.type === 'wheel' || e.type === 'mousedown') && !e.button)
     .scaleExtent([1, Infinity]).translateExtent([[0,0], [Infinity,0]]).on("zoom", e => render(e.transform));
-  d3.select(canvas).call(canvasZoom).call(canvasZoom.transform, zoomLevel);
+  d3.select(canvas).call(canvasZoom);
   document.addEventListener("contextmenu", e => e.ctrlKey && e.preventDefault());
 
   function findRectAtPosition(x, y) {
@@ -314,18 +316,17 @@ async function renderProfiler() {
     if (foundRect?.ref != null) return setCtxWithHistory(foundRect.ref.ctx, foundRect.ref.step);
   });
 
-  const tooltip = document.body.appendChild(document.createElement("div"));
-  tooltip.id = "tooltip";
   canvas.addEventListener("mousemove", e => {
     const foundRect = findRectAtPosition(e.clientX, e.clientY);
     if (foundRect?.tooltipText != null) {
+      const tooltip = document.getElementById("tooltip");
       tooltip.style.display = "block";
       tooltip.style.left = (e.pageX+10)+"px";
       tooltip.style.top = (e.pageY)+"px";
       tooltip.innerText = foundRect.tooltipText;
     } else tooltip.style.display = "none";
   });
-  canvas.addEventListener("mouseleave", () => tooltip.style.display = "none");
+  canvas.addEventListener("mouseleave", () => document.getElementById("tooltip").style.display = "none");
 }
 
 // ** zoom and recentering
