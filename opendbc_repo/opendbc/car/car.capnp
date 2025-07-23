@@ -322,7 +322,7 @@ struct CarState {
   canMonoTimesDEPRECATED @12: List(UInt64);
   canRcvTimeoutDEPRECATED @49 :Bool;
   eventsDEPRECATED @13 :List(OnroadEventDEPRECATED);
-  clutchPressedDEPRECATED @61 :Bool;
+  clutchPressedDEPRECATED @62 :Bool;
   engineRpmDEPRECATED @46 :Float32;
 }
 
