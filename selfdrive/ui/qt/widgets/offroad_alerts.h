@@ -15,9 +15,10 @@ class AbstractAlert : public QFrame {
 protected:
   AbstractAlert(bool hasRebootBtn, QWidget *parent = nullptr);
 
-  QPushButton *snooze_btn;
+  QPushButton *action_btn;
   QVBoxLayout *scrollable_layout;
   Params params;
+  std::map<std::string, QLabel*> alerts;
 
 signals:
   void dismiss();
@@ -41,6 +42,4 @@ public:
   explicit OffroadAlert(QWidget *parent = 0) : AbstractAlert(false, parent) {}
   int refresh();
 
-private:
-  std::map<std::string, QLabel*> alerts;
 };

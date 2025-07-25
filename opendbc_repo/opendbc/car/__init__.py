@@ -19,6 +19,7 @@ ButtonType = structs.CarState.ButtonEvent.Type
 
 FRICTION_THRESHOLD = 0.3
 
+
 @dataclass
 class AngleSteeringLimits:
   STEER_ANGLE_MAX: float
