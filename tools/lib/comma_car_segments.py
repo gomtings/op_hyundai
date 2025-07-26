@@ -14,8 +14,7 @@ def get_comma_car_segments_database():
 
   ret = {}
   for platform in database:
-    # TODO: remove this when commaCarSegments is updated to remove selector
-    ret[MIGRATION.get(platform, platform)] = [s.rstrip('/s') for s in database[platform]]
+    ret[MIGRATION.get(platform, platform)] = database[platform]
 
   return ret
 

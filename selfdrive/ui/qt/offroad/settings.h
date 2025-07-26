@@ -53,6 +53,7 @@ signals:
 private slots:
   void poweroff();
   void reboot();
+  void rebuild();
   void updateCalibDescription();
 
 private:

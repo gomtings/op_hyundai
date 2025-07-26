@@ -151,7 +151,7 @@ class UploadQueueCache:
     try:
       upload_queue_json = Params().get("AthenadUploadQueue")
       if upload_queue_json is not None:
-        for item in upload_queue_json:
+        for item in json.loads(upload_queue_json):
           upload_queue.put(UploadItem.from_dict(item))
     except Exception:
       cloudlog.exception("athena.UploadQueueCache.initialize.exception")
@@ -426,7 +426,7 @@ def uploadFilesToUrls(files_data: list[UploadFileDict]) -> UploadFilesToUrlRespo
       path=path,
       url=file.url,
       headers=file.headers,
-      created_at=int(time.time() * 1000),  # noqa: TID251
+      created_at=int(time.time() * 1000),
       id=None,
       allow_cellular=file.allow_cellular,
       priority=file.priority,
@@ -470,7 +470,7 @@ def setRouteViewed(route: str) -> dict[str, int | str]:
   # maintain a list of the last 10 routes viewed in connect
   params = Params()
 
-  r = params.get("AthenadRecentlyViewedRoutes")
+  r = params.get("AthenadRecentlyViewedRoutes", encoding="utf8")
   routes = [] if r is None else r.split(",")
   routes.append(route)
 
@@ -492,7 +492,7 @@ def startLocalProxy(global_end_event: threading.Event, remote_ws_uri: str, local
 
     cloudlog.debug("athena.startLocalProxy.starting")
 
-    dongle_id = Params().get("DongleId")
+    dongle_id = Params().get("DongleId").decode('utf8')
     identity_token = Api(dongle_id).get_token()
     ws = create_connection(remote_ws_uri,
                            cookie="jwt=" + identity_token,
@@ -532,12 +532,12 @@ def getPublicKey() -> str | None:
 
 @dispatcher.add_method
 def getSshAuthorizedKeys() -> str:
-  return cast(str, Params().get("GithubSshKeys", default=""))
+  return Params().get("GithubSshKeys", encoding='utf8') or ''
 
 
 @dispatcher.add_method
 def getGithubUsername() -> str:
-  return cast(str, Params().get("GithubUsername", default=""))
+  return Params().get("GithubUsername", encoding='utf8') or ''
 
 @dispatcher.add_method
 def getSimInfo():
@@ -580,7 +580,7 @@ def takeSnapshot() -> str | dict[str, str] | None:
 
 def get_logs_to_send_sorted() -> list[str]:
   # TODO: scan once then use inotify to detect file creation/deletion
-  curr_time = int(time.time())  # noqa: TID251
+  curr_time = int(time.time())
   logs = []
   for log_entry in os.listdir(Paths.swaglog_root()):
     log_path = os.path.join(Paths.swaglog_root(), log_entry)
@@ -617,7 +617,7 @@ def log_handler(end_event: threading.Event) -> None:
         log_entry = log_files.pop() # newest log file
         cloudlog.debug(f"athena.log_handler.forward_request {log_entry}")
         try:
-          curr_time = int(time.time())  # noqa: TID251
+          curr_time = int(time.time())
           log_path = os.path.join(Paths.swaglog_root(), log_entry)
           setxattr(log_path, LOG_ATTR_NAME, int.to_bytes(curr_time, 4, sys.byteorder))
           with open(log_path) as f:
@@ -815,7 +815,7 @@ def main(exit_event: threading.Event = None):
     cloudlog.exception("failed to set core affinity")
 
   params = Params()
-  dongle_id = params.get("DongleId")
+  dongle_id = params.get("DongleId", encoding='utf-8')
   UploadQueueCache.initialize(upload_queue)
 
   ws_uri = ATHENA_HOST + "/ws/v2/" + dongle_id

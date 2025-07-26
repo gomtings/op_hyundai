@@ -1,5 +1,5 @@
-#include "stm32h7xx.h"
-#include "stm32h7xx_hal_gpio_ex.h"
+#include "stm32h7/inc/stm32h7xx.h"
+#include "stm32h7/inc/stm32h7xx_hal_gpio_ex.h"
 #define MCU_IDCODE 0x483U
 
 #define CORE_FREQ 240U // in Mhz
@@ -43,49 +43,45 @@ separate IRQs for RX and TX.
 #define PROVISION_CHUNK_ADDRESS 0x080FFFE0U
 #define DEVICE_SERIAL_NUMBER_ADDRESS 0x080FFFC0U
 
-#include "board/can.h"
-#include "board/comms_definitions.h"
+#include "can.h"
+#include "comms_definitions.h"
 
 #ifndef BOOTSTUB
-  #include "board/main_definitions.h"
+  #include "main_definitions.h"
 #else
-  #include "board/bootstub_declarations.h"
+  #include "bootstub_declarations.h"
 #endif
 
-#include "board/libc.h"
-#include "board/critical.h"
-#include "board/faults.h"
-#include "board/utils.h"
+#include "libc.h"
+#include "critical.h"
+#include "faults.h"
+#include "utils.h"
 
-#include "board/drivers/registers.h"
-#include "board/drivers/interrupts.h"
-#include "board/drivers/gpio.h"
-#include "board/stm32h7/peripherals.h"
-#include "board/stm32h7/interrupt_handlers.h"
-#include "board/drivers/timers.h"
+#include "drivers/registers.h"
+#include "drivers/interrupts.h"
+#include "drivers/gpio.h"
+#include "stm32h7/peripherals.h"
+#include "stm32h7/interrupt_handlers.h"
+#include "drivers/timers.h"
 
 #if !defined(BOOTSTUB)
-  #include "board/drivers/uart.h"
-  #include "board/stm32h7/lluart.h"
+  #include "drivers/uart.h"
+  #include "stm32h7/lluart.h"
 #endif
 
-#ifdef PANDA_JUNGLE
-#include "board/jungle/stm32h7/board.h"
-#else
-#include "board/stm32h7/board.h"
-#endif
-#include "board/stm32h7/clock.h"
+#include "stm32h7/board.h"
+#include "stm32h7/clock.h"
 
 #ifdef BOOTSTUB
-  #include "board/stm32h7/llflash.h"
+  #include "stm32h7/llflash.h"
 #else
-  #include "board/stm32h7/llfdcan.h"
+  #include "stm32h7/llfdcan.h"
 #endif
 
-#include "board/stm32h7/llusb.h"
+#include "stm32h7/llusb.h"
 
-#include "board/drivers/spi.h"
-#include "board/stm32h7/llspi.h"
+#include "drivers/spi.h"
+#include "stm32h7/llspi.h"
 
 void early_gpio_float(void) {
   RCC->AHB4ENR = RCC_AHB4ENR_GPIOAEN | RCC_AHB4ENR_GPIOBEN | RCC_AHB4ENR_GPIOCEN | RCC_AHB4ENR_GPIODEN | RCC_AHB4ENR_GPIOEEN | RCC_AHB4ENR_GPIOFEN | RCC_AHB4ENR_GPIOGEN | RCC_AHB4ENR_GPIOHEN;

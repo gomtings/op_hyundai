@@ -67,7 +67,7 @@ class HomeLayout(Widget):
     self.current_state = state
 
   def _render(self, rect: rl.Rectangle):
-    current_time = time.monotonic()
+    current_time = time.time()
     if current_time - self.last_refresh >= REFRESH_INTERVAL:
       self._refresh()
       self.last_refresh = current_time
@@ -210,5 +210,5 @@ class HomeLayout(Widget):
 
   def _get_version_text(self) -> str:
     brand = "openpilot"
-    description = self.params.get("UpdaterCurrentDescription")
+    description = self.params.get("UpdaterCurrentDescription", encoding='utf-8')
     return f"{brand} {description}" if description else brand

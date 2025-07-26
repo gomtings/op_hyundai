@@ -7,7 +7,7 @@ void adc_init(void) {
   register_set(&(ADC1->SMPR1), ADC_SMPR1_SMP12 | ADC_SMPR1_SMP13, 0x7FFFFFFU);
 }
 
-static uint16_t adc_get_raw(uint8_t channel) {
+uint16_t adc_get_raw(uint8_t channel) {
   // Select channel
   register_set(&(ADC1->JSQR), ((uint32_t) channel << 15U), 0x3FFFFFU);
 

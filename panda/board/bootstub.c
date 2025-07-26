@@ -1,22 +1,24 @@
+#define BOOTSTUB
+
 #define VERS_TAG 0x53524556
 #define MIN_VERSION 2
 
 // ********************* Includes *********************
-#include "board/config.h"
+#include "config.h"
 
-#include "board/drivers/led.h"
-#include "board/drivers/pwm.h"
-#include "board/drivers/usb.h"
+#include "drivers/led.h"
+#include "drivers/pwm.h"
+#include "drivers/usb.h"
 
-#include "board/early_init.h"
-#include "board/provision.h"
+#include "early_init.h"
+#include "provision.h"
 
 #include "crypto/rsa.h"
 #include "crypto/sha.h"
 
-#include "board/obj/cert.h"
-#include "board/obj/gitversion.h"
-#include "board/flasher.h"
+#include "obj/cert.h"
+#include "obj/gitversion.h"
+#include "flasher.h"
 
 // cppcheck-suppress unusedFunction ; used in headers not included in cppcheck
 void __initialize_hardware_early(void) {

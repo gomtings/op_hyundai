@@ -190,10 +190,14 @@ class OffroadAlert(AbstractAlert):
 
     for alert_data in self.sorted_alerts:
       text = ""
-      alert_json = self.params.get(alert_data.key)
+      bytes_data = self.params.get(alert_data.key)
 
-      if alert_json:
-        text = alert_json.get("text", "").replace("{}", alert_json.get("extra", ""))
+      if bytes_data:
+        try:
+          alert_json = json.loads(bytes_data)
+          text = alert_json.get("text", "").replace("{}", alert_json.get("extra", ""))
+        except json.JSONDecodeError:
+          text = ""
 
       alert_data.text = text
       alert_data.visible = bool(text)
@@ -292,7 +296,7 @@ class UpdateAlert(AbstractAlert):
   def refresh(self) -> bool:
     update_available: bool = self.params.get_bool("UpdateAvailable")
     if update_available:
-      self.release_notes = self.params.get("UpdaterNewReleaseNotes")
+      self.release_notes = self.params.get("UpdaterNewReleaseNotes", encoding='utf-8')
       self._cached_content_height = 0
 
     return update_available

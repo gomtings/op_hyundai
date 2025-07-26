@@ -14,7 +14,7 @@ ATHENA_MGR_PID_PARAM = "AthenadPid"
 
 def main():
   params = Params()
-  dongle_id = params.get("DongleId")
+  dongle_id = params.get("DongleId").decode('utf-8')
   build_metadata = get_build_metadata()
 
   cloudlog.bind_global(dongle_id=dongle_id,
