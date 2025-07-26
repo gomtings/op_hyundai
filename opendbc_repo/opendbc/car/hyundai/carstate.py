@@ -2,7 +2,8 @@ from collections import deque
 import copy
 import math
 
-from opendbc.can import CANDefine, CANParser
+from opendbc.can.parser import CANParser
+from opendbc.can.can_define import CANDefine
 from opendbc.car import Bus, create_button_events, structs
 from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.hyundai.hyundaicanfd import CanBus
@@ -464,7 +465,84 @@ class CarState(CarStateBase):
     if CP.flags & HyundaiFlags.CANFD:
       return self.get_can_parsers_canfd(CP)
 
+    pt_messages = [
+      # address, frequency
+      ("MDPS12", 50),
+      ("TCS11", 100),
+      ("TCS13", 50),
+      ("TCS15", 10),
+      ("CLU11", 50),
+      ("CLU15", 5),
+      ("CGW1", 10),
+      ("CGW2", 5),
+      ("CGW4", 5),
+      ("WHL_SPD11", 50),
+      ("SAS11", 100),
+      ("TPMS11", 0),
+    ]
+
+    if not CP.openpilotLongitudinalControl:
+      pt_messages += [
+        ("SCC11", 50),
+        ("SCC12", 50),
+      ]
+      if CP.flags & HyundaiFlags.USE_FCA.value:
+        pt_messages.append(("FCA11", 50))
+
+    if CP.enableBsm:
+      pt_messages.append(("LCA11", 50))
+
+    if CP.flags & (HyundaiFlags.HYBRID | HyundaiFlags.EV):
+      pt_messages.append(("E_EMS11", 50))
+    elif CP.flags & HyundaiFlags.FCEV:
+      pt_messages.append(("FCEV_ACCELERATOR", 100))
+    else:
+      pt_messages += [
+        ("EMS12", 100),
+        ("EMS16", 100),
+      ]
+
+    if CP.flags & (HyundaiFlags.HYBRID | HyundaiFlags.EV):
+      pt_messages.append(("ELECT_GEAR", 20))
+    elif CP.flags & HyundaiFlags.FCEV:
+      pt_messages.append(("EMS20", 100))
+    elif CP.flags & HyundaiFlags.CLUSTER_GEARS:
+      pass
+    elif CP.flags & HyundaiFlags.TCU_GEARS:
+      pt_messages.append(("TCU12", 100))
+    else:
+      pt_messages.append(("LVR12", 100))
+
+    if CP.flags & HyundaiFlags.HAS_LDA_BUTTON:
+      pt_messages.append(("BCM_PO_11", 50))
+
+    if CP.exFlags & HyundaiExFlags.AUTOHOLD:
+      pt_messages += [("ESP11", 50)]
+
+    if CP.exFlags & HyundaiExFlags.NAVI:
+      pt_messages += [("Navi_HU", 5)]
+
+    cam_messages = [
+      ("LKAS11", 100)
+    ]
+
+    if CP.openpilotLongitudinalControl and CP.sccBus == 2:
+      cam_messages += [
+        ("SCC11", 50),
+        ("SCC12", 50),
+      ]
+
+      if CP.exFlags & HyundaiExFlags.SCC13:
+        cam_messages += [("SCC13", 50), ]
+
+      if CP.exFlags & HyundaiExFlags.SCC14:
+        cam_messages += [("SCC14", 50), ]
+
+      if CP.flags & HyundaiFlags.USE_FCA.value:
+        cam_messages.append(("FCA11", 50))
+
+
     return {
-      Bus.pt: CANParser(DBC[CP.carFingerprint][Bus.pt], [], 0),
-      Bus.cam: CANParser(DBC[CP.carFingerprint][Bus.pt], [], 2),
+      Bus.pt: CANParser(DBC[CP.carFingerprint][Bus.pt], pt_messages, 0),
+      Bus.cam: CANParser(DBC[CP.carFingerprint][Bus.pt], cam_messages, 2),
     }

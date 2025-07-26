@@ -16,7 +16,7 @@ from opendbc.car.common.basedir import BASEDIR
 from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.common.simple_kalman import KF1D, get_kalman_gain
 from opendbc.car.values import PLATFORMS
-from opendbc.can import CANParser
+from opendbc.can.parser import CANParser
 
 GearShifter = structs.CarState.GearShifter
 ButtonType = structs.CarState.ButtonEvent.Type
@@ -24,7 +24,8 @@ ButtonType = structs.CarState.ButtonEvent.Type
 V_CRUISE_MAX = 145
 MAX_CTRL_SPEED = (V_CRUISE_MAX + 4) * CV.KPH_TO_MS
 ACCEL_MAX = 2.0
-ACCEL_MIN = -3.5
+ACCEL_MIN = -3.7
+FRICTION_THRESHOLD = 0.3
 
 # ISO 11270
 ISO_LATERAL_ACCEL = 3.0  # m/s^2
@@ -244,7 +245,7 @@ class CarInterfaceBase(ABC):
     # parse can
     for cp in self.can_parsers.values():
       if cp is not None:
-        cp.update(can_packets)
+        cp.update_strings(can_packets)
 
     # get CarState
     ret = self.CS.update(self.can_parsers)
@@ -272,6 +273,16 @@ class CarInterfaceBase(ABC):
 
     return ret
 
+  @staticmethod
+  def get_params_adjust_set_speed(CP):
+    return [10], [20]
+
+  def create_buttons(self, button):
+    return None
+
+  def get_buttons_dict(self):
+    return None
+
 
 class CarStateBase(ABC):
   def __init__(self, CP: structs.CarParams):
@@ -298,6 +309,14 @@ class CarStateBase(ABC):
     K = get_kalman_gain(DT_CTRL, np.array(A), np.array(C), np.array(Q), R)
     self.v_ego_kf = KF1D(x0=x0, A=A, C=C[0], K=K)
 
+    Q = [[0.0, 0.0], [0.0, 100.0]]
+    R = 0.3
+    A = [[1.0, DT_CTRL], [0.0, 1.0]]
+    C = [[1.0, 0.0]]
+    x0 = [[0.0], [0.0]]
+    K = get_kalman_gain(DT_CTRL, np.array(A), np.array(C), np.array(Q), R)
+    self.v_ego_clu_kf = KF1D(x0=x0, A=A, C=C[0], K=K)
+
   @abstractmethod
   def update(self, can_parsers) -> structs.CarState:
     pass
@@ -305,13 +324,21 @@ class CarStateBase(ABC):
   def parse_wheel_speeds(self, cs, fl, fr, rl, rr, unit=CV.KPH_TO_MS):
     cs.vEgoRaw = float(np.mean([fl, fr, rl, rr]) * unit * self.CP.wheelSpeedFactor)
     cs.vEgo, cs.aEgo = self.update_speed_kf(cs.vEgoRaw)
-
+    
   def update_speed_kf(self, v_ego_raw):
     if abs(v_ego_raw - self.v_ego_kf.x[0][0]) > 2.0:  # Prevent large accelerations when car starts at non zero speed
       self.v_ego_kf.set_x([[v_ego_raw], [0.0]])
 
     v_ego_x = self.v_ego_kf.update(v_ego_raw)
     return float(v_ego_x[0]), float(v_ego_x[1])
+
+  def update_clu_speed_kf(self, v_ego_raw):
+    if abs(v_ego_raw - self.v_ego_clu_kf.x[0][0]) > 2.0:  # Prevent large accelerations when car starts at non zero speed
+      self.v_ego_clu_kf.set_x([[v_ego_raw], [0.0]])
+
+    v_ego_x = self.v_ego_clu_kf.update(v_ego_raw)
+    return float(v_ego_x[0]), float(v_ego_x[1])
+
 
   def update_blinker_from_lamp(self, blinker_time: int, left_blinker_lamp: bool, right_blinker_lamp: bool):
     """Update blinkers from lights. Enable output when light was seen within the last `blinker_time`

@@ -189,8 +189,8 @@ struct CarState {
   steeringAngleDeg @7 :Float32;
   steeringAngleOffsetDeg @37 :Float32; # Offset between sensors in case there multiple
   steeringRateDeg @15 :Float32;    # optional
-  steeringTorque @8 :Float32;      # Native CAN units, only needed on cars where it's used for control
-  steeringTorqueEps @27 :Float32;  # Native CAN units, only needed on cars where it's used for control
+  steeringTorque @8 :Float32;      # TODO: standardize units
+  steeringTorqueEps @27 :Float32;  # TODO: standardize units
   steeringPressed @9 :Bool;        # is the user overring the steering wheel?
   steeringDisengage @58 :Bool;     # more force than steeringPressed, disengages for applicable brands
   steerFaultTemporary @35 :Bool;
@@ -225,12 +225,41 @@ struct CarState {
   doorOpen @24 :Bool;           # ideally includes all doors
   seatbeltUnlatched @25 :Bool;  # driver seatbelt
 
+  # clutch (manual transmission only)
+  clutchPressed @28 :Bool;
+
   # blindspot sensors
   leftBlindspot @33 :Bool;  # Is there something blocking the left lane change
   rightBlindspot @34 :Bool; # Is there something blocking the right lane change
 
   fuelGauge @41 :Float32; # battery or fuel tank level from [0.0, 1.0]
   charging @43 :Bool;
+
+  # neokii
+  exState @61 :ExState;
+
+  struct ExState {
+    vCruiseKph @0 :Float32;
+    vCluRatio @1 :Float32;
+    autoHold @2 :Int8;
+    tpms @3 :Tpms;
+    navSpeedLimit @4 :Int16;
+    aReqValue @5 :Float32;
+
+    applyMaxSpeed @6 :Float32;
+    cruiseMaxSpeed @7 :Float32;
+    autoTrGap @8 :UInt32;
+    longActuatorDelay @9 :Float32;
+    slowingDownAlert @10 :Bool;
+  }
+
+  struct Tpms {
+    enabled @0 :Bool;
+    fl @1 :Float32;
+    fr @2 :Float32;
+    rl @3 :Float32;
+    rr @4 :Float32;
+  }
 
   struct WheelSpeeds {
     # optional wheel speeds
@@ -247,8 +276,9 @@ struct CarState {
     available @2 :Bool;
     standstill @4 :Bool;
     nonAdaptive @5 :Bool;
-
+    
     speedOffsetDEPRECATED @3 :Float32;
+    leadDistanceBars @7 :Int8;
   }
 
   enum GearShifter {
@@ -287,12 +317,12 @@ struct CarState {
 
   # deprecated
   errorsDEPRECATED @0 :List(OnroadEventDEPRECATED.EventName);
-  brakeLightsDEPRECATED @19 :Bool;
+  brakeLights @19 :Bool;
   steeringRateLimitedDEPRECATED @29 :Bool;
   canMonoTimesDEPRECATED @12: List(UInt64);
   canRcvTimeoutDEPRECATED @49 :Bool;
   eventsDEPRECATED @13 :List(OnroadEventDEPRECATED);
-  clutchPressedDEPRECATED @28 :Bool;
+  clutchPressedDEPRECATED @62 :Bool;
   engineRpmDEPRECATED @46 :Float32;
 }
 
@@ -359,6 +389,8 @@ struct CarControl {
 
   cruiseControl @4 :CruiseControl;
   hudControl @5 :HUDControl;
+
+  steerRatio @18 :Float32;
 
   struct Actuators {
     # lateral commands, mutually exclusive
@@ -433,6 +465,10 @@ struct CarControl {
       prompt @6;
       promptRepeat @7;
       promptDistracted @8;
+
+      slowingDownSpeed @9;
+      cruiseOn @10;
+      cruiseOff @11;
     }
   }
 
@@ -528,6 +564,9 @@ struct CarParams {
 
   secOcRequired @75 :Bool;  # Car requires SecOC message authentication to operate
   secOcKeyAvailable @76 :Bool;  # Stored SecOC key loaded from params
+
+  sccBus @78: Int8;
+  exFlags @79 :UInt32;
 
   struct SafetyConfig {
     safetyModel @0 :SafetyModel;

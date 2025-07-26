@@ -1,4 +1,3 @@
-.cache/
 /build/
 .mypy_cache/
 *.pyc
@@ -19,7 +18,6 @@
 *.dump
 uv.lock
 /dist/
-.vscode/
 
 opendbc/can/build/
 opendbc/can/obj/
