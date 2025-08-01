@@ -1,6 +1,6 @@
 import math
 
-from opendbc.can.parser import CANParser
+from opendbc.can import CANParser
 from opendbc.car import Bus, structs
 from opendbc.car.interfaces import RadarInterfaceBase
 from opendbc.car.hyundai.values import DBC
@@ -24,10 +24,7 @@ def get_radar_can_parser(CP):
     return CANParser(DBC[CP.carFingerprint][Bus.radar], messages, 1)
 
   else:
-    messages = [
-      ("SCC11", 50),
-    ]
-    return CANParser(DBC[CP.carFingerprint]['pt'], messages, CP.sccBus)
+    return CANParser(DBC[CP.carFingerprint][Bus.pt], [("SCC11", 50)], CP.sccBus)
 
 
 class RadarInterface(RadarInterfaceBase):
@@ -46,7 +43,7 @@ class RadarInterface(RadarInterfaceBase):
     if self.radar_off_can or (self.rcp is None):
       return super().update(None)
 
-    vls = self.rcp.update_strings(can_strings)
+    vls = self.rcp.update(can_strings)
     self.updated_messages.update(vls)
 
     if self.trigger_msg not in self.updated_messages:

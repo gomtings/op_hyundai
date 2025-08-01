@@ -169,7 +169,7 @@ def get_car(can_recv: CanRecvCallable, can_send: CanSendCallable, set_obd_multip
           if name == doc.name:
             return platform
       return None
-    found_platform = find_platform_from_hyundai(selected_car.decode("utf-8"))
+    found_platform = find_platform_from_hyundai(selected_car)
     if found_platform is not None:
       candidate = found_platform
 

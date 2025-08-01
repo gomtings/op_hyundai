@@ -26,7 +26,8 @@ def get_metadata(keys:list[TracingKey], contexts:list[list[TrackedGraphRewrite]]
   ret = []
   for i,(k,v) in enumerate(zip(keys, contexts)):
     steps = [{"name":s.name, "loc":s.loc, "depth":s.depth, "match_count":len(s.matches), "code_line":printable(s.loc)} for s in v]
-    ret.append({"name":k.display_name, "fmt":k.fmt, "steps":steps})
+    ret.append(r:={"name":k.display_name, "fmt":k.fmt, "steps":steps})
+    if getenv("PROFILE_VALUE") >= 2 and k.keys: r["runtime_stats"] = get_runtime_stats(k.keys[0])
     for key in k.keys: ref_map[key] = i
   return ret
 
@@ -172,6 +173,13 @@ def get_profile(profile:list[ProfileEvent]):
   dev_layout = {k:{"timeline":timeline_layout(v), "mem":mem_layout(v)} for k,v in dev_events.items()}
   return json.dumps({"layout":dev_layout, "st":min_ts, "et":max_ts}).encode("utf-8")
 
+def get_runtime_stats(key) -> list[dict]:
+  ret:list[dict] = []
+  for e in profile:
+    if isinstance(e, ProfileRangeEvent) and e.en is not None and e.name == key:
+      ret.append({"device":e.device, "duration":float(e.en-e.st)})
+  return ret
+
 # ** HTTP server
 
 class Handler(BaseHTTPRequestHandler):
@@ -187,21 +195,7 @@ class Handler(BaseHTTPRequestHandler):
         if url.path.endswith(".css"): content_type = "text/css"
       except FileNotFoundError: status_code = 404
     elif url.path == "/ctxs":
-      if "ctx" in (query:=parse_qs(url.query)):
-        kidx, ridx = int(query["ctx"][0]), int(query["idx"][0])
-        try:
-          # stream details
-          self.send_response(200)
-          self.send_header("Content-Type", "text/event-stream")
-          self.send_header("Cache-Control", "no-cache")
-          self.end_headers()
-          for r in get_details(contexts[1][kidx][ridx]):
-            self.wfile.write(f"data: {json.dumps(r)}\n\n".encode("utf-8"))
-            self.wfile.flush()
-          self.wfile.write("data: END\n\n".encode("utf-8"))
-          return self.wfile.flush()
-        # pass if client closed connection
-        except (BrokenPipeError, ConnectionResetError): return
+      if "ctx" in (q:=parse_qs(url.query)): return self.stream_json(get_details(contexts[1][int(q["ctx"][0])][int(q["idx"][0])]))
       ret, content_type = json.dumps(ctxs).encode(), "application/json"
     elif url.path == "/get_profile" and profile_ret is not None: ret, content_type = profile_ret, "application/json"
     else: status_code = 404
@@ -212,6 +206,19 @@ class Handler(BaseHTTPRequestHandler):
     self.send_header('Content-Length', str(len(ret)))
     self.end_headers()
     return self.wfile.write(ret)
+
+  def stream_json(self, source:Generator):
+    try:
+      self.send_response(200)
+      self.send_header("Content-Type", "text/event-stream")
+      self.send_header("Cache-Control", "no-cache")
+      self.end_headers()
+      for r in source:
+        self.wfile.write(f"data: {json.dumps(r)}\n\n".encode("utf-8"))
+        self.wfile.flush()
+      self.wfile.write("data: END\n\n".encode("utf-8"))
+    # pass if client closed connection
+    except (BrokenPipeError, ConnectionResetError): return
 
 # ** main loop
 
