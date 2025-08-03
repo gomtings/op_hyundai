@@ -1,5 +1,5 @@
 import numpy as np
-from opendbc.car.vehicle_model import ACCELERATION_DUE_TO_GRAVITY
+from openpilot.common.constants import ACCELERATION_DUE_TO_GRAVITY
 from openpilot.common.realtime import DT_CTRL, DT_MDL
 from openpilot.system.version import get_build_metadata
 from openpilot.selfdrive.controls.ntune import ntune_common_get
