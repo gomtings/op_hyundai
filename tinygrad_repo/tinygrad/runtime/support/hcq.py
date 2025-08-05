@@ -358,14 +358,14 @@ class HCQCompiled(Compiled, Generic[SignalType]):
   peer_groups: dict[str, list[HCQCompiled]] = collections.defaultdict(list)
   signal_pages: dict[str, list[HCQBuffer]] = collections.defaultdict(list) # per peer group
   signal_pool: dict[str, list[HCQBuffer]] = collections.defaultdict(list) # per peer group
+  cpu_devices: list[HCQCompiled] = []
 
   def __init__(self, device:str, allocator:HCQAllocatorBase, renderer:Renderer, compiler:Compiler, runtime, signal_t:Type[SignalType],
-               comp_queue_t:Callable[[], HWQueue], copy_queue_t:Callable[[], HWQueue]|None=None, kernargs_size=(16 << 20), sigalloc_size=0x1000,
-               supports_graph=True):
+               comp_queue_t:Callable[[], HWQueue], copy_queue_t:Callable[[], HWQueue]|None=None, kernargs_size=(16 << 20), sigalloc_size=0x1000):
     self.device_id:int = int(device.split(":")[1]) if ":" in device else 0
 
     from tinygrad.runtime.graph.hcq import HCQGraph
-    super().__init__(device, allocator, renderer, compiler, runtime, HCQGraph if supports_graph else None)
+    super().__init__(device, allocator, renderer, compiler, runtime, HCQGraph)
 
     # TODO: peer logic is determined based on device name.
     self.peer_group = device.split(":")[0]
@@ -383,7 +383,13 @@ class HCQCompiled(Compiled, Generic[SignalType]):
     self.kernargs_buf:HCQBuffer = self.allocator.alloc(kernargs_size, BufferSpec(cpu_access=True))
     self.kernargs_offset_allocator:BumpAllocator = BumpAllocator(self.kernargs_buf.size, wrap=True)
 
+    if self._is_cpu(): HCQCompiled.cpu_devices.append(self)
+
   def synchronize(self):
+    # If we have any work on CPU devices, need to synchronize them. This is just an optimization to release GIL allowing to finish faster.
+    if not self._is_cpu():
+      for dev in HCQCompiled.cpu_devices: dev.synchronize()
+
     try: self.timeline_signal.wait(self.timeline_value - 1)
     except RuntimeError as e:
       if hasattr(self, 'on_device_hang'): self.on_device_hang()
@@ -496,7 +502,7 @@ class HCQAllocatorBase(LRUAllocator[HCQDeviceType], Generic[HCQDeviceType]):
 class HCQAllocator(HCQAllocatorBase, Generic[HCQDeviceType]):
   def _copyin(self, dest:HCQBuffer, src:memoryview):
     assert self.dev.hw_copy_queue_t is not None
-    with hcq_profile(self.dev, queue_type=self.dev.hw_copy_queue_t, desc=f"CPU -> {self.dev.device}", enabled=PROFILE):
+    with hcq_profile(self.dev, queue_type=self.dev.hw_copy_queue_t, desc=f"TINY -> {self.dev.device}", enabled=PROFILE):
       for i in range(0, src.nbytes, self.b[0].size):
         self.b_next = (self.b_next + 1) % len(self.b)
         self.dev.timeline_signal.wait(self.b_timeline[self.b_next])
@@ -528,7 +534,7 @@ class HCQAllocator(HCQAllocatorBase, Generic[HCQDeviceType]):
     self.dev.synchronize()
 
     assert self.dev.hw_copy_queue_t is not None
-    with hcq_profile(self.dev, queue_type=self.dev.hw_copy_queue_t, desc=f"{self.dev.device} -> CPU", enabled=PROFILE):
+    with hcq_profile(self.dev, queue_type=self.dev.hw_copy_queue_t, desc=f"{self.dev.device} -> TINY", enabled=PROFILE):
       for i in range(0, dest.nbytes, cp_size:=(self.max_copyout_size or self.b[0].size)):
         self.dev.hw_copy_queue_t().wait(self.dev.timeline_signal, self.dev.timeline_value - 1) \
                                   .copy(self.b[0].va_addr, src.va_addr+i, lsize:=min(cp_size, dest.nbytes-i)) \
