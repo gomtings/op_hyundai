@@ -11,7 +11,7 @@ from opendbc.car.hyundai.carcontroller import CarController
 from opendbc.car.hyundai.carstate import CarState
 from opendbc.car.hyundai.radar_interface import RadarInterface
 
-from openpilot.common.conversions import Conversions as CV
+from openpilot.common.constants import CV
 from openpilot.selfdrive.controls.neokii.cruise_state_manager import is_radar_disabler
 from openpilot.common.params import Params
 from opendbc.car.hyundai.values import HyundaiExFlags

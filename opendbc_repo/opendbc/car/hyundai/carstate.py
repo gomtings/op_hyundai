@@ -9,7 +9,7 @@ from opendbc.car.hyundai.hyundaicanfd import CanBus
 from opendbc.car.hyundai.values import HyundaiFlags, CAR, DBC, Buttons, CarControllerParams
 from opendbc.car.interfaces import CarStateBase
 
-from openpilot.common.conversions import Conversions as CV
+from openpilot.common.constants import CV
 from openpilot.selfdrive.controls.neokii.cruise_state_manager import CruiseStateManager
 from opendbc.car.hyundai.values import HyundaiExFlags
 
