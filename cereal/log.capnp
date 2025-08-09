@@ -127,12 +127,13 @@ struct OnroadEvent @0xc4fa6047f024e718 {
     espActive @90;
     personalityChanged @91;
     aeb @92;
-    userFlag @95;
+    userBookmark @95;
     excessiveActuation @96;
+    audioFeedback @97;
 
-    slowingDownSpeed @97;
-    cruiseOn @98;
-    cruiseOff @99;
+    slowingDownSpeed @98;
+    cruiseOn @99;
+    cruiseOff @10;
 
     soundsUnavailableDEPRECATED @47;
   }
@@ -2482,7 +2483,7 @@ struct DebugAlert {
   alertText2 @1 :Text;
 }
 
-struct UserFlag {
+struct UserBookmark @0xfe346a9de48d9b50 {
 }
 
 struct SoundPressure @0xdc24138990726023 {
@@ -2498,6 +2499,11 @@ struct SoundPressure @0xdc24138990726023 {
 struct AudioData {
   data @0 :Data;
   sampleRate @1 :UInt32;
+}
+
+struct AudioFeedback {
+  audio @0 :AudioData;
+  blockNum @1 :UInt16;
 }
 
 struct Touch {
@@ -2600,8 +2606,12 @@ struct Event {
     mapRenderState @105: MapRenderState;
 
     # UI services
-    userFlag @93 :UserFlag;
     uiDebug @102 :UIDebug;
+
+    # driving feedback
+    userBookmark @93 :UserBookmark;
+    bookmarkButton @148 :UserBookmark;
+    audioFeedback @149 :AudioFeedback;
 
     # *********** debug ***********
     testJoystick @52 :Joystick;
@@ -2648,9 +2658,9 @@ struct Event {
     customReserved19 @145 :Custom.CustomReserved19;
 
     # neokii
-    naviData @148 :NaviData;
-    naviGps @149 :NaviGps;
-    naviObstacles @150 :NaviObstacles;
+    naviData @150 :NaviData;
+    naviGps @151 :NaviGps;
+    naviObstacles @152 :NaviObstacles;
 
     # *********** legacy + deprecated ***********
     model @9 :Legacy.ModelData; # TODO: rename modelV2 and mark this as deprecated
