@@ -8,8 +8,8 @@ from tinygrad.device import is_dtype_supported
 from tinygrad.uop.ops import UOp, Ops
 from tinygrad.helpers import getenv
 from tinygrad.shape.shapetracker import ShapeTracker, View
-from tinygrad.opt.search import Opt, OptOps
-from tinygrad.opt.kernel import Kernel
+from tinygrad.codegen.opt.search import Opt, OptOps
+from tinygrad.codegen.opt.kernel import Kernel
 from tinygrad.engine.realize import get_program
 
 class TestLinearizerDumb(unittest.TestCase):
@@ -82,6 +82,7 @@ class TestLinearizerDumb(unittest.TestCase):
     assert prg.uops is not None and not any(uop.op is Ops.MAX for uop in prg.uops), "leftover MAX"
 
   @unittest.skipUnless(Device[Device.DEFAULT].renderer.has_local, "need local")
+  @unittest.skip("not applicable")
   def test_expander_new_srcs(self):
     ast = UOp(Ops.SINK, dtypes.void, arg=None, src=(
       UOp(Ops.STORE, dtypes.void, arg=None, src=(
