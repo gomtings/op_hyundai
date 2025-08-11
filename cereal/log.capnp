@@ -133,7 +133,7 @@ struct OnroadEvent @0xc4fa6047f024e718 {
 
     slowingDownSpeed @98;
     cruiseOn @99;
-    cruiseOff @10;
+    cruiseOff @100;
 
     soundsUnavailableDEPRECATED @47;
   }
