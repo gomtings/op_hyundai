@@ -133,12 +133,12 @@ class WifiManager:
     # State
     self._connecting_to_ssid: str = ""
     self._last_network_update: float = 0.0
+    self._callback_queue: list[Callable] = []
 
     # Callbacks
-    # TODO: implement a callback queue to avoid blocking UI thread
     self._need_auth: Callable[[str], None] | None = None
     self._activated: Callable[[], None] | None = None
-    self._forgotten: Callable[[str], None] | None = None
+    self._forgotten: Callable[[], None] | None = None
     self._networks_updated: Callable[[list[Network]], None] | None = None
     self._disconnected: Callable[[], None] | None = None
 
@@ -154,7 +154,7 @@ class WifiManager:
 
   def set_callbacks(self, need_auth: Callable[[str], None],
                     activated: Callable[[], None] | None,
-                    forgotten: Callable[[str], None],
+                    forgotten: Callable[[], None],
                     networks_updated: Callable[[list[Network]], None],
                     disconnected: Callable[[], None]):
     self._need_auth = need_auth
@@ -162,6 +162,15 @@ class WifiManager:
     self._forgotten = forgotten
     self._networks_updated = networks_updated
     self._disconnected = disconnected
+
+  def _enqueue_callback(self, cb: Callable, *args):
+    self._callback_queue.append(lambda: cb(*args))
+
+  def process_callbacks(self):
+    # Call from UI thread to run any pending callbacks
+    to_run, self._callback_queue = self._callback_queue, []
+    for cb in to_run:
+      cb()
 
   def set_active(self, active: bool):
     self._active = active
@@ -187,7 +196,6 @@ class WifiManager:
 
     with self._conn_monitor.filter(rule, bufsize=SIGNAL_QUEUE_SIZE) as q:
       while not self._exit:
-        # TODO: always run, and ensure callbacks don't block UI thread
         if not self._active:
           time.sleep(1)
           continue
@@ -204,19 +212,19 @@ class WifiManager:
         if new_state == NMDeviceState.NEED_AUTH and change_reason == NM_DEVICE_STATE_REASON_SUPPLICANT_DISCONNECT and len(self._connecting_to_ssid):
           self.forget_connection(self._connecting_to_ssid, block=True)
           if self._need_auth is not None:
-            self._need_auth(self._connecting_to_ssid)
+            self._enqueue_callback(self._need_auth, self._connecting_to_ssid)
           self._connecting_to_ssid = ""
 
         elif new_state == NMDeviceState.ACTIVATED:
           if self._activated is not None:
             self._update_networks()
-            self._activated()
+            self._enqueue_callback(self._activated)
           self._connecting_to_ssid = ""
 
         elif new_state == NMDeviceState.DISCONNECTED and change_reason != NM_DEVICE_STATE_REASON_NEW_ACTIVATION:
           self._connecting_to_ssid = ""
           if self._disconnected is not None:
-            self._disconnected()
+            self._enqueue_callback(self._disconnected)
 
   def _network_scanner(self):
     self._wait_for_wifi_device()
@@ -256,12 +264,12 @@ class WifiManager:
 
     return self._wifi_device
 
-  def _get_connections(self) -> list[str]:
+  def _get_connections(self) -> dict[str, str]:
     settings_addr = DBusAddress(NM_SETTINGS_PATH, bus_name=NM, interface=NM_SETTINGS_IFACE)
-    return list(self._router_main.send_and_get_reply(new_method_call(settings_addr, 'ListConnections')).body[0])
+    known_connections = self._router_main.send_and_get_reply(new_method_call(settings_addr, 'ListConnections')).body[0]
 
-  def _connection_by_ssid(self, ssid: str, known_connections: list[str] | None = None) -> str | None:
-    for conn_path in known_connections or self._get_connections():
+    conns: dict[str, str] = {}
+    for conn_path in known_connections:
       conn_addr = DBusAddress(conn_path, bus_name=NM, interface=NM_CONNECTION_IFACE)
       reply = self._router_main.send_and_get_reply(new_method_call(conn_addr, "GetSettings"))
 
@@ -271,9 +279,11 @@ class WifiManager:
         continue
 
       settings = reply.body[0]
-      if "802-11-wireless" in settings and settings['802-11-wireless']['ssid'][1].decode("utf-8", "replace") == ssid:
-        return conn_path
-    return None
+      if "802-11-wireless" in settings:
+        ssid = settings['802-11-wireless']['ssid'][1].decode("utf-8", "replace")
+        if ssid != "":
+          conns[ssid] = conn_path
+    return conns
 
   def connect_to_network(self, ssid: str, password: str):
     def worker():
@@ -317,14 +327,14 @@ class WifiManager:
 
   def forget_connection(self, ssid: str, block: bool = False):
     def worker():
-      conn_path = self._connection_by_ssid(ssid)
+      conn_path = self._get_connections().get(ssid, None)
       if conn_path is not None:
         conn_addr = DBusAddress(conn_path, bus_name=NM, interface=NM_CONNECTION_IFACE)
         self._router_main.send_and_get_reply(new_method_call(conn_addr, 'Delete'))
 
         if self._forgotten is not None:
           self._update_networks()
-          self._forgotten(ssid)
+          self._enqueue_callback(self._forgotten)
 
     if block:
       worker()
@@ -333,7 +343,7 @@ class WifiManager:
 
   def activate_connection(self, ssid: str, block: bool = False):
     def worker():
-      conn_path = self._connection_by_ssid(ssid)
+      conn_path = self._get_connections().get(ssid, None)
       if conn_path is not None:
         if self._wifi_device is None:
           cloudlog.warning("No WiFi device found")
@@ -360,47 +370,47 @@ class WifiManager:
       cloudlog.warning(f"Failed to request scan: {reply}")
 
   def _update_networks(self):
-    if self._wifi_device is None:
-      cloudlog.warning("No WiFi device found")
-      return
+    with self._lock:
+      if self._wifi_device is None:
+        cloudlog.warning("No WiFi device found")
+        return
 
-    # returns '/' if no active AP
-    wifi_addr = DBusAddress(self._wifi_device, NM, interface=NM_WIRELESS_IFACE)
-    active_ap_path = self._router_main.send_and_get_reply(Properties(wifi_addr).get('ActiveAccessPoint')).body[0][1]
-    ap_paths = self._router_main.send_and_get_reply(new_method_call(wifi_addr, 'GetAllAccessPoints')).body[0]
+      # returns '/' if no active AP
+      wifi_addr = DBusAddress(self._wifi_device, NM, interface=NM_WIRELESS_IFACE)
+      active_ap_path = self._router_main.send_and_get_reply(Properties(wifi_addr).get('ActiveAccessPoint')).body[0][1]
+      ap_paths = self._router_main.send_and_get_reply(new_method_call(wifi_addr, 'GetAllAccessPoints')).body[0]
 
-    aps: dict[str, list[AccessPoint]] = {}
+      aps: dict[str, list[AccessPoint]] = {}
 
-    for ap_path in ap_paths:
-      ap_addr = DBusAddress(ap_path, NM, interface=NM_ACCESS_POINT_IFACE)
-      ap_props = self._router_main.send_and_get_reply(Properties(ap_addr).get_all())
+      for ap_path in ap_paths:
+        ap_addr = DBusAddress(ap_path, NM, interface=NM_ACCESS_POINT_IFACE)
+        ap_props = self._router_main.send_and_get_reply(Properties(ap_addr).get_all())
 
-      # some APs have been seen dropping off during iteration
-      if ap_props.header.message_type == MessageType.error:
-        cloudlog.warning(f"Failed to get AP properties for {ap_path}")
-        continue
-
-      try:
-        ap = AccessPoint.from_dbus(ap_props.body[0], ap_path, active_ap_path)
-        if ap.ssid == "":
+        # some APs have been seen dropping off during iteration
+        if ap_props.header.message_type == MessageType.error:
+          cloudlog.warning(f"Failed to get AP properties for {ap_path}")
           continue
 
-        if ap.ssid not in aps:
-          aps[ap.ssid] = []
+        try:
+          ap = AccessPoint.from_dbus(ap_props.body[0], ap_path, active_ap_path)
+          if ap.ssid == "":
+            continue
 
-        aps[ap.ssid].append(ap)
-      except Exception:
-        # catch all for parsing errors
-        cloudlog.exception(f"Failed to parse AP properties for {ap_path}")
+          if ap.ssid not in aps:
+            aps[ap.ssid] = []
 
-    known_connections = self._get_connections()
-    networks = [Network.from_dbus(ssid, ap_list, self._connection_by_ssid(ssid, known_connections) is not None)
-                for ssid, ap_list in aps.items()]
-    networks.sort(key=lambda n: (-n.is_connected, -n.strength, n.ssid.lower()))
-    self._networks = networks
+          aps[ap.ssid].append(ap)
+        except Exception:
+          # catch all for parsing errors
+          cloudlog.exception(f"Failed to parse AP properties for {ap_path}")
 
-    if self._networks_updated is not None:
-      self._networks_updated(self._networks)
+      known_connections = self._get_connections()
+      networks = [Network.from_dbus(ssid, ap_list, ssid in known_connections) for ssid, ap_list in aps.items()]
+      networks.sort(key=lambda n: (-n.is_connected, -n.strength, n.ssid.lower()))
+      self._networks = networks
+
+      if self._networks_updated is not None:
+        self._enqueue_callback(self._networks_updated, self._networks)
 
   def __del__(self):
     self.stop()
