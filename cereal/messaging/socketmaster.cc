@@ -33,7 +33,7 @@ MessageContext message_context;
 struct SubMaster::SubMessage {
   std::string name;
   SubSocket *socket = nullptr;
-  int freq = 0;
+  float freq = 0.0f;
   bool updated = false, alive = false, valid = false, ignore_alive;
   uint64_t rcv_time = 0, rcv_frame = 0;
   void *allocated_msg_reader = nullptr;
@@ -47,7 +47,6 @@ SubMaster::SubMaster(const std::vector<const char *> &service_list, const std::v
                      const char *address, const std::vector<const char *> &ignore_alive) {
   poller_ = Poller::create();
   for (auto name : service_list) {
-    printf("name: %s\n", name);
     assert(services.count(std::string(name)) > 0);
 
     service serv = services.at(std::string(name));
