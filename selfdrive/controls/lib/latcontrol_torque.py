@@ -7,7 +7,6 @@ from openpilot.common.constants import ACCELERATION_DUE_TO_GRAVITY
 from openpilot.selfdrive.controls.lib.latcontrol import LatControl
 from openpilot.common.pid import PIDController
 from openpilot.selfdrive.controls.ntune import nTune
-
 # At higher speeds (25+mph) we can assume:
 # Lateral acceleration achieved by a specific car correlates to
 # torque applied to the steering rack. It does not correlate to
@@ -67,10 +66,9 @@ class LatControlTorque(LatControl):
 
       # do error correction in lateral acceleration space, convert at end to handle non-linear torque responses correctly
       pid_log.error = float(setpoint - measurement)
-      
+      ff = gravity_adjusted_lateral_accel
       # latAccelOffset corrects roll compensation bias from device roll misalignment relative to car roll
       ff -= self.torque_params.latAccelOffset
-      ff = gravity_adjusted_lateral_accel
       ff += get_friction(desired_lateral_accel - actual_lateral_accel, lateral_accel_deadzone, FRICTION_THRESHOLD, self.torque_params)
 
       freeze_integrator = steer_limited_by_safety or CS.steeringPressed or CS.vEgo < 5
