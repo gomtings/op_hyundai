@@ -1025,6 +1025,7 @@ struct DrivingModelData {
   modelExecutionTime @7 :Float32;
 
   action @2 :ModelDataV2.Action;
+  rawAction @8 :ModelDataV2.Action;
 
   laneLineMeta @3 :LaneLineMeta;
   meta @4 :MetaData;
@@ -1096,6 +1097,7 @@ struct ModelDataV2 {
 
   # e2e lateral planner
   action @26: Action;
+  rawAction @27: Action;
 
   gpuExecutionTimeDEPRECATED @17 :Float32;
   navEnabledDEPRECATED @22 :Bool;

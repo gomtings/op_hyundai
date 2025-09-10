@@ -381,8 +381,9 @@ def main(demo=False):
       action = get_action_from_model(model_output, prev_action, lat_delay + DT_MDL,
                                      (ntune_scc_get('longActuatorDelay') + LONG_SMOOTH_SECONDS) + DT_MDL,
                                      v_ego)
+      raw_action = get_action_from_model(model_output, prev_action, DT_MDL, long_delay + DT_MDL, v_ego)
       prev_action = action
-      fill_model_msg(drivingdata_send, modelv2_send, model_output, action,
+      fill_model_msg(drivingdata_send, modelv2_send, model_output, action, raw_action,
                      publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id,
                      frame_drop_ratio, meta_main.timestamp_eof, model_execution_time, live_calib_seen)
 
