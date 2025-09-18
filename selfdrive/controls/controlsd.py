@@ -39,7 +39,7 @@ class Controls:
     self.CI = interfaces[self.CP.carFingerprint](self.CP)
 
     self.sm = messaging.SubMaster(['liveParameters', 'liveTorqueParameters', 'modelV2', 'selfdriveState',
-                                   'liveCalibration', 'livePose', 'longitudinalPlan', 'carState', 'carOutput',
+                                   'liveCalibration', 'liveDelay', 'livePose', 'longitudinalPlan', 'carState', 'carOutput',
                                    'driverMonitoringState', 'onroadEvents', 'driverAssistance',
                                    'radarState', 'lateralPlan', 'liveDelay'
                                    ], poll='selfdriveState')
@@ -139,17 +139,15 @@ class Controls:
       self.desired_curvature, curvature_limited = clip_curvature(CS.vEgo, self.desired_curvature, new_desired_curvature, lp.roll)
       self.raw_desired_curvature, raw_curvature_limited = clip_curvature(CS.vEgo, self.raw_desired_curvature, new_raw_desired_curvature, lp.roll)
       curvature_limited = curvature_limited or raw_curvature_limited
-
+      
+    lat_delay = self.sm["liveDelay"].lateralDelay
+    
     actuators.curvature = self.desired_curvature
 
-    if self.CP.lateralTuning.which() == 'torque':
-      steer, steeringAngleDeg, lac_log = self.LaC.update(CC.latActive, CS, self.VM, lp,
-                                                        self.steer_limited_by_safety, self.desired_curvature, new_raw_desired_curvature,
-                                                        curvature_limited)  # TODO what if not available
-    else:
-      steer, steeringAngleDeg, lac_log = self.LaC.update(CC.latActive, CS, self.VM, lp,
-                                                      self.steer_limited_by_safety, self.desired_curvature,
-                                                      curvature_limited)  # TODO what if not available
+    steer, steeringAngleDeg, lac_log = self.LaC.update(CC.latActive, CS, self.VM, lp,
+                                                      self.steer_limited_by_safety, self.desired_curvature, new_raw_desired_curvature,
+                                                      curvature_limited, lat_delay)
+    
     actuators.torque = float(steer)
     actuators.steeringAngleDeg = float(steeringAngleDeg)
     # Ensure no NaNs/Infs
