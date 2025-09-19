@@ -8,6 +8,7 @@ from openpilot.common.constants import ACCELERATION_DUE_TO_GRAVITY
 from openpilot.selfdrive.controls.lib.latcontrol import DT_CTRL, LatControl
 from openpilot.common.pid import PIDController
 from openpilot.selfdrive.controls.ntune import nTune
+
 # At higher speeds (25+mph) we can assume:
 # Lateral acceleration achieved by a specific car correlates to
 # torque applied to the steering rack. It does not correlate to
@@ -37,7 +38,7 @@ class LatControlTorque(LatControl):
     self.steering_angle_deadzone_deg = self.torque_params.steeringAngleDeadzoneDeg
     self.requested_lateral_accel_buffer = deque([0.] * LATACCEL_REQUEST_BUFFER_SIZE, maxlen=LATACCEL_REQUEST_BUFFER_SIZE)
     self.tune = nTune(CP, self)
-
+    
   def update_live_torque_params(self, latAccelFactor, latAccelOffset, friction):
     self.torque_params.latAccelFactor = latAccelFactor
     self.torque_params.latAccelOffset = latAccelOffset
@@ -69,9 +70,11 @@ class LatControlTorque(LatControl):
 
       low_speed_factor = np.interp(CS.vEgo, LOW_SPEED_X, LOW_SPEED_Y)**2
       # pid error calculated as difference between expected and measured lateral acceleration
-      setpoint = current_expected_lateral_accel + low_speed_factor * current_expected_curvature
+      setpoint = lag_compensated_desired_lateral_accel + low_speed_factor * desired_curvature
+      setpoint_expected = current_expected_lateral_accel + low_speed_factor * current_expected_curvature
       measurement = actual_lateral_accel + low_speed_factor * actual_curvature
       gravity_adjusted_lateral_accel = lag_compensated_desired_lateral_accel - roll_compensation
+      error_expected = float(setpoint_expected - measurement)
 
       # do error correction in lateral acceleration space, convert at end to handle non-linear torque responses correctly
       pid_log.error = float(setpoint - measurement)
@@ -82,9 +85,10 @@ class LatControlTorque(LatControl):
 
       freeze_integrator = steer_limited_by_safety or CS.steeringPressed or CS.vEgo < 5
       output_lataccel = self.pid.update(pid_log.error,
-                                      feedforward=ff,
-                                      speed=CS.vEgo,
-                                      freeze_integrator=freeze_integrator)
+                                        feedforward=ff,
+                                        speed=CS.vEgo,
+                                        freeze_integrator=freeze_integrator,
+                                        error_expected=error_expected)
       output_torque = self.torque_from_lateral_accel(output_lataccel, self.torque_params)
 
       pid_log.active = True
@@ -94,7 +98,7 @@ class LatControlTorque(LatControl):
       pid_log.f = float(self.pid.f)
       pid_log.output = float(-output_torque)  # TODO: log lat accel?
       pid_log.actualLateralAccel = float(actual_lateral_accel)
-      pid_log.desiredLateralAccel = float(current_expected_lateral_accel)
+      pid_log.desiredLateralAccel = float(lag_compensated_desired_lateral_accel)
       pid_log.saturated = bool(self._check_saturation(self.steer_max - abs(output_torque) < 1e-3, CS, steer_limited_by_safety, curvature_limited))
     
     pid_log.latAccelFactor = self.torque_params.latAccelFactor

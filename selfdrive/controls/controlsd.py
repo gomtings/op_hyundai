@@ -40,15 +40,12 @@ class Controls:
 
     self.sm = messaging.SubMaster(['liveParameters', 'liveTorqueParameters', 'modelV2', 'selfdriveState',
                                    'liveCalibration', 'liveDelay', 'livePose', 'longitudinalPlan', 'carState', 'carOutput',
-                                   'driverMonitoringState', 'onroadEvents', 'driverAssistance',
-                                   'radarState', 'lateralPlan', 'liveDelay'
-                                   ], poll='selfdriveState')
+                                   'driverMonitoringState', 'onroadEvents', 'driverAssistance'], poll='selfdriveState')
     self.pm = messaging.PubMaster(['carControl', 'controlsState'])
 
     self.steer_limited_by_safety = False
     self.curvature = 0.0
     self.desired_curvature = 0.0
-    self.raw_desired_curvature = 0.0
 
     self.pose_calibrator = PoseCalibrator()
     self.calibrated_pose: Pose | None = None
@@ -77,13 +74,7 @@ class Controls:
     # Update VehicleModel
     lp = self.sm['liveParameters']
     x = max(lp.stiffnessFactor, 0.1)
-    #sr = max(lp.steerRatio, 0.1)
-
-    if ntune_common_enabled('useLiveSteerRatio'):
-      sr = max(lp.steerRatio, 0.1)
-    else:
-      sr = max(ntune_common_get('steerRatio'), 0.1)
-
+    sr = max(lp.steerRatio, 0.1)
     self.VM.update_params(x, sr)
 
     steer_angle_without_offset = math.radians(CS.steeringAngleDeg - lp.angleOffsetDeg)
@@ -107,9 +98,7 @@ class Controls:
     standstill = abs(CS.vEgo) <= max(self.CP.minSteerSpeed, 0.3) or CS.standstill
     CC.latActive = self.sm['selfdriveState'].active and not CS.steerFaultTemporary and not CS.steerFaultPermanent and \
                    (not standstill or self.CP.steerAtStandstill)
-    CC.longActive = CC.enabled and not any(e.overrideLongitudinal for e in self.sm['onroadEvents']) and self.CP.openpilotLongitudinalControl \
-                    and CS.cruiseState.enabled
-
+    CC.longActive = CC.enabled and not any(e.overrideLongitudinal for e in self.sm['onroadEvents']) and self.CP.openpilotLongitudinalControl and CS.cruiseState.enabled
     actuators = CC.actuators
     actuators.longControlState = self.LoC.long_control_state
 
@@ -128,7 +117,6 @@ class Controls:
     actuators.accel = float(self.LoC.update(CC.longActive, CS, long_plan, pid_accel_limits, self.sm))
 
     lat_plan = self.sm['lateralPlan']
-
     # Steering PID loop and lateral MPC
     if lat_plan.useLaneLines:
       live_delay = self.sm['liveDelay']
@@ -139,15 +127,14 @@ class Controls:
       self.desired_curvature, curvature_limited = clip_curvature(CS.vEgo, self.desired_curvature, new_desired_curvature, lp.roll)
       self.raw_desired_curvature, raw_curvature_limited = clip_curvature(CS.vEgo, self.raw_desired_curvature, new_raw_desired_curvature, lp.roll)
       curvature_limited = curvature_limited or raw_curvature_limited
-      
+
     lat_delay = self.sm["liveDelay"].lateralDelay
     
     actuators.curvature = self.desired_curvature
 
     steer, steeringAngleDeg, lac_log = self.LaC.update(CC.latActive, CS, self.VM, lp,
-                                                      self.steer_limited_by_safety, self.desired_curvature, new_raw_desired_curvature,
-                                                      curvature_limited, lat_delay)
-    
+                                                       self.steer_limited_by_safety, self.desired_curvature,
+                                                       curvature_limited, lat_delay)
     actuators.torque = float(steer)
     actuators.steeringAngleDeg = float(steeringAngleDeg)
     # Ensure no NaNs/Infs
@@ -164,8 +151,7 @@ class Controls:
 
   def publish(self, CC, lac_log):
     CS = self.sm['carState']
-    model_v2 = self.sm['modelV2']
-    
+
     # Orientation and angle rates can be useful for carcontroller
     # Only calibrated (car) frame is relevant for the carcontroller
     CC.currentCurvature = self.curvature
@@ -182,14 +168,11 @@ class Controls:
     hudControl.speedVisible = CC.enabled
     hudControl.lanesVisible = CC.enabled
     hudControl.leadVisible = self.sm['longitudinalPlan'].hasLead
-    #hudControl.leadDistanceBars = self.sm['selfdriveState'].personality.raw + 1
-    hudControl.leadDistanceBars = CS.cruiseState.leadDistanceBars
+    hudControl.leadDistanceBars = self.sm['selfdriveState'].personality.raw + 1
     hudControl.visualAlert = self.sm['selfdriveState'].alertHudVisual
 
-    laneVisible = len(model_v2.laneLines) > 2 and len(model_v2.laneLineProbs) > 2
-    hudControl.leftLaneVisible  = bool(laneVisible and len(model_v2.laneLines[1].x) > 0 and model_v2.laneLineProbs[1] > 0.5)
-    hudControl.rightLaneVisible = bool(laneVisible and len(model_v2.laneLines[2].x) > 0 and model_v2.laneLineProbs[2] > 0.5)
-    
+    hudControl.rightLaneVisible = True
+    hudControl.leftLaneVisible = True
     if self.sm.valid['driverAssistance']:
       hudControl.leftLaneDepart = self.sm['driverAssistance'].leftLaneDeparture
       hudControl.rightLaneDepart = self.sm['driverAssistance'].rightLaneDeparture
