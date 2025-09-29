@@ -142,6 +142,7 @@ void can_init_all(void) {
     #ifndef CANFD
       bus_config[i].can_data_speed = 0U;
     #endif
+    bus_config[i].canfd_enabled = false;
     can_clear(can_queues[i]);
     (void)can_init(i);
   }
