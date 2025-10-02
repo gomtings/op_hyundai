@@ -33,14 +33,13 @@ class LatControlTorque(LatControl):
     self.torque_params = CP.lateralTuning.torque.as_builder()
     self.torque_from_lateral_accel = CI.torque_from_lateral_accel()
     self.lateral_accel_from_torque = CI.lateral_accel_from_torque()
-    self.pid = PIDController(self.torque_params.kp, self.torque_params.ki,
-                             k_f=self.torque_params.kf)
+    self.pid = PIDController(self.torque_params.kp, self.torque_params.ki, k_d=self.torque_params.kd, k_f=self.torque_params.kf)
     self.update_limits()
     self.steering_angle_deadzone_deg = self.torque_params.steeringAngleDeadzoneDeg
     self.requested_lateral_accel_buffer = deque([0.] * LATACCEL_REQUEST_BUFFER_SIZE, maxlen=LATACCEL_REQUEST_BUFFER_SIZE)
     self.error_pre = 0.0
     self.tune = nTune(CP, self)
-    
+  
   def update_live_torque_params(self, latAccelFactor, latAccelOffset, friction):
     self.torque_params.latAccelFactor = latAccelFactor
     self.torque_params.latAccelOffset = latAccelOffset
@@ -73,16 +72,15 @@ class LatControlTorque(LatControl):
       low_speed_factor = np.interp(CS.vEgo, LOW_SPEED_X, LOW_SPEED_Y)**2
       # pid error calculated as difference between expected and measured lateral acceleration
       setpoint = lag_compensated_desired_lateral_accel + low_speed_factor * desired_curvature
-      #setpoint_expected = current_expected_lateral_accel + low_speed_factor * current_expected_curvature
+      setpoint_expected = current_expected_lateral_accel + low_speed_factor * current_expected_curvature
       measurement = actual_lateral_accel + low_speed_factor * actual_curvature
       gravity_adjusted_lateral_accel = lag_compensated_desired_lateral_accel - roll_compensation
-      #error_expected = float(setpoint_expected - measurement)
-      error = float(setpoint - measurement)
-      error_rate = (error - self.error_pre) / DT_CTRL
-      self.error_pre = error
-
+      error_expected = float(setpoint_expected - measurement)
+      #error = float(setpoint - measurement)
+      error_rate = (error_expected - self.error_pre) / DT_CTRL
+      self.error_pre = error_expected
       # do error correction in lateral acceleration space, convert at end to handle non-linear torque responses correctly
-      pid_log.error = float(setpoint - measurement)
+      pid_log.error = float(error_expected)
       ff = gravity_adjusted_lateral_accel
       # latAccelOffset corrects roll compensation bias from device roll misalignment relative to car roll
       ff -= self.torque_params.latAccelOffset
