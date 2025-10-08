@@ -10,6 +10,7 @@ from openpilot.selfdrive.controls.lib.latcontrol import LatControl
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.pid import PIDController
 from openpilot.selfdrive.controls.ntune import nTune
+from openpilot.common.realtime import DT_CTRL
 
 # At higher speeds (25+mph) we can assume:
 # Lateral acceleration achieved by a specific car correlates to
@@ -26,7 +27,7 @@ LOW_SPEED_X = [0, 10, 20, 30]
 LOW_SPEED_Y = [15, 13, 10, 5]
 
 class LatControlTorque(LatControl):
-  def __init__(self, CP, CI, dt):
+  def __init__(self, CP, CI, dt=DT_CTRL):
     super().__init__(CP, CI, dt)
     self.torque_params = CP.lateralTuning.torque.as_builder()
     self.torque_from_lateral_accel = CI.torque_from_lateral_accel()
