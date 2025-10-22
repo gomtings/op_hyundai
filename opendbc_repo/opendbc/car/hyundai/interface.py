@@ -94,12 +94,10 @@ class CarInterface(CarInterfaceBase):
     if ret.flags & HyundaiFlags.CANFD:
       ret.longitudinalTuning.kpBP = [0.]
       ret.longitudinalTuning.kpV = [0.8]
-      ret.longitudinalTuning.kf = 0.5
       ret.alphaLongitudinalAvailable = candidate not in (CANFD_UNSUPPORTED_LONGITUDINAL_CAR | CANFD_RADAR_SCC_CAR)
     else:
       ret.longitudinalTuning.kpBP = [0.]
       ret.longitudinalTuning.kpV = [0.9]
-      ret.longitudinalTuning.kf = 0.5
       ret.alphaLongitudinalAvailable = True #candidate not in (LEGACY_SAFETY_MODE_CAR)
 
     ret.openpilotLongitudinalControl = alpha_long and ret.alphaLongitudinalAvailable
