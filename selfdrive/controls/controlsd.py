@@ -18,6 +18,7 @@ from openpilot.selfdrive.controls.lib.latcontrol_angle import LatControlAngle, S
 from openpilot.selfdrive.controls.lib.latcontrol_torque import LatControlTorque
 from openpilot.selfdrive.controls.lib.longcontrol import LongControl
 from openpilot.selfdrive.locationd.helpers import PoseCalibrator, Pose
+from openpilot.selfdrive.modeld.modeld import LAT_SMOOTH_SECONDS
 
 from openpilot.selfdrive.controls.ntune import ntune_common_enabled, ntune_common_get
 from selfdrive.controls.neokii.lane_planner import LanePlanner
@@ -130,13 +131,12 @@ class Controls:
 
     # Steering PID loop and lateral MPC
     if lat_plan.useLaneLines:
-      live_delay = self.sm['liveDelay']
+      lat_delay = self.sm["liveDelay"].lateralDelay + LAT_SMOOTH_SECONDS
       self.desired_curvature, curvature_limited = LanePlanner.get_lag_adjusted_curvature(CS.vEgo, lat_plan.psis, lat_plan.curvatures, lat_plan.distances, lp.roll, live_delay.lateralDelay)
     else:
       new_desired_curvature = model_v2.action.desiredCurvature if CC.latActive else self.curvature
       self.desired_curvature, curvature_limited = clip_curvature(CS.vEgo, self.desired_curvature, new_desired_curvature, lp.roll)
-    
-    lat_delay = self.sm["liveDelay"].lateralDelay
+      lat_delay = self.sm["liveDelay"].lateralDelay + LAT_SMOOTH_SECONDS
 
     actuators.curvature = self.desired_curvature
     steer, steeringAngleDeg, lac_log = self.LaC.update(CC.latActive, CS, self.VM, lp,
