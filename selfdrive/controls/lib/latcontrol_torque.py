@@ -48,7 +48,7 @@ class LatControlTorque(LatControl):
     self.lookahead_frames = int(JERK_LOOKAHEAD_SECONDS / self.dt)
     self.jerk_filter = FirstOrderFilter(0.0, 1 / (2 * np.pi * LP_FILTER_CUTOFF_HZ), self.dt)
     self.tune = nTune(CP, self)
-    
+     
   def update_live_torque_params(self, latAccelFactor, latAccelOffset, friction):
     self.torque_params.latAccelFactor = latAccelFactor
     self.torque_params.latAccelOffset = latAccelOffset
@@ -106,6 +106,10 @@ class LatControlTorque(LatControl):
       pid_log.desiredLateralAccel = float(setpoint)
       pid_log.desiredLateralJerk = float(desired_lateral_jerk)
       pid_log.saturated = bool(self._check_saturation(self.steer_max - abs(output_torque) < 1e-3, CS, steer_limited_by_safety, curvature_limited))
-
+    
+    pid_log.latAccelFactor = self.torque_params.latAccelFactor
+    pid_log.latAccelOffset = self.torque_params.latAccelOffset
+    pid_log.friction = self.torque_params.friction
+    
     # TODO left is positive in this convention
     return -output_torque, 0.0, pid_log
