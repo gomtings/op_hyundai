@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import os
 from openpilot.system.hardware import TICI
-os.environ['DEV'] = 'QCOM' if TICI else 'LLVM'
+os.environ['DEV'] = 'QCOM' if TICI else 'NV'
 USBGPU = "USBGPU" in os.environ
 if USBGPU:
   os.environ['DEV'] = 'AMD'
@@ -31,25 +31,24 @@ from openpilot.selfdrive.modeld.constants import ModelConstants, Plan
 from openpilot.selfdrive.modeld.models.commonmodel_pyx import DrivingModelFrame, CLContext
 from openpilot.selfdrive.modeld.runners.tinygrad_helpers import qcom_tensor_from_opencl_address
 
-from openpilot.selfdrive.controls.ntune import ntune_common_get, ntune_scc_get
-
 PROCESS_NAME = "selfdrive.modeld.modeld"
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
 
 VISION_PKL_PATH = Path(__file__).parent / 'models/driving_vision_tinygrad.pkl'
+OFF_POLICY_PKL_PATH = Path(__file__).parent / 'models/driving_off_policy_tinygrad.pkl'
 POLICY_PKL_PATH = Path(__file__).parent / 'models/driving_policy_tinygrad.pkl'
 VISION_METADATA_PATH = Path(__file__).parent / 'models/driving_vision_metadata.pkl'
+OFF_POLICY_METADATA_PATH = Path(__file__).parent / 'models/driving_off_policy_metadata.pkl'
 POLICY_METADATA_PATH = Path(__file__).parent / 'models/driving_policy_metadata.pkl'
 
 LAT_SMOOTH_SECONDS = 0.0
 LONG_SMOOTH_SECONDS = 0.3
 MIN_LAT_CONTROL_SPEED = 0.3
 
-#RECOVERY_POWER = 1.0 # The higher this number the more aggressively the model will recover to lanecenter, too high and it will ping-pong
 
 def get_action_from_model(model_output: dict[str, np.ndarray], prev_action: log.ModelDataV2.Action,
                           lat_action_t: float, long_action_t: float, v_ego: float) -> log.ModelDataV2.Action:
-    plan = model_output['plan'][0] #+ RECOVERY_POWER*model_output['planplus'][0]
+    plan = model_output['plan'][0]
     desired_accel, should_stop, _ = get_accel_from_plan(plan[:,Plan.VELOCITY][:,0],
                                                      plan[:,Plan.ACCELERATION][:,0],
                                                      ModelConstants.T_IDXS,
@@ -151,6 +150,12 @@ class ModelState:
       self.vision_output_slices = vision_metadata['output_slices']
       vision_output_size = vision_metadata['output_shapes']['outputs'][1]
 
+    with open(OFF_POLICY_METADATA_PATH, 'rb') as f:
+      off_policy_metadata = pickle.load(f)
+      self.off_policy_input_shapes =  off_policy_metadata['input_shapes']
+      self.off_policy_output_slices = off_policy_metadata['output_slices']
+      off_policy_output_size = off_policy_metadata['output_shapes']['outputs'][1]
+
     with open(POLICY_METADATA_PATH, 'rb') as f:
       policy_metadata = pickle.load(f)
       self.policy_input_shapes =  policy_metadata['input_shapes']
@@ -172,10 +177,14 @@ class ModelState:
     self.vision_output = np.zeros(vision_output_size, dtype=np.float32)
     self.policy_inputs = {k: Tensor(v, device='NPY').realize() for k,v in self.numpy_inputs.items()}
     self.policy_output = np.zeros(policy_output_size, dtype=np.float32)
+    self.off_policy_output = np.zeros(off_policy_output_size, dtype=np.float32)
     self.parser = Parser()
 
     with open(VISION_PKL_PATH, "rb") as f:
       self.vision_run = pickle.load(f)
+
+    with open(OFF_POLICY_PKL_PATH, "rb") as f:
+      self.off_policy_run = pickle.load(f)
 
     with open(POLICY_PKL_PATH, "rb") as f:
       self.policy_run = pickle.load(f)
@@ -217,9 +226,12 @@ class ModelState:
     self.policy_output = self.policy_run(**self.policy_inputs).contiguous().realize().uop.base.buffer.numpy()
     policy_outputs_dict = self.parser.parse_policy_outputs(self.slice_outputs(self.policy_output, self.policy_output_slices))
 
-    combined_outputs_dict = {**vision_outputs_dict, **policy_outputs_dict}
+    self.off_policy_output = self.off_policy_run(**self.policy_inputs).contiguous().realize().uop.base.buffer.numpy()
+    off_policy_outputs_dict = self.parser.parse_off_policy_outputs(self.slice_outputs(self.off_policy_output, self.off_policy_output_slices))
+
+    combined_outputs_dict = {**vision_outputs_dict, **policy_outputs_dict, **off_policy_outputs_dict}
     if SEND_RAW_PRED:
-      combined_outputs_dict['raw_pred'] = np.concatenate([self.vision_output.copy(), self.policy_output.copy()])
+      combined_outputs_dict['raw_pred'] = np.concatenate([self.vision_output.copy(), self.policy_output.copy(), self.off_policy_output.copy()])
 
     return combined_outputs_dict
 
@@ -379,13 +391,9 @@ def main(demo=False):
       drivingdata_send = messaging.new_message('drivingModelData')
       posenet_send = messaging.new_message('cameraOdometry')
 
-      action = get_action_from_model(model_output, prev_action, lat_delay + DT_MDL,
-                                     (ntune_scc_get('longActuatorDelay') + LONG_SMOOTH_SECONDS) + DT_MDL,
-                                     v_ego)
-      raw_action = get_action_from_model(model_output, prev_action, DT_MDL, long_delay + DT_MDL, v_ego)
-
+      action = get_action_from_model(model_output, prev_action, lat_delay + DT_MDL, long_delay + DT_MDL, v_ego)
       prev_action = action
-      fill_model_msg(drivingdata_send, modelv2_send, model_output, action, raw_action,
+      fill_model_msg(drivingdata_send, modelv2_send, model_output, action,
                      publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id,
                      frame_drop_ratio, meta_main.timestamp_eof, model_execution_time, live_calib_seen)
 
