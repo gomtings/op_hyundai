@@ -48,7 +48,7 @@ def tg_compile(flags, model_name):
   )
 
 # Compile small models
-for model_name in ['driving_vision', 'driving_off_policy', 'driving_policy', 'dmonitoring_model']:
+for model_name in ['driving_vision', 'driving_policy', 'dmonitoring_model']:
   flags = {
     'larch64': 'DEV=QCOM',
     'Darwin': 'DEV=CPU IMAGE=0',
