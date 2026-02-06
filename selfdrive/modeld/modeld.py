@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import os
 from openpilot.system.hardware import TICI
-os.environ['DEV'] = 'QCOM' if TICI else 'LLVM'
+os.environ['DEV'] = 'QCOM' if TICI else 'CPU'
 USBGPU = "USBGPU" in os.environ
 if USBGPU:
   os.environ['DEV'] = 'AMD'
@@ -31,10 +31,6 @@ from openpilot.selfdrive.modeld.constants import ModelConstants, Plan
 from openpilot.selfdrive.modeld.models.commonmodel_pyx import DrivingModelFrame, CLContext
 from openpilot.selfdrive.modeld.runners.tinygrad_helpers import qcom_tensor_from_opencl_address
 
-<<<<<<< HEAD
-=======
-from openpilot.selfdrive.controls.ntune import ntune_common_get, ntune_scc_get
->>>>>>> parent of 2d340d3a (Off policy model#37081)
 
 PROCESS_NAME = "selfdrive.modeld.modeld"
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
@@ -48,17 +44,11 @@ LAT_SMOOTH_SECONDS = 0.0
 LONG_SMOOTH_SECONDS = 0.3
 MIN_LAT_CONTROL_SPEED = 0.3
 
-#RECOVERY_POWER = 1.0 # The higher this number the more aggressively the model will recover to lanecenter, too high and it will ping-pong
 
 def get_action_from_model(model_output: dict[str, np.ndarray], prev_action: log.ModelDataV2.Action,
                           lat_action_t: float, long_action_t: float, v_ego: float) -> log.ModelDataV2.Action:
-<<<<<<< HEAD
     plan = model_output['plan'][0]
     desired_accel, should_stop = get_accel_from_plan(plan[:,Plan.VELOCITY][:,0],
-=======
-    plan = model_output['plan'][0] #+ RECOVERY_POWER*model_output['planplus'][0]
-    desired_accel, should_stop, _ = get_accel_from_plan(plan[:,Plan.VELOCITY][:,0],
->>>>>>> parent of 2d340d3a (Off policy model#37081)
                                                      plan[:,Plan.ACCELERATION][:,0],
                                                      ModelConstants.T_IDXS,
                                                      action_t=long_action_t)
@@ -387,13 +377,9 @@ def main(demo=False):
       drivingdata_send = messaging.new_message('drivingModelData')
       posenet_send = messaging.new_message('cameraOdometry')
 
-      action = get_action_from_model(model_output, prev_action, lat_delay + DT_MDL,
-                                     (ntune_scc_get('longActuatorDelay') + LONG_SMOOTH_SECONDS) + DT_MDL,
-                                     v_ego)
-      raw_action = get_action_from_model(model_output, prev_action, DT_MDL, long_delay + DT_MDL, v_ego)
-
+      action = get_action_from_model(model_output, prev_action, lat_delay + DT_MDL, long_delay + DT_MDL, v_ego)
       prev_action = action
-      fill_model_msg(drivingdata_send, modelv2_send, model_output, action, raw_action,
+      fill_model_msg(drivingdata_send, modelv2_send, model_output, action,
                      publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id,
                      frame_drop_ratio, meta_main.timestamp_eof, model_execution_time, live_calib_seen)
 
