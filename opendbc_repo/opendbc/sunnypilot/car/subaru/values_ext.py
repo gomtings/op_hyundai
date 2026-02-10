@@ -8,12 +8,10 @@ See the LICENSE.md file in the root directory for more details.
 from enum import IntFlag
 
 
-class HondaFlagsSP(IntFlag):
-  NIDEC_HYBRID = 1
-  EPS_MODIFIED = 2
-  HYBRID_ALT_BRAKEHOLD = 4
+class SubaruSafetyFlagsSP:
+  STOP_AND_GO = 1
 
 
-class HondaSafetyFlagsSP:
-  NIDEC_HYBRID = 1
-  GAS_INTERCEPTOR = 2
+class SubaruFlagsSP(IntFlag):
+  STOP_AND_GO = 1
+  STOP_AND_GO_MANUAL_PARKING_BRAKE = 2
