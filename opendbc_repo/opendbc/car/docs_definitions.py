@@ -150,6 +150,7 @@ class CarHarness(EnumBase):
 
 class Device(EnumBase):
   four = BasePart("comma four", parts=[Mount.mount, Cable.obd_c_cable_2ft])
+  threex_angled_mount = BasePart("comma 3X (angled mount)", parts=[Mount.mount])
 
 
 class PartType(Enum):
