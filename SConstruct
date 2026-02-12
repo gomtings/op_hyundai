@@ -371,6 +371,9 @@ if arch == "larch64":
 # Build openpilot
 SConscript(['third_party/SConscript'])
 
+# Build transformations library first (required by selfdrive/modeld and selfdrive/locationd)
+SConscript(['sunnypilot/common/transformations/SConscript'])
+
 SConscript(['selfdrive/SConscript'])
 
 SConscript(['sunnypilot/SConscript'])

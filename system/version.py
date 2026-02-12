@@ -118,6 +118,10 @@ class BuildMetadata:
     return self.channel in RELEASE_BRANCHES
 
   @property
+  def release_sp_channel(self) -> bool:
+    return self.channel in RELEASE_SP_BRANCHES
+
+  @property
   def canonical(self) -> str:
     return f"{self.openpilot.version}-{self.openpilot.git_commit}-{self.openpilot.build_style}"
 
@@ -144,6 +148,8 @@ class BuildMetadata:
     elif self.master_channel:
       return "master"
     elif self.tested_channel:
+      return "release"
+    elif self.release_channel or self.release_sp_channel:
       return "release"
     else:
       return "feature"
