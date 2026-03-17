@@ -112,6 +112,8 @@ def out_of_space_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMas
 
 def posenet_invalid_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int, personality) -> Alert:
   mdl = sm['modelV2'].velocity.x[0] if len(sm['modelV2'].velocity.x) else math.nan
+  if math.isnan(mdl):
+    print(f"[events] !!! SPEED IS NAN !!! velocity.x len={len(sm['modelV2'].velocity.x)}, position.x len={len(sm['modelV2'].position.x)}")
   err = CS.vEgo - mdl
   msg = f"Speed Error: {err:.1f} m/s"
   return NoEntryAlert(msg, alert_text_1="Posenet Speed Invalid")

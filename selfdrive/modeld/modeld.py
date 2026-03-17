@@ -228,6 +228,7 @@ class ModelState(ModelStateBase):
 
 
 def main(demo=False):
+  print("[modeld_stock] >>> 프로세스 진입 성공! (main)")
   cloudlog.warning("modeld init")
 
   if not USBGPU:
@@ -239,8 +240,9 @@ def main(demo=False):
   cloudlog.warning("setting up CL context")
   cl_context = CLContext()
   cloudlog.warning("CL context ready; loading model")
+  print("[modeld_stock] ModelState(모델 로드) 시작...")
   model = ModelState(cl_context)
-  cloudlog.warning(f"models loaded in {time.monotonic() - st:.1f}s, modeld starting")
+  print(f"[modeld_stock] models loaded in {time.monotonic() - st:.1f}s, modeld starting")
 
   # visionipc clients
   while True:
@@ -365,7 +367,9 @@ def main(demo=False):
     frame_drop_ratio = frames_dropped / (1 + frames_dropped)
     prepare_only = vipc_dropped_frames > 0
     if prepare_only:
-      cloudlog.error(f"skipping model eval. Dropped {vipc_dropped_frames} frames")
+      print(f"[modeld_stock] FRAME DROP: dropped={vipc_dropped_frames}, prepare_only=True")
+    elif run_count % 20 == 0:
+      print(f"[modeld_stock] OK: run_count={run_count}, live_calib_seen={live_calib_seen}, dropped={vipc_dropped_frames}")
 
     bufs = {name: buf_extra if 'big' in name else buf_main for name in model.vision_input_names}
     transforms = {name: model_transform_extra if 'big' in name else model_transform_main for name in model.vision_input_names}
