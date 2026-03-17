@@ -179,10 +179,6 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
 def fill_pose_msg(msg: capnp._DynamicStructBuilder, net_output_data: dict[str, np.ndarray],
                   vipc_frame_id: int, vipc_dropped_frames: int, timestamp_eof: int, live_calib_seen: bool) -> None:
   msg.valid = live_calib_seen & (vipc_dropped_frames < 1)
-  if not msg.valid:
-    print(f"[modeld_stock] cameraOdometry valid=False: live_calib_seen={live_calib_seen}, dropped_frames={vipc_dropped_frames}")
-  elif not live_calib_seen:
-    print(f"[modeld_stock] cameraOdometry PUBLISHING while uncalibrated (valid=True)")
   cameraOdometry = msg.cameraOdometry
 
   cameraOdometry.frameId = vipc_frame_id
