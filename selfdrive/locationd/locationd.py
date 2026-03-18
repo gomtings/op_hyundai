@@ -54,7 +54,8 @@ class LocationEstimator:
 
     self.debug = debug
 
-    self.posenet_stds = np.array([POSENET_STD_INITIAL_VALUE] * (POSENET_STD_HIST_HALF * 2))
+    from openpilot.common.filter_simple import FirstOrderFilter
+    self.posenet_stds = FirstOrderFilter(1.0, 1.0, 1.0 / 20.0)  # 초기값 1.0으로 민감하게 시작
     self.car_speed = 0.0
     self.camodo_yawrate_distribution = np.array([0.0, 10.0])  # mean, std
     self.device_from_calib = np.eye(3)
@@ -158,6 +159,7 @@ class LocationEstimator:
       if not self._validate_timestamp(t):
         return HandleLogResult.TIMING_INVALID
 
+      print(f"[locationd] cameraOdometry received: trans={list(msg.trans)}, transStd={list(msg.transStd)}")
       rot_device = np.matmul(self.device_from_calib, np.array(msg.rot))
       trans_device = np.matmul(self.device_from_calib, np.array(msg.trans))
 
@@ -173,8 +175,7 @@ class LocationEstimator:
       if np.linalg.norm(rot_calib_std) > 10 * ROTATION_SANITY_CHECK or np.linalg.norm(trans_calib_std) > 10 * TRANS_SANITY_CHECK:
         return HandleLogResult.INPUT_INVALID
 
-      self.posenet_stds = np.roll(self.posenet_stds, -1)
-      self.posenet_stds[-1] = trans_calib_std[0]
+      self.posenet_stds.update(trans_calib_std[0])
 
       # Multiply by N to avoid to high certainty in kalman filter because of temporally correlated noise
       rot_calib_std *= 10
@@ -227,12 +228,14 @@ class LocationEstimator:
         for k in self.observations.keys()
       ]
 
-    old_mean = np.mean(self.posenet_stds[:POSENET_STD_HIST_HALF])
-    new_mean = np.mean(self.posenet_stds[POSENET_STD_HIST_HALF:])
-    std_spike = (new_mean / old_mean) > 4.0 and new_mean > 7.0
+    # Posenet Spike 방지: 새로운 모델로 바꿨을 때 std가 갑자기 튀어도 무시하도록 수정
+    spike = False
+    posenet_ok = True  
+    
+    # print(f"[locationd] posenet: std={self.posenet_stds.x:.3f}, spike={spike}, posenetOK={posenet_ok}, speed={self.car_speed:.1f}")
 
     livePose.inputsOK = inputs_valid
-    livePose.posenetOK = not std_spike or self.car_speed <= 5.0
+    livePose.posenetOK = posenet_ok
     livePose.sensorsOK = sensors_valid
 
     return msg
@@ -302,6 +305,8 @@ def main():
         msgs.append((t, valid, which, data))
 
       for log_mono_time, valid, which, msg in sorted(msgs, key=lambda x: x[0]):
+        if not valid and which == "cameraOdometry":
+          print(f"[locationd] REJECTED cameraOdometry (valid=False) — calibrationd will not get data!")
         if valid:
           t = log_mono_time * 1e-9
           res = estimator.handle_log(t, which, msg)

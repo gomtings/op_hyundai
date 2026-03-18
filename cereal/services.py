@@ -2,11 +2,13 @@
 from enum import IntEnum
 from typing import Optional
 
+
 # TODO: this should be automatically determined using the capnp schema
 class QueueSize(IntEnum):
   BIG = 10 * 1024 * 1024      # 10MB - video frames, large AI outputs
   MEDIUM = 2 * 1024 * 1024    # 2MB - high freq (CAN), livestream
   SMALL = 250 * 1024          # 250KB - most services
+
 
 class Service:
   def __init__(self, should_log: bool, frequency: float, decimation: Optional[int] = None,

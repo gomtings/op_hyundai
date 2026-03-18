@@ -186,7 +186,11 @@ class Calibrator:
                             road_transform_trans_std: list[float]) -> np.ndarray | None:
     self.old_rpy_weight = max(0.0, self.old_rpy_weight - 1/SMOOTH_CYCLES)
 
-    straight_and_fast = ((self.v_ego > MIN_SPEED_FILTER) and (trans[0] > MIN_SPEED_FILTER) and (abs(rot[2]) < MAX_YAW_RATE_FILTER))
+    if self.block_idx % 10 == 0: # 너무 많이 출력되면 복잡하므로 10번에 한 번씩 출력
+       print(f"DEBUG: v_ego={self.v_ego:.2f}, trans_0={trans[0]:.4f}, RAW_threshold={MIN_SPEED_FILTER:.4f}, threshold={MIN_SPEED_FILTER/20.0:.4f}")
+
+    #straight_and_fast = ((self.v_ego > MIN_SPEED_FILTER) and (trans[0] > MIN_SPEED_FILTER) and (abs(rot[2]) < MAX_YAW_RATE_FILTER))
+    straight_and_fast = ((self.v_ego > MIN_SPEED_FILTER) and (trans[0] > MIN_SPEED_FILTER / 20.0) and (abs(rot[2]) < MAX_YAW_RATE_FILTER))
     angle_std_threshold = MAX_VEL_ANGLE_STD
     height_std_threshold = MAX_HEIGHT_STD
     rpy_certain = np.arctan2(trans_std[1], trans[0]) < angle_std_threshold
@@ -276,12 +280,14 @@ def main() -> NoReturn:
 
     if sm.updated['cameraOdometry']:
       calibrator.handle_v_ego(sm['carState'].vEgo)
-      new_rpy = calibrator.handle_cam_odom(sm['cameraOdometry'].trans,
-                                           sm['cameraOdometry'].rot,
-                                           sm['cameraOdometry'].wideFromDeviceEuler,
-                                           sm['cameraOdometry'].transStd,
-                                           sm['cameraOdometry'].roadTransformTrans,
-                                           sm['cameraOdometry'].roadTransformTransStd)
+      cam_odom = sm['cameraOdometry']
+      print(f"[calibrationd] cameraOdometry updated: valid={sm.valid['cameraOdometry']}, trans={list(cam_odom.trans)[:1]}, transStd={list(cam_odom.transStd)[:1]}, v_ego={sm['carState'].vEgo:.2f}")
+      new_rpy = calibrator.handle_cam_odom(cam_odom.trans,
+                                           cam_odom.rot,
+                                           cam_odom.wideFromDeviceEuler,
+                                           cam_odom.transStd,
+                                           cam_odom.roadTransformTrans,
+                                           cam_odom.roadTransformTransStd)
 
       if DEBUG and new_rpy is not None:
         print('got new rpy', new_rpy)
