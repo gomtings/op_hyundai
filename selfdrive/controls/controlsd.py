@@ -21,7 +21,7 @@ from openpilot.selfdrive.locationd.helpers import PoseCalibrator, Pose
 from openpilot.selfdrive.modeld.modeld import LAT_SMOOTH_SECONDS
 
 from openpilot.selfdrive.controls.ntune import ntune_common_enabled, ntune_common_get
-from selfdrive.controls.neokii.lane_planner import LanePlanner
+from openpilot.selfdrive.controls.neokii.lane_planner import LanePlanner
 
 State = log.SelfdriveState.OpenpilotState
 LaneChangeState = log.LaneChangeState
