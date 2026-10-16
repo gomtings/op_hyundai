@@ -225,9 +225,20 @@ void ModelsPanel::handleBundleDownloadProgress() {
         modelFrame = visionFrame;
         break;
       case cereal::ModelManagerSP::Model::Type::POLICY:
+      case cereal::ModelManagerSP::Model::Type::OFF_POLICY:
+      case cereal::ModelManagerSP::Model::Type::ON_POLICY:
         progressBar = policyProgressBar;
         modelFrame = policyFrame;
         break;
+      case cereal::ModelManagerSP::Model::Type::CHUNKED:
+        // bundles of the newer model index ship one chunked model, show it as the main model
+        progressBar = supercomboProgressBar;
+        modelFrame = supercomboFrame;
+        break;
+    }
+
+    if (progressBar == nullptr || modelFrame == nullptr) {
+      continue;
     }
 
     const auto &progress = model.getArtifact().getDownloadProgress();
