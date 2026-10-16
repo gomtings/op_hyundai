@@ -2,8 +2,6 @@ import glob
 import os
 import time
 from SCons.Script import Action, Value
-from openpilot.common.transformations.camera import _ar_ox_fisheye, _os_fisheye
-from openpilot.common.transformations.model import MEDMODEL_INPUT_SIZE, DM_INPUT_SIZE
 from openpilot.selfdrive.modeld.helpers import chestnut_present
 from openpilot.system.camerad.cameras.nv12_info import get_nv12_info
 
@@ -16,7 +14,12 @@ tinygrad_root = env.Dir("#").abspath
 tinygrad_files = ["#"+x for x in glob.glob(env.Dir("#tinygrad_repo").relpath + "/**", recursive=True, root_dir=tinygrad_root)
                   if 'pycache' not in x and os.path.isfile(os.path.join(tinygrad_root, x))]
 
-camera_configs = [(c.width, c.height) for c in (_ar_ox_fisheye, _os_fisheye)]
+# These come from common/transformations/{camera,model}.py, which on master-tici import a Cython
+# extension that is itself built by this SCons run, so they can't be imported while parsing.
+# Keep in sync with _ar_ox_fisheye, _os_fisheye, MEDMODEL_INPUT_SIZE and DM_INPUT_SIZE.
+camera_configs = [(1928, 1208), (2688 // 2, 1520 // 2)]
+MEDMODEL_INPUT_SIZE = (512, 256)
+DM_INPUT_SIZE = (1440, 960)
 
 if arch == 'larch64':
   tg_flags = 'DEV=QCOM IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1'
