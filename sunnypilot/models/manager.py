@@ -279,7 +279,7 @@ class ModelManagerSP:
       if self._download_interrupted():
         raise DownloadCancelled("Download cancelled")
       self.selected_bundle.status = custom.ModelManagerSP.DownloadStatus.downloaded
-      self.params.put(ACTIVE_BUNDLE_KEYS[source], model_bundle.to_dict(), block=True)
+      self.params.put(ACTIVE_BUNDLE_KEYS[source], model_bundle.to_dict())
       self.active_bundle = get_active_bundle(self.params, chestnut=self.chestnut_present)
 
     except Exception:

@@ -132,8 +132,8 @@ class ModelCache:
 
   def set(self, data: dict) -> None:
     """Updates the cache with new model data"""
-    self.params.put(self._CACHE_KEY, data, block=True)
-    self.params.put(self._LAST_SYNC_KEY, int(time.monotonic() * 1e9), block=True)
+    self.params.put(self._CACHE_KEY, data)
+    self.params.put(self._LAST_SYNC_KEY, int(time.monotonic() * 1e9))
 
 
 class ModelFetcher:
@@ -157,7 +157,7 @@ class ModelFetcher:
     self.params.put("ModelManager_ActiveJson", {
       "qcom": self.MODEL_URL,
       "chestnut": self.MODEL_URL_CHESTNUT,
-    }, block=True)
+    })
 
   @staticmethod
   def active_source(chestnut_present: bool) -> str:

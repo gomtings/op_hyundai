@@ -185,7 +185,7 @@ def get_active_model_runner(params: Params | None = None, force_check: bool = Fa
     runner_type = active_bundle.runner.raw
 
   if cached_runner_type != runner_type:
-    params.put("ModelRunnerTypeCache", int(runner_type), block=True)
+    params.put("ModelRunnerTypeCache", int(runner_type))
 
   return runner_type
 
