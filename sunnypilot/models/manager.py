@@ -322,7 +322,8 @@ class ModelManagerSP:
     while True:
       try:
         self.sm.update(0)
-        self.chestnut_present = self.sm['deviceState'].chestnutPresent
+        # master-tici's DeviceState has no chestnutPresent (external GPU is not supported here)
+        self.chestnut_present = getattr(self.sm['deviceState'], 'chestnutPresent', False)
         self.source_models = {source: self.model_fetcher.get_bundles_for_source(source) for source in ModelFetcher.MODEL_SOURCES}
         self.available_models = self.source_models[ModelFetcher.active_source(self.chestnut_present)]
         validate_active_bundles(self.params, self.source_models)
