@@ -1,2 +1,1 @@
-SConscript(['modeld/SConscript'])
-SConscript(['modeld_v2/SConscript'])
+# model stacks are built from selfdrive/modeld/SConscript (tinygrad compiled on device)

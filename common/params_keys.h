@@ -169,6 +169,13 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
 
     // Model Manager params
     {"ModelManager_ActiveBundle", {PERSISTENT, JSON}},
+    {"ModelManager_ActiveJson", {CLEAR_ON_MANAGER_START, JSON}},
+    {"ModelManager_DownloadRef", {CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION, STRING}},
+    {"CameraOffset", {PERSISTENT | BACKUP, FLOAT, "0.0"}},
+    {"PlanplusControl", {PERSISTENT | BACKUP, FLOAT, "1.0"}},
+    {"RoadEdgeLaneChangeEnabled", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"ChestnutActive", {CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION | CLEAR_ON_IGNITION_ON, BOOL}},
+    {"ChestnutLoading", {CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION | CLEAR_ON_IGNITION_ON, BOOL}},
     {"ModelManager_ClearCache", {CLEAR_ON_MANAGER_START, BOOL}},
     {"ModelManager_DownloadIndex", {CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION, INT, "0"}},
     {"ModelManager_Favs", {PERSISTENT | BACKUP, STRING}},

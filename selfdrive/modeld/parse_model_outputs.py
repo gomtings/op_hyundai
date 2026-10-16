@@ -41,7 +41,7 @@ class Parser:
     raw = outs[name]
     outs[name] = sigmoid(raw)
 
-  def parse_mdn(self, name, outs, in_N=0, out_N=1, out_shape=None):
+  def parse_mdn(self, name, outs, in_N=0, out_N=1, out_shape=()):
     if self.check_missing(outs, name):
       return
     raw = outs[name]
@@ -110,9 +110,7 @@ class Parser:
     return outs
 
   def parse_policy_outputs(self, outs: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
-    plan_mhp = self.is_mhp(outs, 'plan',  ModelConstants.IDX_N * ModelConstants.PLAN_WIDTH)
-    plan_in_N, plan_out_N = (ModelConstants.PLAN_MHP_N, ModelConstants.PLAN_MHP_SELECTION) if plan_mhp else (0, 0)
-    self.parse_mdn('plan', outs, in_N=plan_in_N, out_N=plan_out_N, out_shape=(ModelConstants.IDX_N, ModelConstants.PLAN_WIDTH))
+    self.parse_mdn('plan', outs, in_N=0, out_N=0, out_shape=(ModelConstants.IDX_N, ModelConstants.PLAN_WIDTH))
     self.parse_categorical_crossentropy('desire_state', outs, out_shape=(ModelConstants.DESIRE_PRED_WIDTH,))
     return outs
 

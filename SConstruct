@@ -12,6 +12,8 @@ SCons.Warnings.warningAsException(True)
 # pending upstream fix - https://github.com/SCons/scons/issues/4461
 #SetOption('warn', 'all')
 
+sys.path.insert(0, Dir('#').abspath)  # SConscripts import openpilot.* at parse time
+
 TICI = os.path.isfile('/TICI')
 AGNOS = TICI
 

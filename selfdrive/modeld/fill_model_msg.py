@@ -1,8 +1,9 @@
 import os
 import capnp
 import numpy as np
-from cereal import log
+from openpilot.cereal import log
 from openpilot.selfdrive.modeld.constants import ModelConstants, Plan, Meta
+from openpilot.sunnypilot.models.helpers import plan_x_idxs_helper
 
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
 
@@ -55,26 +56,30 @@ def fill_lane_line_meta(builder, lane_lines, lane_line_probs):
   builder.rightY = lane_lines[2].y[0]
   builder.rightProb = lane_line_probs[2]
 
-def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._DynamicStructBuilder,
-                   net_output_data: dict[str, np.ndarray], action: log.ModelDataV2.Action,
+def fill_driving_model_data(msg: capnp._DynamicStructBuilder, modelv2_send: capnp._DynamicStructBuilder) -> None:
+  msg.valid = modelv2_send.valid
+  modelV2 = modelv2_send.modelV2
+  driving_model_data = msg.drivingModelData
+  driving_model_data.frameId = modelV2.frameId
+  driving_model_data.frameIdExtra = modelV2.frameIdExtra
+  driving_model_data.frameDropPerc = modelV2.frameDropPerc
+  driving_model_data.modelExecutionTime = modelV2.modelExecutionTime
+  driving_model_data.big = modelV2.big
+  driving_model_data.action = modelV2.action
+  driving_model_data.meta.laneChangeState = modelV2.meta.laneChangeState
+  driving_model_data.meta.laneChangeDirection = modelV2.meta.laneChangeDirection
+  fill_lane_line_meta(driving_model_data.laneLineMeta, modelV2.laneLines, modelV2.laneLineProbs)
+  fill_xyz_poly(driving_model_data.path, ModelConstants.POLY_PATH_DEGREE, modelV2.position.x, modelV2.position.y, modelV2.position.z)
+
+def fill_model_msg(msg: capnp._DynamicStructBuilder, net_output_data: dict[str, np.ndarray], action: log.ModelDataV2.Action,
                    publish_state: PublishState, vipc_frame_id: int, vipc_frame_id_extra: int,
                    frame_id: int, frame_drop: float, timestamp_eof: int, model_execution_time: float,
                    valid: bool) -> None:
   frame_age = frame_id - vipc_frame_id if frame_id > vipc_frame_id else 0
   frame_drop_perc = frame_drop * 100
-  extended_msg.valid = valid
-  base_msg.valid = valid
+  msg.valid = valid
 
-  driving_model_data = base_msg.drivingModelData
-
-  driving_model_data.frameId = vipc_frame_id
-  driving_model_data.frameIdExtra = vipc_frame_id_extra
-  driving_model_data.frameDropPerc = frame_drop_perc
-  driving_model_data.modelExecutionTime = model_execution_time
-
-  driving_model_data.action = action
-
-  modelV2 = extended_msg.modelV2
+  modelV2 = msg.modelV2
   modelV2.frameId = vipc_frame_id
   modelV2.frameIdExtra = vipc_frame_id_extra
   modelV2.frameAge = frame_age
@@ -89,14 +94,11 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
   fill_xyzt(modelV2.orientation, ModelConstants.T_IDXS, *net_output_data['plan'][0,:,Plan.T_FROM_CURRENT_EULER].T)
   fill_xyzt(modelV2.orientationRate, ModelConstants.T_IDXS, *net_output_data['plan'][0,:,Plan.ORIENTATION_RATE].T)
 
-  # poly path
-  fill_xyz_poly(driving_model_data.path, ModelConstants.POLY_PATH_DEGREE, *net_output_data['plan'][0,:,Plan.POSITION].T)
-
   # action
   modelV2.action = action
 
-  # times at X_IDXS of edges and lines aren't used
-  LINE_T_IDXS: list[float] = []
+  # times at X_IDXS of edges and lines
+  LINE_T_IDXS: list[float] = plan_x_idxs_helper(ModelConstants, Plan, net_output_data)
 
   # lane lines
   modelV2.init('laneLines', 4)
@@ -105,8 +107,6 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
     fill_xyzt(lane_line, LINE_T_IDXS, np.array(ModelConstants.X_IDXS), net_output_data['lane_lines'][0,i,:,0], net_output_data['lane_lines'][0,i,:,1])
   modelV2.laneLineStds = net_output_data['lane_lines_stds'][0,:,0,0].tolist()
   modelV2.laneLineProbs = net_output_data['lane_lines_prob'][0,1::2].tolist()
-
-  fill_lane_line_meta(driving_model_data.laneLineMeta, modelV2.laneLines, modelV2.laneLineProbs)
 
   # road edges
   modelV2.init('roadEdges', 2)
@@ -149,7 +149,7 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
   meta.hardBrakePredicted = hard_brake_predicted.item()
 
   # confidence
-  if vipc_frame_id % (2*ModelConstants.MODEL_FREQ) == 0:
+  if vipc_frame_id % (2*ModelConstants.MODEL_RUN_FREQ) == 0:
     # any disengage prob
     brake_disengage_probs = net_output_data['meta'][0,Meta.BRAKE_DISENGAGE]
     gas_disengage_probs = net_output_data['meta'][0,Meta.GAS_DISENGAGE]
@@ -176,8 +176,8 @@ def fill_model_msg(base_msg: capnp._DynamicStructBuilder, extended_msg: capnp._D
     modelV2.rawPredictions = net_output_data['raw_pred'].tobytes()
 
 def fill_pose_msg(msg: capnp._DynamicStructBuilder, net_output_data: dict[str, np.ndarray],
-                  vipc_frame_id: int, vipc_dropped_frames: int, timestamp_eof: int, live_calib_seen: bool) -> None:
-  msg.valid = live_calib_seen & (vipc_dropped_frames < 1)
+                  vipc_frame_id: int, vipc_dropped_frames: int, timestamp_eof: int, extrinsics_calibration_seen: bool) -> None:
+  msg.valid = extrinsics_calibration_seen & (vipc_dropped_frames < 1)
   cameraOdometry = msg.cameraOdometry
 
   cameraOdometry.frameId = vipc_frame_id
