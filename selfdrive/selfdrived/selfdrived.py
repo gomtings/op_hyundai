@@ -87,8 +87,10 @@ class SelfdriveD(CruiseHelper):
     self.car_state_sock = messaging.sub_sock('carState', timeout=20)
 
     ignore = self.sensor_packets + self.gps_packets + ['alertDebug'] + ['modelDataV2SP']
-    if SIMULATION:
-      ignore += ['driverCameraState', 'managerState']
+    # DRIVER-CAMERA-IGNORE: this unit's driver camera is broken. Same change as c3-port-tici (it ignores the
+    # liveness of the driver camera and of driver monitoring), added on request. Bench/test use only.
+    if True:  # was: if SIMULATION:
+      ignore += ['driverCameraState', 'managerState', 'driverMonitoringState']
     if REPLAY:
       # no vipc in replay will make them ignored anyways
       ignore += ['roadCameraState', 'wideRoadCameraState']
