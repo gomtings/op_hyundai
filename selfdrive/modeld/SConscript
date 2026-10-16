@@ -39,7 +39,7 @@ mac_brew_string = f'HOME={os.path.expanduser("~")}' if arch == 'Darwin' else ''
 warp_deps = [File("#openpilot/system/camerad/cameras/nv12_info.py")]
 compiler = Dir('#tinygrad_repo/examples/openpilot').abspath
 # CPU 7 is isolated with isolcpus on AGNOS, so explicitly pin the compiler to it.
-taskset = 'taskset -c 7 ' if arch == 'larch64' else ''
+taskset = 'taskset -c 7 ' if arch == 'larch64' and 7 in os.sched_getaffinity(0) else ''  # AGNOS 12.8 can't pin to cpu 7
 
 def chestnut_action(command):
   def do_compile(target, source, env):
