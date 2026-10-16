@@ -4,7 +4,7 @@ import numpy as np
 from openpilot.cereal import log
 from openpilot.sunnypilot.modeld_v2.constants import ModelConstants, Plan
 from openpilot.sunnypilot.models.helpers import plan_x_idxs_helper
-from openpilot.selfdrive.controls.lib.drive_helpers import get_curvature_from_plan
+from openpilot.selfdrive.modeld.drive_helpers import get_curvature_from_plan
 
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
 
