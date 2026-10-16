@@ -405,7 +405,8 @@ void ModelsPanel::handleCurrentModelLblBtnClicked() {
     // Find selected bundle and initiate download
     for (const auto &bundle: bundles) {
       if (QString::fromStdString(bundle.getRef()) == selectedBundleRef) {
-        params.put("ModelManager_DownloadIndex", std::to_string(bundle.getIndex()));
+        // the newer model manager looks bundles up by ref (it no longer reads ModelManager_DownloadIndex)
+        params.put("ModelManager_DownloadRef", selectedBundleRef.toStdString());
         if (bundle.getGeneration() != model_manager.getActiveBundle().getGeneration()) {
           showResetParamsDialog();
         }
