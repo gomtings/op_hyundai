@@ -39,8 +39,21 @@ def check_sources() -> list[str]:
       problems.append(f"{rel} is a git-lfs pointer, not the real file: run `git lfs pull`")
   return problems
 
+def fetch_sources(spinner: Spinner) -> None:
+  # needs network; if it fails the check below reports what is still missing
+  for text, cmd in (("fetching submodules", ["git", "submodule", "update", "--init", "--recursive"]),
+                    ("fetching model files", ["git", "lfs", "pull"])):
+    spinner.update(text)
+    try:
+      subprocess.run(cmd, cwd=BASEDIR, timeout=1800, check=False)
+    except (OSError, subprocess.TimeoutExpired) as e:
+      cloudlog.error(f"{' '.join(cmd)} failed: {e}")
+
 def build(spinner: Spinner, dirty: bool = False, minimal: bool = False) -> None:
   problems = check_sources()
+  if problems:
+    fetch_sources(spinner)
+    problems = check_sources()
   if problems:
     msg = "cannot build, the checkout is incomplete\n \n" + "\n".join(problems)
     add_file_handler(cloudlog)
