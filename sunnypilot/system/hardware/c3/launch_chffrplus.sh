@@ -80,7 +80,9 @@ function launch {
 
   # start manager
   cd $DIR/system/manager
-  if [ ! -f $DIR/prebuilt ]; then
+  # `prebuilt` holds the commit it was built from; an empty one (older installs) is trusted as is
+  if [ ! -f $DIR/prebuilt ] || { [ -s $DIR/prebuilt ] && [ "$(cat $DIR/prebuilt)" != "$(git -C $DIR rev-parse HEAD)" ]; }; then
+    rm -f $DIR/prebuilt
     ./build.py
   fi
   ./manager.py

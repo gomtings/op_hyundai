@@ -148,3 +148,8 @@ if __name__ == "__main__":
   spinner.update_progress(0, 100)
   build_metadata = get_build_metadata()
   build(spinner, build_metadata.openpilot.is_dirty, minimal = AGNOS)
+  if AGNOS:
+    # mark the checkout as built; the launch script rebuilds when HEAD moves away from this commit
+    head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=BASEDIR, capture_output=True, text=True, check=False).stdout.strip()
+    if head:
+      (Path(BASEDIR) / "prebuilt").write_text(head)

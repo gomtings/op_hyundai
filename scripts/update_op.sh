@@ -23,5 +23,5 @@ if ! python3 system/manager/build.py; then
   exit 1
 fi
 
-touch prebuilt
+git rev-parse HEAD > prebuilt
 echo "update done on $BRANCH ($(git rev-parse --short HEAD)); reboot to apply"
