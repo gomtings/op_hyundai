@@ -17,7 +17,40 @@ CACHE_DIR = Path("/data/scons_cache" if AGNOS else "/tmp/scons_cache")
 TOTAL_SCONS_NODES = 3800
 MAX_BUILD_PROGRESS = 100
 
+SUBMODULE_MARKERS = {
+  "panda": "panda/__init__.py",
+  "opendbc_repo": "opendbc_repo/opendbc/__init__.py",
+  "msgq_repo": "msgq_repo/msgq/__init__.py",
+  "rednose_repo": "rednose_repo/rednose/__init__.py",
+  "teleoprtc_repo": "teleoprtc_repo/teleoprtc/__init__.py",
+  "tinygrad_repo": "tinygrad_repo/tinygrad/__init__.py",
+}
+LFS_FILES = ("selfdrive/modeld/models/driving_supercombo.onnx", "selfdrive/modeld/models/dmonitoring_model.onnx")
+
+def check_sources() -> list[str]:
+  # a fresh clone without submodules / LFS objects fails deep inside scons with a confusing error, so say what is missing up front
+  problems = []
+  for name, marker in SUBMODULE_MARKERS.items():
+    if not (Path(BASEDIR) / marker).exists():
+      problems.append(f"submodule {name} is empty: run `git submodule update --init --recursive`")
+  for rel in LFS_FILES:
+    f = Path(BASEDIR) / rel
+    if not f.exists() or f.stat().st_size < 1024:
+      problems.append(f"{rel} is a git-lfs pointer, not the real file: run `git lfs pull`")
+  return problems
+
 def build(spinner: Spinner, dirty: bool = False, minimal: bool = False) -> None:
+  problems = check_sources()
+  if problems:
+    msg = "cannot build, the checkout is incomplete\n \n" + "\n".join(problems)
+    add_file_handler(cloudlog)
+    cloudlog.error(msg)
+    spinner.close()
+    if not os.getenv("CI"):
+      with TextWindow(msg) as t:
+        t.wait_for_exit()
+    exit(1)
+
   env = os.environ.copy()
   env['SCONS_PROGRESS'] = "1"
   if AGNOS:
