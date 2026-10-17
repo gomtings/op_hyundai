@@ -9,13 +9,6 @@ cd "$DIR"
 
 BRANCH="${1:-$(git rev-parse --abbrev-ref HEAD)}"
 
-# the venv's capnp (1.0.1) does not match /usr/local's (1.0.2), so build against the system one
-mkdir -p /tmp/capnp_sys
-for t in capnp capnpc capnpc-c++; do
-  [ -x "/usr/local/bin/$t" ] && ln -sf "/usr/local/bin/$t" "/tmp/capnp_sys/$t"
-done
-export PATH="/tmp/capnp_sys:$PATH"
-
 # tinygrad submodule lives under sunnypilot/tinygrad
 git fetch origin "$BRANCH"
 git checkout "$BRANCH"

@@ -20,6 +20,16 @@ MAX_BUILD_PROGRESS = 100
 def build(spinner: Spinner, dirty: bool = False, minimal: bool = False) -> None:
   env = os.environ.copy()
   env['SCONS_PROGRESS'] = "1"
+  if AGNOS:
+    # the venv's capnp (1.0.1) does not match the headers in /usr/local (1.0.2), so build with the system tools
+    capnp_sys = Path("/tmp/capnp_sys")
+    capnp_sys.mkdir(exist_ok=True)
+    for tool in ("capnp", "capnpc", "capnpc-c++"):
+      src = Path("/usr/local/bin") / tool
+      if src.exists():
+        (capnp_sys / tool).unlink(missing_ok=True)
+        (capnp_sys / tool).symlink_to(src)
+    env['PATH'] = f"{capnp_sys}:{env['PATH']}"
   nproc = os.cpu_count()
   if nproc is None:
     nproc = 2
