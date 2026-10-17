@@ -439,8 +439,7 @@ def main(demo=False):
       r_lane_change_prob = desire_state[log.Desire.laneChangeRight]
       lane_change_prob = l_lane_change_prob + r_lane_change_prob
       left_edge, right_edge = RELC.update_and_fill(modelv2_send.modelV2, mdv2sp_send.modelDataV2SP, v_ego)
-      # master-tici's DesireHelper takes no road-edge arguments (its lane change logic stays as is)
-      DH.update(sm['carState'], sm['carControl'].latActive, lane_change_prob)
+      DH.update(sm['carState'], sm['carControl'].latActive, lane_change_prob, left_edge, right_edge)
       modelv2_send.modelV2.meta.laneChangeState = DH.lane_change_state
       modelv2_send.modelV2.meta.laneChangeDirection = DH.lane_change_direction
       mdv2sp_send.valid = modelv2_send.valid
