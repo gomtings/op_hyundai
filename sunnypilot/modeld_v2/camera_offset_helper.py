@@ -40,11 +40,11 @@ class CameraOffsetHelper:
     height = sm["liveCalibration"].height[0] if sm['liveCalibration'].height else 1.22
     rpy_calib = sm['liveCalibration'].rpyCalib
 
-    intrinsics_main = dc.wide_road.intrinsics if main_wide_camera else dc.narrow_road.intrinsics
+    intrinsics_main = dc.ecam.intrinsics if main_wide_camera else dc.fcam.intrinsics
     v_horizon_main = self.get_v_horizon(intrinsics_main, rpy_calib)
     model_transform_main = self.apply_camera_offset(model_transform_main, height, self.actual_camera_offset, v_horizon_main)
 
-    intrinsics_extra = dc.wide_road.intrinsics
+    intrinsics_extra = dc.ecam.intrinsics
     v_horizon_extra = self.get_v_horizon(intrinsics_extra, rpy_calib)
     model_transform_extra = self.apply_camera_offset(model_transform_extra, height, self.actual_camera_offset, v_horizon_extra)
     return model_transform_main, model_transform_extra
