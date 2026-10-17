@@ -93,6 +93,8 @@ class RoadEdgeLaneChangeController:
 
   def update_and_fill(self, modelv2, mdv2sp, v_ego):
     self.update(modelv2.roadEdgeStds, modelv2.laneLineProbs, v_ego, modelv2.roadEdges)
-    mdv2sp.leftLaneChangeEdgeBlock = self.left_edge_detected
-    mdv2sp.rightLaneChangeEdgeBlock = self.right_edge_detected
+    # master-tici's ModelDataV2SP has no road-edge fields and nothing there reads them: only fill them when present
+    if hasattr(mdv2sp, 'leftLaneChangeEdgeBlock'):
+      mdv2sp.leftLaneChangeEdgeBlock = self.left_edge_detected
+      mdv2sp.rightLaneChangeEdgeBlock = self.right_edge_detected
     return self.left_edge_detected, self.right_edge_detected
