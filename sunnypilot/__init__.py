@@ -1,5 +1,7 @@
 import hashlib
 
+PARAMS_UPDATE_PERIOD = 3  # seconds
+
 
 def get_file_hash(path: str) -> str:
   sha256_hash = hashlib.sha256()

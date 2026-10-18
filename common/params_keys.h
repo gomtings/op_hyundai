@@ -189,7 +189,11 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"NeuralNetworkLateralControl", {PERSISTENT | BACKUP, BOOL, "0"}},
 
     // Torque lateral controller selection (v0/v1) and parameter override
+    {"CustomTorqueParams", {PERSISTENT | BACKUP, BOOL}},
     {"EnforceTorqueControl", {PERSISTENT | BACKUP, BOOL}},
+    {"LateralJerkTorqueController", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"LiveTorqueParamsToggle", {PERSISTENT | BACKUP, BOOL}},
+    {"LiveTorqueParamsRelaxedToggle", {PERSISTENT | BACKUP, BOOL}},
     {"TorqueControlTune", {PERSISTENT | BACKUP, FLOAT, "0.0"}},
     {"TorqueParamsOverrideEnabled", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"TorqueParamsOverrideFriction", {PERSISTENT | BACKUP, FLOAT, "0.1"}},

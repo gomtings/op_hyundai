@@ -11,6 +11,9 @@ from openpilot.common.pid import PIDController
 from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
 from openpilot.selfdrive.modeld.constants import ModelConstants
 
+KP = 1.0
+KI = 0.3
+
 LAT_PLAN_MIN_IDX = 5
 LATERAL_LAG_MOD = 0.0  # seconds, modifies how far in the future we look ahead for the lateral plan
 
@@ -58,7 +61,7 @@ class LatControlTorqueExtBase:
     self.torque_from_lateral_accel_in_torque_space = CI.torque_from_lateral_accel_in_torque_space()
 
     self._ff = 0.0
-    self._pid = PIDController(0.0, 0.0, k_f=0.0)
+    self._pid = PIDController(KP, KI, k_f=1.0)
     self._pid_log = None
     self._setpoint = 0.0
     self._measurement = 0.0
@@ -129,3 +132,10 @@ class LatControlTorqueExtBase:
         self.lat_accel_friction_factor = 1.0
       self.lateral_jerk_setpoint = self.lat_jerk_friction_factor * self.lookahead_lateral_jerk
       self.lateral_jerk_measurement = self.lat_jerk_friction_factor * self.actual_lateral_jerk
+
+  def update_output_torque(self, CS):
+    freeze_integrator = self._steer_limited_by_safety or CS.steeringPressed or CS.vEgo < 5
+    self._output_torque = self._pid.update(self._pid_log.error,
+                                           feedforward=self._ff,
+                                           speed=CS.vEgo,
+                                           freeze_integrator=freeze_integrator)

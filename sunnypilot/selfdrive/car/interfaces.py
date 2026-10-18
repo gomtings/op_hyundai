@@ -43,11 +43,37 @@ def _initialize_neural_network_lateral_control(CI: CarInterfaceBase, CP: structs
   CP_SP.neuralNetworkLateralControl.fuzzyFingerprint = not exact_match
 
 
+def _initialize_enforced_torque_lateral_control(CI: CarInterfaceBase, CP: structs.CarParams, params: Params = None) -> None:
+  if params is None:
+    params = Params()
+
+  if CP.steerControlType != structs.CarParams.SteerControlType.angle and params.get_bool("EnforceTorqueControl"):
+    CI.configure_torque_tune(CP.carFingerprint, CP.lateralTuning)
+
+
+def _cleanup_unsupported_params(CP: structs.CarParams, params: Params = None) -> None:
+  if params is None:
+    params = Params()
+
+  if params.get_bool("LateralJerkTorqueController") and params.get_bool("NeuralNetworkLateralControl"):
+    cloudlog.warning("LateralJerkTorqueController and NeuralNetworkLateralControl both enabled, disabling both")
+    params.put_bool("LateralJerkTorqueController", False)
+    params.put_bool("NeuralNetworkLateralControl", False)
+
+  if CP.steerControlType == structs.CarParams.SteerControlType.angle:
+    cloudlog.warning("SteerControlType is angle, cleaning up params")
+    params.remove("NeuralNetworkLateralControl")
+    params.remove("EnforceTorqueControl")
+    params.remove("LateralJerkTorqueController")
+
+
 def setup_interfaces(CI: CarInterfaceBase, params: Params = None) -> None:
   CP = CI.CP
   CP_SP = CI.CP_SP
 
+  _initialize_enforced_torque_lateral_control(CI, CP, params)
   _initialize_neural_network_lateral_control(CI, CP, CP_SP, params)
+  _cleanup_unsupported_params(CP, params)
 
 
 def initialize_params(params) -> list[dict[str, Any]]:

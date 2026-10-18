@@ -46,6 +46,13 @@ private:
   NeuralNetworkLateralControl *nnlcToggle = nullptr;
   ParamControl *torqueToggle = nullptr;
   ButtonParamControlSP *torqueTuneButtons = nullptr;
+  ParamControl *jerkToggle = nullptr;
+  ParamControl *selfTuneToggle = nullptr;
+  ParamControl *relaxedTuneToggle = nullptr;
+  ParamControl *customTuneToggle = nullptr;
+  ParamControl *overrideToggle = nullptr;
+  OptionControlSP *latAccelFactorOption = nullptr;
+  OptionControlSP *frictionOption = nullptr;
   BlinkerPauseLateralSettings *blinkerPauseLateralSettings = nullptr;
 
   const QString MADS_BASE_DESC = tr("Enables independent engagements of Automatic Lane Centering (ALC) and Adaptive Cruise Control (ACC).");
