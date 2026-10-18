@@ -66,7 +66,7 @@ class Controls(ControlsExt, ModelStateBase):
     elif self.CP.lateralTuning.which() == 'pid':
       self.LaC = LatControlPID(self.CP, self.CP_SP, self.CI)
     elif self.CP.lateralTuning.which() == 'torque':
-      self.LaC = LatControlTorque(self.CP, self.CP_SP, self.CI)
+      self.LaC = self.initialize_lateral_control(LatControlTorque(self.CP, self.CP_SP, self.CI), self.CI)
 
   def update(self):
     self.sm.update(15)
@@ -141,9 +141,10 @@ class Controls(ControlsExt, ModelStateBase):
     self.desired_curvature, curvature_limited = clip_curvature(CS.vEgo, self.desired_curvature, new_desired_curvature, lp.roll)
 
     actuators.curvature = self.desired_curvature
+    lat_args = (self.lat_delay,) if getattr(self.LaC, 'uses_lat_delay', False) else ()
     steer, steeringAngleDeg, lac_log = self.LaC.update(CC.latActive, CS, self.VM, lp,
                                                        self.steer_limited_by_safety, self.desired_curvature,
-                                                       self.calibrated_pose, curvature_limited)  # TODO what if not available
+                                                       self.calibrated_pose, curvature_limited, *lat_args)  # TODO what if not available
     actuators.torque = float(steer)
     actuators.steeringAngleDeg = float(steeringAngleDeg)
     # Ensure no NaNs/Infs

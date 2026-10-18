@@ -188,6 +188,13 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     // Neural Network Lateral Control
     {"NeuralNetworkLateralControl", {PERSISTENT | BACKUP, BOOL, "0"}},
 
+    // Torque lateral controller selection (v0/v1) and parameter override
+    {"EnforceTorqueControl", {PERSISTENT | BACKUP, BOOL}},
+    {"TorqueControlTune", {PERSISTENT | BACKUP, FLOAT, "0.0"}},
+    {"TorqueParamsOverrideEnabled", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"TorqueParamsOverrideFriction", {PERSISTENT | BACKUP, FLOAT, "0.1"}},
+    {"TorqueParamsOverrideLatAccelFactor", {PERSISTENT | BACKUP, FLOAT, "2.5"}},
+
     // sunnylink params
     {"EnableSunnylinkUploader", {PERSISTENT | BACKUP, BOOL}},
     {"LastSunnylinkPingTime", {CLEAR_ON_MANAGER_START, INT}},
