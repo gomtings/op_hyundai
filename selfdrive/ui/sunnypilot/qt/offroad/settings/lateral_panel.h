@@ -44,6 +44,8 @@ private:
   PushButtonSP *laneChangeSettingsButton;
   LaneChangeSettings *laneChangeWidget = nullptr;
   NeuralNetworkLateralControl *nnlcToggle = nullptr;
+  ParamControl *torqueToggle = nullptr;
+  ButtonParamControlSP *torqueTuneButtons = nullptr;
   BlinkerPauseLateralSettings *blinkerPauseLateralSettings = nullptr;
 
   const QString MADS_BASE_DESC = tr("Enables independent engagements of Automatic Lane Centering (ALC) and Adaptive Cruise Control (ACC).");

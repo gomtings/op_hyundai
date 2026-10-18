@@ -89,8 +89,44 @@ LateralPanel::LateralPanel(SettingsWindowSP *parent) : QFrame(parent) {
     nnlcToggle->updateToggle();
   });
 
+  list->addItem(horizontal_line());
+
+  // Enforce Torque Lateral Control (torque controller v0/v1)
+  torqueToggle = new ParamControl(
+    "EnforceTorqueControl",
+    tr("Enforce Torque Lateral Control"),
+    tr("Enable this to enforce sunnypilot to steer with Torque lateral control. Cannot be used together with NNLC."),
+    "");
+  torqueToggle->setConfirmation(true, false);
+  list->addItem(torqueToggle);
+
+  torqueTuneButtons = new ButtonParamControlSP(
+    "TorqueControlTune", tr("Torque Control Tune"),
+    tr("v0 is the sunnypilot default. v1 is the newer controller with jerk look-ahead."),
+    "",
+    {tr("v0 (Default)"), tr("v1")},
+    375);
+  list->addItem(torqueTuneButtons);
+
+  // Torque control and NNLC replace the same controller, so only one of them can be on
+  QObject::connect(torqueToggle, &ToggleControl::toggleFlipped, [=](bool state) {
+    torqueTuneButtons->setEnabled(state && offroad);
+    if (state && nnlcToggle->isToggled()) {
+      params.putBool("NeuralNetworkLateralControl", false);
+      nnlcToggle->refresh();
+      nnlcToggle->updateToggle();
+    }
+  });
+  QObject::connect(nnlcToggle, &ToggleControl::toggleFlipped, [=](bool state) {
+    if (state && torqueToggle->isToggled()) {
+      params.putBool("EnforceTorqueControl", false);
+      torqueToggle->refresh();
+      torqueTuneButtons->setEnabled(false);
+    }
+  });
+
   toggleOffroadOnly = {
-    madsToggle, nnlcToggle,
+    madsToggle, nnlcToggle, torqueToggle,
   };
   QObject::connect(uiState(), &UIState::offroadTransition, this, &LateralPanel::updateToggles);
 
@@ -139,6 +175,13 @@ void LateralPanel::updateToggles(bool _offroad) {
     capnp::FlatArrayMessageReader cmsg(aligned_buf.align(cp_bytes.data(), cp_bytes.size()));
     cereal::CarParams::Reader CP = cmsg.getRoot<cereal::CarParams>();
 
+    // torque lateral control does not apply to angle steering platforms
+    if (CP.getSteerControlType() == cereal::CarParams::SteerControlType::ANGLE) {
+      params.remove("EnforceTorqueControl");
+      torqueToggle->refresh();
+      torqueToggle->setEnabled(false);
+    }
+
     if (isBrandInList(CP.getBrand(), mads_limited_settings_brands)) {
       madsToggle->setDescription(descriptionBuilder(STATUS_MADS_SETTINGS_LIMITED_COMPATIBILITY, MADS_BASE_DESC));
     } else {
@@ -149,6 +192,7 @@ void LateralPanel::updateToggles(bool _offroad) {
   }
 
   madsSettingsButton->setEnabled(madsToggle->isToggled());
+  torqueTuneButtons->setEnabled(_offroad && torqueToggle->isToggled());
 
   blinkerPauseLateralSettings->refresh();
 
