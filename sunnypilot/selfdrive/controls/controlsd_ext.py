@@ -30,21 +30,28 @@ class ControlsExt:
     self.pm_services_ext = ['carControlSP']
 
   def initialize_lateral_control(self, lac, CI):
-    # With EnforceTorqueControl off nothing changes: the stock torque controller keeps running.
-    # TorqueControlTune picks the sunnypilot torque controller: 0 = v0, 1 = v1, anything else = stock.
-    if not self.params.get_bool("EnforceTorqueControl") or self.CP.lateralTuning.which() != 'torque':
+    # Same selection as upstream sunnypilot: torque cars run v0 unless EnforceTorqueControl is on and
+    # TorqueControlTune picks v1. Upstream's "other" value is its stock controller; here that role is
+    # played by v1 (upstream's stock one), and a tune of 2 keeps this tree's previous stock controller.
+    if self.CP.lateralTuning.which() != 'torque':
       return lac
+
+    from openpilot.sunnypilot.selfdrive.controls.lib.latcontrol_torque_v0 import LatControlTorque as LatControlTorqueV0
+    from openpilot.sunnypilot.selfdrive.controls.lib.latcontrol_torque_v1 import LatControlTorque as LatControlTorqueV1
+
+    if not self.params.get_bool("EnforceTorqueControl"):
+      cloudlog.info("lateral control: torque v0")
+      return LatControlTorqueV0(self.CP, self.CP_SP, CI)
 
     tune = self.params.get("TorqueControlTune", return_default=True)
     if tune == 0.0:
-      from openpilot.sunnypilot.selfdrive.controls.lib.latcontrol_torque_v0 import LatControlTorque as LatControlTorqueV0
       cloudlog.info("lateral control: torque v0")
       return LatControlTorqueV0(self.CP, self.CP_SP, CI)
-    if tune == 1.0:
-      from openpilot.sunnypilot.selfdrive.controls.lib.latcontrol_torque_v1 import LatControlTorque as LatControlTorqueV1
-      cloudlog.info("lateral control: torque v1")
-      return LatControlTorqueV1(self.CP, self.CP_SP, CI)
-    return lac
+    if tune == 2.0:
+      cloudlog.info("lateral control: previous stock torque controller")
+      return lac
+    cloudlog.info("lateral control: torque v1")
+    return LatControlTorqueV1(self.CP, self.CP_SP, CI)
 
   def get_params_sp(self) -> None:
     self.param_store.update(self.params)
